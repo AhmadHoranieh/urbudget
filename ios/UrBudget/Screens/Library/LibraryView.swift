@@ -30,61 +30,14 @@ struct LibraryView: View {
         let busy = working || store.busy
         let name = store.budget?.text("name") ?? "this budget"
         let excess = LibraryBackup.excess(backups.count, keep: keep)
+        let pruneTitle: String = excess == 1 ? "Remove 1 older backup?" : "Remove \(excess) older backups?"
+        // One small function per section: Xcode 26's type checker gives up on the whole list at once.
         List {
-            Section {
-                ForEach(budgets, id: \.idText) { entry in budgetRow(entry) }
-                if !loaded && budgets.isEmpty { ProgressView().frame(maxWidth: .infinity) }
-                Button { creating = true } label: { Label("New budget", systemImage: "plus") }
-                    .disabled(busy)
-            } header: {
-                Text("Budgets")
-            } footer: {
-                Text("Each has its own history, bank links, assistant chats and backups. Tap the open budget for its name, currency and formats. Swipe another to delete it.")
-            }
-
-            Section {
-                Button { freshStarting = true } label: {
-                    LibraryRowLabel(title: "Make a fresh start", detail: "Carry balances, categories and targets into a new budget; this one stays in the library", symbol: "sparkles")
-                }
-                .disabled(busy || store.budget == nil)
-            } header: {
-                Text("Start a new plan")
-            }
-
+            budgetsSection(busy: busy)
+            freshStartSection(busy: busy)
             if let recovery { recoverySection(recovery, busy: busy) }
-
-            Section {
-                Button { backUp() } label: {
-                    LibraryRowLabel(title: "Back up now", detail: "A complete copy to save or share", symbol: "externaldrive.badge.plus")
-                }
-                .disabled(busy || store.budget == nil)
-                Picker("Backups to keep", selection: Binding(get: { keep }, set: setRetention)) {
-                    ForEach(LibrarySettings.retentionChoices, id: \.keep) { Text($0.label).tag($0.keep) }
-                }
-                .disabled(busy || !loaded)
-            } header: {
-                Text("Backups & recovery")
-            } footer: {
-                Text("Applies to each budget's automatic and manual backups. Older copies are removed when a new backup is made.")
-            }
-
-            Section {
-                if loaded && backups.isEmpty {
-                    Text("No backups yet.").foregroundStyle(Color.secondary)
-                }
-                ForEach(backups) { backup in backupRow(backup, busy: busy) }
-                if excess > 0 {
-                    Button(role: .destructive) { pruning = true } label: {
-                        Label(excess == 1 ? "Remove 1 older backup" : "Remove \(excess) older backups", systemImage: "trash")
-                    }
-                    .disabled(busy)
-                }
-            } header: {
-                Text("Backups of \(name)")
-            } footer: {
-                Text("Safety copies are made before a restore, an import or sync replaces this budget. Restoring one backs up the current budget first.")
-            }
-
+            backupSettingsSection(busy: busy)
+            backupsSection(busy: busy, name: name, excess: excess)
             if let loadError { Section { FormErrorView(message: loadError) } }
         }
         .groupedList()
@@ -111,7 +64,7 @@ struct LibraryView: View {
         } message: { backup in
             Text("This replaces the open budget with the backup from \(backup.title). The current budget is backed up before replacement. A newer change will stop this restore for review.")
         }
-        .confirmationDialog(excess == 1 ? "Remove 1 older backup?" : "Remove \(excess) older backups?", isPresented: $pruning, titleVisibility: .visible) {
+        .confirmationDialog(pruneTitle, isPresented: $pruning, titleVisibility: .visible) {
             Button("Remove backups", role: .destructive) { prune() }
         } message: {
             Text("Only the newest \(keep) are kept. Removed backups can't be recovered.")
@@ -126,6 +79,72 @@ struct LibraryView: View {
             case .success: store.showToast(export?.done ?? "Exported")
             case .failure(let failure): store.error = BudgetStore.readable(failure)
             }
+        }
+    }
+
+    // MARK: Sections
+
+    private func budgetsSection(busy: Bool) -> some View {
+        Section {
+            ForEach(budgets, id: \.idText) { (entry: JSON) in budgetRow(entry) }
+            if !loaded && budgets.isEmpty { ProgressView().frame(maxWidth: .infinity) }
+            Button { creating = true } label: { Label("New budget", systemImage: "plus") }
+                .disabled(busy)
+        } header: {
+            Text("Budgets")
+        } footer: {
+            Text("Each has its own history, bank links, assistant chats and backups. Tap the open budget for its name, currency and formats. Swipe another to delete it.")
+        }
+    }
+
+    private func freshStartSection(busy: Bool) -> some View {
+        Section {
+            Button { freshStarting = true } label: {
+                LibraryRowLabel(title: "Make a fresh start", detail: "Carry balances, categories and targets into a new budget; this one stays in the library", symbol: "sparkles")
+            }
+            .disabled(busy || store.budget == nil)
+        } header: {
+            Text("Start a new plan")
+        }
+    }
+
+    private func backupSettingsSection(busy: Bool) -> some View {
+        let retention = Binding<Int>(get: { keep }, set: { setRetention($0) })
+        return Section {
+            Button { backUp() } label: {
+                LibraryRowLabel(title: "Back up now", detail: "A complete copy to save or share", symbol: "externaldrive.badge.plus")
+            }
+            .disabled(busy || store.budget == nil)
+            Picker("Backups to keep", selection: retention) {
+                ForEach(LibrarySettings.retentionChoices, id: \.keep) { (choice: (keep: Int, label: String)) in
+                    Text(choice.label).tag(choice.keep)
+                }
+            }
+            .disabled(busy || !loaded)
+        } header: {
+            Text("Backups & recovery")
+        } footer: {
+            Text("Applies to each budget's automatic and manual backups. Older copies are removed when a new backup is made.")
+        }
+    }
+
+    private func backupsSection(busy: Bool, name: String, excess: Int) -> some View {
+        let removeTitle: String = excess == 1 ? "Remove 1 older backup" : "Remove \(excess) older backups"
+        return Section {
+            if loaded && backups.isEmpty {
+                Text("No backups yet.").foregroundStyle(Color.secondary)
+            }
+            ForEach(backups) { (backup: LibraryBackup) in backupRow(backup, busy: busy) }
+            if excess > 0 {
+                Button(role: .destructive) { pruning = true } label: {
+                    Label(removeTitle, systemImage: "trash")
+                }
+                .disabled(busy)
+            }
+        } header: {
+            Text("Backups of \(name)")
+        } footer: {
+            Text("Safety copies are made before a restore, an import or sync replaces this budget. Restoring one backs up the current budget first.")
         }
     }
 
