@@ -324,6 +324,30 @@ describe("sync", () => {
     expect((await call("/api/v1/me", { headers: web.headers })).status).toBe(401);
     expect(env.DB.sqlite.prepare("SELECT COUNT(*) AS n FROM users").get()).toEqual({ n: 0 });
   });
+
+  it("honors Sync given by UrBudget (a review account's) with nothing to bill, manage or cancel", async () => {
+    const web = await signIn("review@example.com", "web");
+    const desktop = await signIn("review@example.com", "desktop");
+    env.DB.sqlite
+      .prepare("INSERT INTO subscriptions (id,user_id,customer_id,status,current_period_end,updated_at,event_at) VALUES (?,?,?,?,?,?,?)")
+      .run("comp:review", web.userId, "comp", "active", null, "2026-10-22T00:00:00Z", "2026-10-22T00:00:00Z");
+
+    const me = (await (await call("/api/v1/me", { headers: web.headers })).json()) as Record<string, unknown>;
+    expect(me.subscription).toEqual({ provider: "comp", status: "active", renewsAt: null, endsAt: null });
+    expect(me.sync).toMatchObject({ active: true });
+    // Past the subscription check (402 without one): 404 only because no sync key is set up yet.
+    expect((await call("/api/v1/sync/budgets", { headers: desktop.headers })).status).toBe(404);
+
+    const portal = await call("/api/v1/billing/portal", { method: "POST", headers: web.headers });
+    expect(portal.status).toBe(404);
+    expect(await portal.json()).toMatchObject({ error: "no_customer" });
+
+    const deleted = await call("/api/v1/me", json("DELETE", { confirm: "review@example.com" }, web.headers));
+    expect(deleted.status).toBe(200);
+    expect(polarCalls).toEqual([]);
+    expect(env.DB.sqlite.prepare("SELECT COUNT(*) AS n FROM deleted_billing_customers").get()).toEqual({ n: 0 });
+    expect(env.DB.sqlite.prepare("SELECT COUNT(*) AS n FROM users").get()).toEqual({ n: 0 });
+  });
 });
 
 describe("downloads", () => {

@@ -5,7 +5,7 @@ import { requireUser } from "../auth";
 import type { AppEnv, Env } from "../env";
 import { ApiError, countEvent, jsonBody, now, randomId, recordProblem } from "../util";
 import { polar } from "./polar";
-import type { BillingEvent } from "./provider";
+import { COMPLIMENTARY, type BillingEvent } from "./provider";
 import { cancelGoogleSubscriptions, PLAY_PACKAGE } from "./google";
 
 export { SYNC_STATUSES } from "./provider";
@@ -102,7 +102,8 @@ export async function cancelSubscriptions(env: Env, userId: string) {
   )
     .bind(userId)
     .all<{ id: string }>();
-  for (const { id } of live.results) if (!id.startsWith("google:")) await provider.cancelSubscription(env, id);
+  for (const { id } of live.results)
+    if (!id.startsWith("google:") && !id.startsWith(COMPLIMENTARY)) await provider.cancelSubscription(env, id);
 }
 
 export const billing = new Hono<AppEnv>();
@@ -133,6 +134,8 @@ billing.post("/portal", requireUser, async (c) => {
   ).bind(user.id).first<{ id: string; customer_id: string }>();
   if (subscription?.id.startsWith("google:"))
     return c.json({ url: `https://play.google.com/store/account/subscriptions?package=${PLAY_PACKAGE}` });
+  if (subscription?.id.startsWith(COMPLIMENTARY))
+    throw new ApiError(404, "no_customer", "This account's Sync was given by UrBudget, so there's nothing to manage.");
   const customerId =
     subscription?.customer_id ?? user.billing_customer_id ??
     null;

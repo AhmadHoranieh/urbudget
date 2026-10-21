@@ -50,3 +50,9 @@ export interface BillingProvider {
 
 /** Subscription states in which sync works (a failed renewal is retried while past due). */
 export const SYNC_STATUSES = ["active", "trialing", "past_due"];
+
+/**
+ * The id prefix of Sync that UrBudget grants itself, such as the store review account's: a row
+ * added by hand (README › Google Play purchases). No provider bills, cancels or manages it.
+ */
+export const COMPLIMENTARY = "comp:";

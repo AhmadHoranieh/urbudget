@@ -169,7 +169,8 @@ function renderSync() {
   const renews = formatDate(sub?.renewsAt);
   const ends = formatDate(sub?.endsAt);
   let summary = "";
-  let canManage = Boolean(sub);
+  // Sync given by UrBudget (provider "comp") has no billing to manage.
+  let canManage = Boolean(sub) && sub.provider !== "comp";
   let canSubscribe = false;
 
   if (!sub) {

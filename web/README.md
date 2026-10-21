@@ -96,16 +96,27 @@ Primary setup references: [Google Play notifications](https://developer.android.
 [authenticated Pub/Sub push](https://docs.cloud.google.com/pubsub/docs/authenticate-push-subscriptions),
 and [subscription lifecycle](https://developer.android.com/google/play/billing/lifecycle/subscriptions).
 
-For Play review, optionally configure a dedicated account containing synthetic data only.
+For App Store and Play review, optionally configure a dedicated account containing synthetic data only. (The setting names say Play, but the same account works for both stores' reviewers, because the apps sign in the same way. The iOS code field shows a number pad, so use an all-digit code: 24 or more digits pass the format check below.)
 Set `PLAY_REVIEW_EMAIL` to that account's lowercase email and `PLAY_REVIEW_CODE_HASH` to
 SHA-256 of `review:<lowercase email>:<random access code>`. Generate a high-entropy code of
 24–128 characters using letters, digits, `_` or `-`. Store the hash as a Worker secret, and
 put the actual code and review instructions only in Play Console's private App access details
 or an approved private credential store. Never use a customer's account, commit the code,
 or enable production `DEV_LOGIN_CODES` for review. The configured address gets a reusable
-app-only review sign-in; other addresses keep normal email OTP. This creates no paid access:
-provision any needed Sync review entitlement through a controlled server operation before
-submission. Verify the full reviewer journey,
+app-only review sign-in; other addresses keep normal email OTP. This creates no paid access.
+To give the account Sync, add a complimentary subscription row. Its id starts with `comp:`, which
+no provider bills, cancels or manages, so reviewers can still delete the account. The account must
+already exist (`userFor` makes it at the first sign-in, or insert it the same way):
+
+```sh
+npx wrangler d1 execute urbudget --remote --command "INSERT INTO subscriptions
+  (id, user_id, customer_id, status, current_period_end, updated_at, event_at)
+  SELECT 'comp:review', id, 'comp', 'active', NULL, strftime('%Y-%m-%dT%H:%M:%SZ', 'now'),
+    strftime('%Y-%m-%dT%H:%M:%SZ', 'now') FROM users WHERE email = 'review@urbudget.app'"
+```
+
+If a reviewer deletes the account, the row loses its user and grants nothing. Delete it and add
+it again once the account signs in afresh. Verify the full reviewer journey,
 including any synthetic Sync passphrase, and maintain access while review is needed. When
 retiring the credential, remove/rotate the configuration and revoke that account's existing
 sessions; changing the credential alone does not invalidate sessions already issued.

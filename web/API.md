@@ -33,7 +33,7 @@ Two kinds of session:
 | `POST /auth/verify` | `{ email, code, client: "web" \| "desktop", deviceName? }` | web: `{ user }` and the cookie; desktop: `{ user, token }`. Errors: `invalid_code`, `expired_code`, `too_many_attempts` |
 | `POST /auth/logout` | | `{ ok: true }` |
 | `POST /auth/web-link` (desktop) | `{ next }` | `{ url }`: opening it in a browser signs that browser in and goes to `next` (a path on the site). Valid 5 minutes, once |
-| `GET /me` | | `{ user: { id, email, createdAt }, subscription: null \| { provider: "polar" \| "google", status, renewsAt, endsAt }, sync: { active, budgets, bytes } }` |
+| `GET /me` | | `{ user: { id, email, createdAt }, subscription: null \| { provider: "polar" \| "google" \| "comp", status, renewsAt, endsAt }, sync: { active, budgets, bytes } }` |
 | `DELETE /me` | `{ confirm: "<the account's email>" }` | `{ ok: true }`. Cancels any Sync subscription, then deletes the account and its synced data |
 | `POST /billing/checkout` | `{ plan?: "sync" }` | `{ url }` of Polar's hosted checkout for Sync, tied to the signed-in account (401 signed out); the browser goes there. Polar returns the subscriber to `/account/?checkout_id=…`. Any other `plan` is 400 `invalid_plan`. Error `not_configured` until Polar is set up |
 | `POST /billing/portal` | | `{ url }` of Polar's customer portal (update card, cancel), or Google Play's subscriptions page for a Play subscriber. Error `no_customer` |

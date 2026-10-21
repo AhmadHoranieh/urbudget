@@ -7,6 +7,7 @@ import { assistantReports } from "./assistant-reports";
 import { auth, requireUser } from "./auth";
 import type { AppEnv, Env } from "./env";
 import { billing, cancelSubscriptions } from "./billing";
+import { COMPLIMENTARY } from "./billing/provider";
 import { googleBilling, refreshGooglePurchases } from "./billing/google";
 import { googleNotifications } from "./billing/google-rtdn";
 import { downloads, files, releases, TEAM_COOKIE } from "./releases";
@@ -46,7 +47,7 @@ api.get("/me", requireUser, async (c) => {
   return c.json({
     user: { id: user.id, email: user.email, createdAt: user.created_at },
     subscription: subscription && {
-      provider: subscription.id.startsWith("google:") ? "google" : "polar",
+      provider: subscription.id.startsWith("google:") ? "google" : subscription.id.startsWith(COMPLIMENTARY) ? "comp" : "polar",
       status: subscription.status,
       renewsAt: subscription.cancel_at || subscription.status === "canceled" ? null : subscription.current_period_end,
       endsAt: subscription.cancel_at ?? (subscription.status === "canceled" ? subscription.current_period_end : null),
@@ -84,7 +85,7 @@ api.delete("/me", requireUser, async (c) => {
       c.env.DB.prepare(`INSERT OR IGNORE INTO deleted_billing_customers (customer_id, deleted_at)
         SELECT billing_customer_id, ?2 FROM users WHERE id = ?1 AND billing_customer_id IS NOT NULL
           AND EXISTS (SELECT 1 FROM account_deletions WHERE user_id = ?1 AND token = ?3)
-        UNION SELECT customer_id, ?2 FROM subscriptions WHERE user_id = ?1 AND id NOT LIKE 'google:%'
+        UNION SELECT customer_id, ?2 FROM subscriptions WHERE user_id = ?1 AND id NOT LIKE 'google:%' AND id NOT LIKE 'comp:%'
           AND EXISTS (SELECT 1 FROM account_deletions WHERE user_id = ?1 AND token = ?3)`)
         .bind(user.id, now(), token),
       c.env.DB.prepare(`DELETE FROM users WHERE id = ?1
