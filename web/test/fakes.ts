@@ -131,7 +131,7 @@ export async function testEnv(): Promise<TestEnv> {
     BILLING_ENV: "sandbox",
     POLAR_PRODUCT_SYNC: "prod-sync",
     POLAR_ACCESS_TOKEN: "polar_oat_test",
-    POLAR_WEBHOOK_SECRET: "whsec_dGVzdC13ZWJob29rLXNlY3JldC1rZXk",
+    POLAR_WEBHOOK_SECRET: `whsec_${btoa("test-webhook-secret-key")}`,
     DEV_LOGIN_CODES: "1",
   };
 }

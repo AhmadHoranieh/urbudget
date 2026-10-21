@@ -3,7 +3,7 @@ APP_URL=http://localhost:8787
 # Sign-in responses include the code and emails are printed instead of sent.
 DEV_LOGIN_CODES=1
 # scripts/dev-webhook.mjs signs fake Polar events with this; any whsec_ value works locally.
-POLAR_WEBHOOK_SECRET=whsec_bG9jYWwtZGV2ZWxvcG1lbnQtc2VjcmV0
+POLAR_WEBHOOK_SECRET=whsec_ZGV2ZWxvcG1lbnQ
 POLAR_PRODUCT_SYNC=dev-sync-product
 # Optional: a sandbox token and products (npm run polar:setup -- --sandbox) to try real checkout.
 # POLAR_ACCESS_TOKEN=polar_oat_...

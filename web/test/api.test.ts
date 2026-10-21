@@ -206,7 +206,7 @@ describe("webhooks", () => {
   });
 
   it("checks Standard Webhooks signatures with clock tolerance, and Polar's older secrets", async () => {
-    const secret = "whsec_dGVzdC13ZWJob29rLXNlY3JldC1rZXk";
+    const secret = `whsec_${btoa("test-webhook-secret-key")}`;
     const ts = 1_800_000_000;
     const headers = (signature: string) =>
       new Headers({ "webhook-id": "msg_1", "webhook-timestamp": String(ts), "webhook-signature": signature });
