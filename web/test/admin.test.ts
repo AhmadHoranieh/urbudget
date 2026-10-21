@@ -52,7 +52,7 @@ beforeEach(async () => {
     }
     if (url === "https://sandbox-api.polar.sh/v1/checkouts/")
       return Response.json({ id: "co_1", url: "https://sandbox.polar.sh/checkout/co_1" }, { status: 201 });
-    if (url.startsWith("https://api.github.com/repos/AhmadHoranieh/local-budget/releases"))
+    if (url.startsWith("https://api.github.com/repos/AhmadHoranieh/urbudget/releases"))
       return Response.json([
         {
           tag_name: "v1.0.1",
@@ -197,7 +197,7 @@ describe("admin numbers", () => {
 
   it("counts download clicks by day, version and source, but not crawlers'", async () => {
     await publish();
-    env.GITHUB_REPO = "AhmadHoranieh/local-budget";
+    env.GITHUB_REPO = "AhmadHoranieh/urbudget";
     await call("/download/windows", { headers: { "User-Agent": browser, Referer: "http://localhost/download/" } });
     await call("/download/windows", { headers: { "User-Agent": browser, Referer: "https://www.reddit.com/r/ynab/comments/x" } });
     await call("/download/windows", { headers: { "User-Agent": browser, "Sec-Fetch-Site": "none" } });

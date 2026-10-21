@@ -224,7 +224,7 @@ Unsigned installers work, but Windows SmartScreen warns and macOS blocks the app
 3. Open the application and copy its **Application Audience (AUD) Tag**.
 4. In `wrangler.jsonc`, set `ACCESS_TEAM_DOMAIN` (`urbudget.cloudflareaccess.com`) and `ACCESS_AUD` (the tag). Push to `main` to deploy.
 5. Say who may use the admin page as a Worker secret, so no address is in the (public) repository: `npx wrangler secret put ADMIN_EMAILS` and enter your address (comma-separate more). Until it's set, nobody gets in. A Worker that still has `ADMIN_EMAILS` as a plain variable from an older `wrangler.jsonc` refuses a secret of the same name: deploy the current `wrangler.jsonc` first, which drops the variable, then put the secret.
-6. Download counts from GitHub releases (while the repository is private): make a [fine-grained token](https://github.com/settings/personal-access-tokens/new) for this repository with **Contents: read**, then `npx wrangler secret put GITHUB_TOKEN`.
+6. Download counts from GitHub releases work without a token, since the repository is public, but unauthenticated requests share GitHub's low per-address rate limit. To lift it, make a [fine-grained token](https://github.com/settings/personal-access-tokens/new) with **Public repositories (read-only)** access, then `npx wrangler secret put GITHUB_TOKEN`.
 7. Revenue numbers need the Polar token to have `metrics:read`. If it was made without it, make a new token with it and run `npm run go-live` again.
 
 Locally, `npm run dev` serves `http://localhost:8787/admin/` without Access (only with `DEV_LOGIN_CODES=1` and a localhost `APP_URL`, as in `.dev.vars`).

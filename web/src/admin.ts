@@ -386,7 +386,7 @@ interface GitHubRelease {
   assets: { name: string; size: number; download_count: number }[];
 }
 
-/** Download counts of the files on GitHub's releases. The repository is private, so it takes a token. */
+/** Download counts of the files on GitHub's releases. A token is optional: it lifts the rate limit. */
 async function githubReleases(env: Env) {
   if (!env.GITHUB_REPO) return { configured: false as const };
   try {
@@ -399,7 +399,14 @@ async function githubReleases(env: Env) {
       },
     });
     if (!response.ok) {
-      const hint = response.status === 404 || response.status === 401 ? " Check GITHUB_TOKEN: the repository is private." : "";
+      const hint =
+        response.status === 404
+          ? " Check GITHUB_REPO."
+          : response.status === 401
+            ? " Check GITHUB_TOKEN."
+            : response.status === 403 || response.status === 429
+              ? " That's GitHub's rate limit: set GITHUB_TOKEN."
+              : "";
       return { configured: true as const, error: `GitHub answered ${response.status}.${hint}` };
     }
     const releases = (await response.json()) as GitHubRelease[];

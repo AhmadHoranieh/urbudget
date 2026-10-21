@@ -44,8 +44,9 @@
     "ACCESS_TEAM_DOMAIN": "urbudget.cloudflareaccess.com",
     "ACCESS_AUD": "96d159176caf030d03f91993e4991cb2137b94fe50391b2ba1432aa1d26cba91",
     // Who may use it is the ADMIN_EMAILS secret (below), not a var, so no address is in the repository.
-    // Whose GitHub releases' download counts the admin page shows (needs the GITHUB_TOKEN secret).
-    "GITHUB_REPO": "AhmadHoranieh/local-budget"
+    // Whose GitHub releases' download counts the admin page shows. The repository is public; the
+    // optional GITHUB_TOKEN secret keeps GitHub's shared per-address rate limit out of the way.
+    "GITHUB_REPO": "AhmadHoranieh/urbudget"
   }
   // Secrets (npx wrangler secret put NAME, or wrangler secret bulk):
   //   POLAR_ACCESS_TOKEN      Polar organization access token
@@ -54,5 +55,5 @@
   //   ADMIN_EMAILS            who may use the admin page, comma-separated; the Access policy
   //                           "UrBudget admins" must let them in too
   //   GOOGLE_PLAY_SERVICE_ACCOUNT Google service-account JSON; server only, never in the app
-  //   GITHUB_TOKEN            read-only token for GITHUB_REPO's releases (the admin page's download counts)
+  //   GITHUB_TOKEN            optional read-only token for GITHUB_REPO's releases (the admin page's download counts)
 }

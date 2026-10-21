@@ -38,7 +38,7 @@ export interface Env {
   ADMIN_EMAILS?: string;
   /** `owner/name` of the GitHub repository whose releases' download counts the admin page shows. */
   GITHUB_REPO?: string;
-  /** A read-only GitHub token for that repository (it's private). */
+  /** Optional read-only GitHub token; unauthenticated requests share a low per-address rate limit. */
   GITHUB_TOKEN?: string;
 }
 
