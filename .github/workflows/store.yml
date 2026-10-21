@@ -13,6 +13,8 @@
 # submission as a draft: tick "draft" when running this by hand, or set the repository variable
 # STORE_DRAFT to true before publishing the release. Then edit the listing in Partner Center and
 # submit it there; delete the variable afterwards so the next release goes straight to review.
+# Partner Center only processes a draft's uploaded package when the API commits it, so its
+# Packages page still shows the old version: drop the release's .msix there too before submitting.
 name: Microsoft Store
 
 on:

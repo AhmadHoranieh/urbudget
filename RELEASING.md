@@ -7,7 +7,7 @@ deploys it ([deploy.yml](.github/workflows/deploy.yml), see the [website guide](
 | App | Version is in | Tag | Workflow | Where it goes |
 | --- | --- | --- | --- | --- |
 | Desktop (Windows, macOS) | `desktop/` (package, lockfile, Tauri and Cargo files) and the shared crates | `desktop-v1.2.3` | [release.yml](.github/workflows/release.yml) makes a draft GitHub release with the installers | Publishing the draft puts them on urbudget.app ([publish.yml](.github/workflows/publish.yml)) and sends the Store package to the Microsoft Store ([store.yml](.github/workflows/store.yml)) |
-| Android | `android/app/build.gradle.kts` | `android-v1.2.3` | [android-release.yml](.github/workflows/android-release.yml) builds the signed App Bundle | Upload it from the run's artifacts in Play Console |
+| Android | `android/app/build.gradle.kts` | `android-v1.2.3` | [android-release.yml](.github/workflows/android-release.yml) builds the signed App Bundle and sends it to Play | Play's internal track (or the `PLAY_TRACK` variable's), then promote it in Play Console. The very first bundle is uploaded by hand from the run's artifacts |
 | iOS | `ios/project.yml` and the Xcode project | `ios-v1.2.3` | [ios-release.yml](.github/workflows/ios-release.yml) uploads the build to App Store Connect | TestFlight, then submit it for review in App Store Connect |
 
 ## Making a release
@@ -59,6 +59,23 @@ gh secret set ANDROID_UPLOAD_KEY_ALIAS --env google-play
 gh secret set ANDROID_UPLOAD_STORE_PASSWORD --env google-play
 gh secret set ANDROID_UPLOAD_KEY_PASSWORD --env google-play
 ```
+
+To have the workflow upload to Play itself:
+
+1. Upload the first bundle by hand (Play Console → Test and release → Internal testing → Create
+   new release, with the bundle from an **Android release** run's artifacts) and roll it out to
+   internal testers. Play's API can't upload to an app that has never had a release.
+2. In Google Cloud, make a service account (no roles needed in Cloud) and a JSON key for it, and
+   enable the Google Play Android Developer API in the same project. In Play Console → Users and
+   permissions, invite the service account's email with **Release apps to testing tracks** for
+   UrBudget (add **Release to production** only if tags should go to production).
+3. Store the key: `gh secret set GOOGLE_PLAY_SERVICE_ACCOUNT_JSON --env google-play < key.json`,
+   then delete the downloaded file.
+
+Each `android-v*` tag then goes to the internal track. `PLAY_TRACK` (a repository variable) picks
+another track, such as `alpha` for closed testing; `PLAY_RELEASE_STATUS=draft` leaves the release
+as a draft to roll out from Play Console. Keep this key apart from the Worker's
+`GOOGLE_PLAY_SERVICE_ACCOUNT`, which only checks purchases.
 
 **iOS** needs the app in App Store Connect and an API key for uploading:
 

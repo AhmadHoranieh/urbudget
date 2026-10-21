@@ -11,7 +11,7 @@ Notable changes to UrBudget, organized using [Keep a Changelog](https://keepacha
 - UrBudget is now free and open source, with nothing locked: there's no trial, license or read-only mode any more.
 - Sync, the only paid part, is $3 a month.
 
-## [1.0.7] - 2026-10-21
+## 1.0.7 — 2026-10-21
 
 ### Added
 
@@ -140,4 +140,3 @@ Also
 
 [Unreleased]: https://github.com/AhmadHoranieh/urbudget/compare/desktop-v1.0.8...HEAD
 [1.0.8]: https://github.com/AhmadHoranieh/urbudget/releases/tag/desktop-v1.0.8
-[1.0.7]: https://github.com/AhmadHoranieh/local-budget/compare/v1.0.6...v1.0.7

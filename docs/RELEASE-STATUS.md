@@ -1,65 +1,44 @@
 # Release status
 
-Reviewed 21 October 2026. Update this page after a release or a verified account milestone.
+Reviewed 22 October 2026. Update this page after a release or a verified account milestone.
 
 | Platform | Status |
 | --- | --- |
-| Desktop | Published [v1.0.7](https://github.com/AhmadHoranieh/local-budget/releases/tag/v1.0.7), tag commit `9f5a9dd`, on 21 October 2026. Windows and universal macOS installers and signed update packages are live on urbudget.app. |
-| Shared source | Desktop 1.0.7 is published, including reviewed YNAB and bank-import fixes, budget totals and editing improvements, and Store update support. The native Android and iOS apps are on `main`; each app now has its own version, `desktop-v`/`android-v`/`ios-v` tags and release workflow ([RELEASING.md](../RELEASING.md)). |
-| Microsoft Store | The [1.0.7 submission workflow](https://github.com/AhmadHoranieh/local-budget/actions/runs/39505002258) passed. Store certification and availability are not yet verified. |
-| Android | Native app source version `1.0.7` (version code 1000007), package `app.urbudget`. Not submitted to Play as of the last verified setup session. The release workflow hasn't run: the `google-play` environment has no upload-key secrets yet. The Tauri phone build it replaces was removed. |
-| iOS | Native app source version `1.0.7`, bundle `app.urbudget`. Simulator tests pass and a debug build ran on an iPhone; store purchases remain release work. The release workflow hasn't run: it needs the App Store Connect app record and API key. The Tauri phone build it replaces was removed. |
+| Desktop | Published [desktop-v1.0.8](https://github.com/AhmadHoranieh/urbudget/releases/tag/desktop-v1.0.8) on 22 October 2026, the first free and open-source release: no trial, license or read-only mode. Windows and universal macOS installers and signed update packages are live on urbudget.app. |
+| Website | urbudget.app runs this repository's `web/` since commit `e36d8f7` (22 October 2026): the app is free, and Sync is the only paid part at $3 a month. The Polar product "UrBudget Sync" is $3 a month, and the old $9 license product is archived. |
+| Microsoft Store | 1.0.8 submitted for certification on 22 October 2026, with the listing rewritten for the free app. Certification isn't verified yet. |
+| Android | Native app source version `1.0.7` (version code 1000007), package `app.urbudget`. A [signed bundle built on GitHub](https://github.com/AhmadHoranieh/urbudget/actions/runs/39681884973) from the `google-play` environment's upload key on 22 October 2026. Not on Play yet: the developer account's identity verification is in progress, and the app can't be created in Play Console until it's done. |
+| iOS | Native app source version `1.0.7`, bundle `app.urbudget`. The App Store Connect app record (6825535486) exists, and its listing, price (free), availability, age rating (4+) and privacy answers are filled in. Not yet: privacy answers published, screenshots, review account, first build. The release workflow needs Xcode 26 type-checking fixes before it can build ([AhmadHoranieh/urbudget#1](https://github.com/AhmadHoranieh/urbudget/pull/1)). |
 
-The 1.0.7 source review at `f9ea19e` passed 617 UI tests and 406 Rust tests, TypeScript checks,
-the production frontend build, and a Windows native debug build. Manual review used an isolated
-sample budget and was accepted before the version bump. Three opt-in Rust benchmarks were
-left ignored. Evidence is retained locally in `reports/merge-main-*.log` and
-`reports/manual-review-app-build.log`; these results do not confirm signed installers or publication.
-After the version bump, `npm run check` also passed for 1.0.7 (production build, 617 UI tests,
-406 Rust tests), recorded in `reports/release-1.0.7-check.log`.
+## Desktop 1.0.8
 
-The 1.0.7 [installer build](https://github.com/AhmadHoranieh/local-budget/actions/runs/39502213347),
-[app validation](https://github.com/AhmadHoranieh/local-budget/actions/runs/39502214032), and
-[publication](https://github.com/AhmadHoranieh/local-budget/actions/runs/39505002370) passed.
-Live Windows/macOS installers returned HTTP 200 and matched GitHub asset sizes and digests.
-Windows x64 and both macOS architectures offer signed 1.0.7 updates to 1.0.6 clients and return
-HTTP 204 to 1.0.7 clients. Release notes match the approved changelog. Evidence is retained locally
-in `reports/release-1.0.7-live-verification.json`.
+The [installer build](https://github.com/AhmadHoranieh/urbudget/actions/runs/39684655221) and
+[app validation](https://github.com/AhmadHoranieh/urbudget/actions/runs/39684655298) passed for
+`a2d7dcd`, and publishing the release ran [Publish](https://github.com/AhmadHoranieh/urbudget/actions/runs/39686439128)
+and [Microsoft Store](https://github.com/AhmadHoranieh/urbudget/actions/runs/39686438937).
 
-The older Android upload bundle built from `cd2efa9` is retained as signing evidence only.
-It predates consolidation and the credential fixes: **build and test a new signed bundle from
-current main before upload**. Inspect its versionCode against Play Console and increase it if
-that code has already been uploaded. Do not change the existing desktop release tag.
+On urbudget.app after publishing:
+- The download links redirect to the 1.0.8 Windows installer and macOS disk image. The installer's size matches the GitHub asset (6,797,945 bytes).
+- Windows x64 and macOS (Apple silicon and Intel) clients on 1.0.7 are offered 1.0.8 with a valid update signature and the 1.0.8 notes. 1.0.8 clients get HTTP 204.
 
-The latest completed local app validation for `23b7b91` recorded 366 UI tests, 225 Rust tests,
-6 Android JVM tests and 4 Android emulator tests, plus Windows/Android builds and release lint.
-These are results for that commit, not permanent expected test counts. Evidence is retained
-locally in `reports/review-fixes-20261019/`; [GitHub validation](https://github.com/AhmadHoranieh/local-budget/actions/runs/39308920011)
-is the source for that run's remote status.
+The Store package was attached to the Partner Center draft by hand. The workflow's `--noCommit` upload isn't processed until the submission is committed by the API (RELEASING.md).
 
-The 1.0.6 release review on 20 October passed 361 Rust tests, 529 UI tests across 70 files,
-330 web/API tests across 13 files and 6 CI-selector tests. TypeScript checks, the production
-frontend build and the Windows native debug build passed. Both ignored synthetic benchmarks
-were run explicitly and passed; all twelve accounting/report fingerprints match the previous
-engine review. Evidence is retained locally in `reports/release-1.0.6-20261020/`.
-The previous Android CI run exhausted runner disk space during APK compilation. Validation now
-omits Rust debug symbols and both Android workflows remove unused SDK-managed NDK versions;
-[cross-platform validation](https://github.com/AhmadHoranieh/local-budget/actions/runs/39349691141)
-passed on Windows, macOS, Android and iOS Simulator. The Android runner had 17 GiB free after
-toolchain setup, and both APK builds, unit tests and release lint completed successfully.
+## Earlier releases
 
-The [installer build](https://github.com/AhmadHoranieh/local-budget/actions/runs/39352032488)
-and [publication workflow](https://github.com/AhmadHoranieh/local-budget/actions/runs/39395243293)
-passed. Public Windows/macOS installer URLs returned HTTP 200. Windows x64 and both macOS
-architectures offer signed version 1.0.6 updates to 1.0.5 clients and return HTTP 204 to 1.0.6
-clients. Publication evidence is retained in the same release-review directory.
+Desktop 1.0.7 and earlier were released from the previous private repository, with tags `v1.0.7` and earlier. Their build, validation and publication runs and the local evidence under `reports/` aren't public:
+- **1.0.7:** 617 UI tests and 406 Rust tests passed. Live installers matched their GitHub assets, and 1.0.6 clients were offered signed 1.0.7 updates.
+- **1.0.6:** 361 Rust tests, 529 UI tests and 330 web/API tests passed. Windows, macOS, Android and iOS Simulator validation passed.
 
-The last observed Play account state was a newly created Personal account awaiting identity,
-physical-device and phone verification. No app/catalog or live purchase configuration had been
-created in that session. Check Console before acting; do not infer completion from elapsed time.
-The owner's private Play checklist owns the remaining account, product,
-review-access and real-purchase testing steps. The [mobile guide](MOBILE.md) owns the
-build procedure and platform limitations.
+The older Android upload bundle built from `cd2efa9` is kept only as signing evidence. Build and test a new signed bundle from current `main` before any upload, and use a version code Play hasn't seen.
 
-Publishing a desktop release, uploading a mobile bundle, deploying the website, and pushing
-source to main are separate actions. A source push alone does not update installed desktop apps.
+## Notes
+
+The owner's private Play checklist covers the remaining account, product, review-access and real-purchase testing steps. The [mobile guide](MOBILE.md) covers the build procedure and platform limits.
+
+These are separate actions:
+- publishing a desktop release,
+- uploading a mobile bundle,
+- deploying the website,
+- pushing source to `main`.
+
+A source push alone doesn't update installed desktop apps.

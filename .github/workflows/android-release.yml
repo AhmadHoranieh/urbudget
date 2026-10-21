@@ -1,9 +1,13 @@
-# Builds the signed Android App Bundle (.aab) of the native app in android/ for Google Play.
+# Builds the signed Android App Bundle (.aab) of the native app in android/ for Google Play, and
+# sends it to Play once the google-play environment has a GOOGLE_PLAY_SERVICE_ACCOUNT_JSON secret.
 # Push a tag such as android-v1.0.8 for the version in android/app/build.gradle.kts
 # (`node scripts/versions.mjs android 1.0.8` sets it; RELEASING.md), or run it from the Actions tab
-# on main. Nothing is sent to Play from here: upload the bundle from the run's artifacts in Play
-# Console (Test and release → a track → Create new release), with mapping.txt for readable crashes.
-# Signing uses the upload key in the google-play environment's four ANDROID_UPLOAD_* secrets.
+# on main. Signing uses the upload key in the google-play environment's four ANDROID_UPLOAD_* secrets.
+#
+# The upload goes to the PLAY_TRACK repository variable's track (internal when it isn't set) as a
+# finished release, or as a draft while PLAY_RELEASE_STATUS is "draft". Play only takes drafts until
+# the app's first release has been rolled out, and that first bundle has to be uploaded by hand in
+# Play Console: take it from this run's artifacts, with mapping.txt for readable crashes.
 name: Android release
 
 on:
@@ -45,8 +49,8 @@ jobs:
             node scripts/versions.mjs --tag "$GITHUB_REF_NAME"
           else
             node scripts/versions.mjs
-            echo "version=$(node --input-type=module -e 'import { readVersions } from "./scripts/versions.mjs"; console.log(readVersions().android)')" >> "$GITHUB_OUTPUT"
           fi
+          echo "version=$(node --input-type=module -e 'import { readVersions } from "./scripts/versions.mjs"; console.log(readVersions().android)')" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-java@v4
         with:
@@ -98,3 +102,24 @@ jobs:
             android/app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: error
           retention-days: 14
+
+      - name: Check for Play upload access
+        id: play
+        env:
+          ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$ACCOUNT" ]; then echo "upload=true" >> "$GITHUB_OUTPUT"
+          else echo "No GOOGLE_PLAY_SERVICE_ACCOUNT_JSON secret: upload the bundle from this run's artifacts in Play Console." >> "$GITHUB_STEP_SUMMARY"; fi
+
+      # Pinned to a commit: this action sees the Play service account.
+      - name: Upload to Google Play
+        if: steps.play.outputs.upload == 'true'
+        uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: app.urbudget
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          mappingFile: android/app/build/outputs/mapping/release/mapping.txt
+          releaseName: ${{ steps.release.outputs.version }}
+          track: ${{ vars.PLAY_TRACK || 'internal' }}
+          status: ${{ vars.PLAY_RELEASE_STATUS || 'completed' }}
