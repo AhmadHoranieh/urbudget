@@ -49,7 +49,7 @@ jobs:
           device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for r in json.load(sys.stdin)["devices"].values() for d in r if d["name"].startswith("iPhone")))')
           # Ad-hoc signing ("Sign to Run Locally") gives the simulator app its Keychain, as on a Mac.
           xcodebuild -project ios/UrBudget.xcodeproj -scheme UrBudget -destination "id=$device" \
-            -derivedDataPath build CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- test
+            -derivedDataPath build -continueBuildingAfterErrors CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- test
       - name: Build for devices (unsigned)
         run: |
           xcodebuild -project ios/UrBudget.xcodeproj -scheme UrBudget -configuration Release \

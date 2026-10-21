@@ -764,14 +764,9 @@ struct ReportMiniBars: View {
     var body: some View {
         let ids = model.labels.indices.map(String.init)
         Chart {
-            ForEach(model.series, id: \.label) { series in
-                ForEach(Array(series.values.enumerated()), id: \.offset) { index, value in
-                    BarMark(x: .value("Month", String(index)), y: .value("Amount", Double(value)), width: .ratio(model.series.count > 1 ? 0.8 : 0.55))
-                        .position(by: .value("Series", series.label))
-                        .foregroundStyle(value < 0 ? Color.urNegative : ReportPalette.color(series.color))
-                        .cornerRadius(3)
-                        .accessibilityLabel("\(index < model.labels.count ? model.labels[index] : ""), \(series.label)")
-                        .accessibilityValue(index < series.texts.count ? series.texts[index] : "")
+            ForEach(model.series, id: \.label) { (series: ReportMiniSeries) in
+                ForEach(Array(series.values.enumerated()), id: \.offset) { pair in
+                    bar(series, index: pair.offset, value: pair.element)
                 }
             }
             RuleMark(y: .value("Zero", 0.0)).foregroundStyle(Color.secondary.opacity(0.6)).lineStyle(StrokeStyle(lineWidth: 1)).accessibilityHidden(true)
@@ -786,6 +781,21 @@ struct ReportMiniBars: View {
         .chartLegend(.hidden)
         .frame(height: 130)
         .accessibilityLabel(model.series.map(\.label).joined(separator: " and ") + " by month")
+    }
+
+    /// One column. Its parts are worked out first: as one expression, Xcode 26 can't type-check it in time.
+    private func bar(_ series: ReportMiniSeries, index: Int, value: Int64) -> some ChartContent {
+        let month: String = index < model.labels.count ? model.labels[index] : ""
+        let spoken: String = index < series.texts.count ? series.texts[index] : ""
+        let label: String = "\(month), \(series.label)"
+        let color: Color = value < 0 ? Color.urNegative : ReportPalette.color(series.color)
+        let width: MarkDimension = .ratio(model.series.count > 1 ? 0.8 : 0.55)
+        return BarMark(x: .value("Month", String(index)), y: .value("Amount", Double(value)), width: width)
+            .position(by: .value("Series", series.label))
+            .foregroundStyle(color)
+            .cornerRadius(3)
+            .accessibilityLabel(label)
+            .accessibilityValue(spoken)
     }
 }
 
