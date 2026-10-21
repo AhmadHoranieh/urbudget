@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to download Citi transactions (CSV, QFX or OFX)</title>
+  <meta name="description" content="Citi exports transactions from the Account Details page as QFX, OFX, CSV, QBO or TXT. Which format works best in a budget and how to import the file.">
+  <link rel="canonical" href="https://urbudget.app/import/citi/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to download Citi transactions (CSV, QFX or OFX)">
+  <meta property="og:description" content="Where Citi's export is, the five formats it offers, and why QFX or OFX is the file to bring into a budget.">
+  <meta property="og:url" content="https://urbudget.app/import/citi/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to download Citi transactions (CSV, QFX or OFX)">
+  <meta name="twitter:description" content="Where Citi's export is, the five formats it offers, and why QFX or OFX is the file to bring into a budget.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "UrBudget",
+            "item": "https://urbudget.app/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Bank import guides",
+            "item": "https://urbudget.app/import/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Citi",
+            "item": "https://urbudget.app/import/citi/"
+          }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to download Citi transactions",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-19",
+        "author": {
+          "@id": "https://urbudget.app/#org"
+        },
+        "publisher": {
+          "@id": "https://urbudget.app/#org"
+        },
+        "mainEntityOfPage": "https://urbudget.app/import/citi/"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to download Citi transactions</h1>
+        <p class="lead">Citi exports your transactions from each account's Account Details page, in five formats. For a budget, take the Quicken (QFX) or OFX file. Here's where the export is, which formats work, and how to import the file into UrBudget.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>What Citi lets you export</h2>
+        <p>Citi's help lists five formats for exporting transactions from the Account Details page:</p>
+        <div class="compare-wrap" role="region" aria-label="Citi's export formats and how UrBudget handles them" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col">Citi's format</th><th scope="col" class="us">In UrBudget</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Quicken (QFX)</th><td class="us"><b>Pick this one</b>, or OFX. Standard signs and a Citi ID on every transaction.</td></tr>
+              <tr><th scope="row">OFX/Microsoft Money</th><td class="us">Just as good. QFX is OFX with a few Quicken additions, and UrBudget reads both the same way.</td></tr>
+              <tr><th scope="row">CSV</th><td class="us">Imports if the columns fit. Citi doesn't publish its CSV layout, so check the signs in the preview.</td></tr>
+              <tr><th scope="row">QuickBooks (QBO)</th><td class="us">Not supported. UrBudget doesn't open .qbo files.</td></tr>
+              <tr><th scope="row">TXT</th><td class="us">Not a format UrBudget is built to read. Export QFX or OFX instead.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Export from Citi Online</h2>
+        <ol class="steps">
+          <li><b>Sign on at citi.com.</b> Go to your Account Homepage.</li>
+          <li><b>Select the account name.</b> That opens the account's Account Details page. Your transactions are in the bottom half of it.</li>
+          <li><b>Set the filters.</b> Citi's filters change which transactions are shown, by time period among other things. Choose the period since your last export, and clear any category filter so nothing is left out.</li>
+          <li><b>Export as Quicken (QFX) or OFX/Microsoft Money.</b> Use the export option on the same page, pick the format and save the file. Repeat for each Citi account.</li>
+        </ol>
+        <div class="note">
+          <p>Citi's help also explains how to download into Quicken directly from inside Quicken. That is a Quicken feature. This guide covers file import; for UrBudget's optional SimpleFIN connection, <a href="/bank-sync/">check current institution availability and setup</a>.</p>
+        </div>
+
+        <h2>Why QFX or OFX beats the CSV</h2>
+        <ul>
+          <li><strong>The signs are standard.</strong> A purchase on your Citi card is money out and a payment to the card is money in, with no column guessing.</li>
+          <li><strong>Every transaction has an ID.</strong> If two exports overlap, UrBudget recognizes the rows it already has from Citi's IDs and skips them.</li>
+          <li><strong>No date order to set.</strong> OFX dates are written one fixed way, so there's nothing to pick.</li>
+        </ul>
+        <p>A CSV works when its first line names a date, a description, and either Amount (money out negative) or Debit and Credit columns. If you try it, check one purchase and one payment in the preview. If a single Amount column has purchases as positive numbers, tick <b>Purchases are positive</b> (UrBudget 1.0.3 and later). If separate Debit and Credit columns come out wrong, export QFX or OFX instead.</p>
+
+        <h2>Import it into UrBudget</h2>
+        <ol class="steps">
+          <li><b>Go to the account.</b> Select the matching account in UrBudget, your Citi card for example, and choose <b>Import file</b> above its transactions.</li>
+          <li><b>Pick the file.</b> Choose the .qfx or .ofx file, or drag it onto the box. UrBudget detects the format from the name.</li>
+          <li><b>Preview.</b> Choose <i>Preview transactions</i>. Only a CSV asks for the date order; for US dates, choose Month/day/year.</li>
+          <li><b>Go through the rows.</b> Rows already imported are marked and skipped. Rows that look like ones you typed in (same amount, within 10 days) are offered as matches, so the transaction you entered gets the bank's details instead of a twin.</li>
+          <li><b>Import.</b> Choose the import button. The transactions wait in the register for your approval.</li>
+        </ol>
+
+        <h2>If something looks wrong</h2>
+        <ul>
+          <li><strong>UrBudget says the file's currency differs from the budget's.</strong> QFX and OFX files name their currency, and UrBudget only imports a file in the budget's currency. Check the budget's currency in Settings.</li>
+          <li><strong>Some purchases are missing.</strong> Check that no filter was set when you exported. Citi lets you narrow transactions by category, time period and cardmember; clear them and export again. Importing the overlap again is safe.</li>
+          <li><strong>You saved a .qbo file.</strong> That's the QuickBooks format. Go back to Account Details and export QFX or OFX.</li>
+          <li><strong>You need a statement to check a balance.</strong> Citi's statements are on the Account Statements page. They're PDFs, so they're for reading, not importing.</li>
+          <li><strong>Every row says already imported.</strong> Those transactions came in with an earlier export, so there's nothing new to add.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Budget from your Citi file</h2>
+          <p>Free on Windows and macOS, on all your own computers. UrBudget never asks for your Citi password.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=import-citi" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/import/">All bank guides</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related guides">
+          <li><a href="/import/">All bank import guides</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+          <li><a href="/import/chase/">Download Chase transactions</a></li>
+          <li><a href="/import/us-bank/">Download U.S. Bank transactions</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

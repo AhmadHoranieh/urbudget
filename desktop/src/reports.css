@@ -1,0 +1,917 @@
+/* Reports. Imported by Reports.tsx. Series colours are the validated reference
+   categorical palette (adjacent CVD ΔE ≥ 8.4, checked against this app's surfaces);
+   light aqua, yellow and magenta sit below 3:1, so every chart has a legend and a table.
+   Series 1 keeps its own blue rather than --accent: the deeper UI blue would sit within
+   ΔE 1 of series 7 for deuteranopes. */
+.reports-page {
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-5: #e87ba4;
+  --series-6: #008300;
+  --series-7: #6250d6;
+  --series-8: #e34948;
+  --series-other: #a3a8b0;
+  --diverging-positive: #2a78d6;
+  --diverging-negative: #e34948;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) .reports-page {
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --series-5: #d55181;
+    --series-6: #008300;
+    --series-7: #9085e9;
+    --series-8: #e66767;
+    --series-other: #5d636c;
+    --diverging-positive: #3987e5;
+    --diverging-negative: #e66767;
+  }
+}
+:root[data-theme="dark"] .reports-page {
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-5: #d55181;
+  --series-6: #008300;
+  --series-7: #9085e9;
+  --series-8: #e66767;
+  --series-other: #5d636c;
+  --diverging-positive: #3987e5;
+  --diverging-negative: #e66767;
+}
+
+/* The group's reports as a row of tabs (Reports.tsx; the groups switch in the page header), the
+   chosen report under them, which scrolls on its own. */
+.page-scroll.fill > .reports-page {
+  overflow: hidden;
+  padding: 0;
+  container-type: inline-size;
+}
+.reports-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+/* The hairline is the row's own (an inset shadow) rather than the tabs', so it runs the full
+   width when the tabs scroll and fade, and the selected tab's bar covers it. */
+.report-nav {
+  flex: none;
+  background: var(--bg);
+  box-shadow: inset 0 -1px 0 var(--border);
+}
+.tabs.report-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.tabs.report-tabs button {
+  position: relative;
+  gap: 7px;
+  height: auto;
+  border-radius: 0;
+}
+.tabs.report-tabs button svg {
+  flex: none;
+  color: var(--muted);
+}
+.tabs.report-tabs button.selected {
+  background: none;
+  box-shadow: none;
+}
+.tabs.report-tabs button.selected svg {
+  color: var(--accent);
+}
+.tabs.report-tabs button.selected::after {
+  position: absolute;
+  right: 10px;
+  bottom: 0;
+  left: 10px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--accent);
+  content: "";
+}
+/* Keyboard focus is drawn inside the tab: the row clips anything past its edges. */
+.tabs.report-tabs button:focus-visible {
+  outline-offset: -2px;
+}
+.report-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+  /* The budget's and register's margin; with the scrollbar, the right one matches the left. */
+  padding: 20px calc(var(--gutter) - var(--scrollbar-size)) 20px var(--gutter);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+/* WebKit before Safari 18.2 (macOS 15.1's) has no scrollbar-gutter: there the bar's track stays
+   instead, empty until there's something to scroll, so the margins still match. */
+@supports not (scrollbar-gutter: stable) {
+  .report-main {
+    overflow-y: scroll;
+  }
+}
+/* The assistant's printed reports style a .report-head of their own (report-doc.css, loaded with
+   the assistant), with a rule and a gap under it; this page's heading has neither. */
+.report-main > .report-head {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.report-head h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.report-head p {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+/* Two panels side by side where there is room. */
+.report-pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 12px;
+}
+.report-pair > .panel {
+  min-width: 0;
+}
+
+/* One filter row above everything it scopes */
+.report-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.filter-button .muted {
+  font-weight: 400;
+}
+.filter-popover {
+  width: 300px;
+}
+.filter-popover-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.filter-popover-head input {
+  flex: 1;
+}
+.filter-popover-list {
+  max-height: 320px;
+  padding: 6px 8px;
+  overflow: auto;
+}
+.filter-popover-list fieldset {
+  margin: 0 0 6px;
+  padding: 0;
+  border: none;
+}
+.filter-popover-list .checkbox-label {
+  padding: 3px 0 3px 18px;
+}
+.filter-popover-list .checkbox-label.group {
+  padding-left: 0;
+  font-weight: 600;
+}
+
+/* Headline figures: proportional numerals, sans */
+.report-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity 0.15s;
+}
+.report-body.loading {
+  opacity: 0.55;
+}
+.report-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.report-tiles > div {
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.report-tiles dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.report-tiles dd {
+  margin: 2px 0 0;
+  overflow: hidden;
+  font-size: 20px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.report-tiles dd.negative {
+  color: var(--negative);
+}
+.report-tiles dd.positive {
+  color: var(--positive);
+}
+.report-tiles dd.tile-note {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  white-space: normal;
+}
+.report-panel .panel-title {
+  flex-wrap: wrap;
+}
+.report-panel .panel-title h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Chart chrome */
+.chart {
+  position: relative;
+  width: 100%;
+}
+.chart svg {
+  display: block;
+  overflow: visible;
+}
+.chart-axes text {
+  fill: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.chart-axes .grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.chart-axes .baseline {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+.chart-hover {
+  fill: var(--hover);
+}
+.chart-hit {
+  fill: transparent;
+  outline: none;
+}
+.chart-hit:focus-visible {
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+.chart-dot {
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+.chart-crosshair {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+}
+.chart-average line {
+  stroke: var(--text-2);
+  stroke-width: 1;
+}
+.chart-average text,
+.chart-end-label {
+  fill: var(--text-2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  /* A halo in the surface colour keeps labels readable where they cross marks. */
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+/* Its look is shared with every other tooltip (ui.css). */
+.chart-tooltip {
+  position: absolute;
+  z-index: 5;
+  min-width: 160px;
+  padding: 8px 10px;
+}
+.chart-tooltip-title {
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.chart-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.chart-tooltip-row span {
+  color: var(--text-2);
+}
+.key-line {
+  display: inline-block;
+  flex: none;
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+}
+.key-box {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  margin: 6px 0 0;
+  padding: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  list-style: none;
+}
+.chart-legend + .help {
+  margin-top: 10px;
+}
+.chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Ranked bars */
+.bar-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bar-list li > button,
+.bar-list li > div {
+  display: grid;
+  grid-template-columns: minmax(110px, 1.6fr) minmax(40px, 3fr) 120px 52px;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  text-align: left;
+}
+.bar-list li > button:hover {
+  background: var(--hover);
+}
+.bar-list-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.bar-list-label > span,
+.diverging-list .bar-list-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bar-list-label small {
+  display: block;
+  font-size: 11.5px;
+}
+.bar-list-track {
+  display: block;
+  height: 14px;
+}
+.bar-list-track i {
+  display: block;
+  height: 100%;
+  border-radius: 0 4px 4px 0;
+}
+
+/* Tables under charts */
+/* Tables grow with the page and their headers stick to the top of the report. A table too wide
+   for its panel scrolls in its own box instead (ReportTable sets "scrolls"), about a window tall. */
+.report-table {
+  margin-top: 12px;
+}
+.report-table.scrolls {
+  max-height: max(360px, calc(100vh - 170px));
+  overflow: auto;
+}
+/* Sticking to the report area, the header rises over its 16px top padding to meet the edge. */
+.report-table:not(.scrolls) thead th {
+  top: -16px;
+}
+.report-table table {
+  margin: 0;
+}
+/* The header lines are shadows: a collapsed border would stay behind when the rows scroll. */
+/* Above every row, including rows whose first cell is pinned to the left. */
+.report-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  border-bottom: none;
+  box-shadow: inset 0 -1px 0 var(--border-strong);
+}
+.report-table tfoot th {
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+/* A wide table scrolling sideways keeps its first column in view. Pinned cells need a solid
+   background; a hovered row lays the hover tint over it. */
+.report-table.wide.scrolls td:first-child,
+.report-table.wide.scrolls th:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 170px;
+  background: var(--surface);
+}
+.report-table.wide.scrolls tbody tr:hover td:first-child {
+  background-image: linear-gradient(var(--hover), var(--hover));
+}
+/* The pinned column keeps its right edge while the other columns slide under it. */
+.report-table.wide.scrolls :is(td, th):first-child {
+  box-shadow: inset -1px 0 0 var(--border-strong);
+}
+.report-table.wide.scrolls thead th:first-child {
+  box-shadow: inset -1px 0 0 var(--border-strong), inset 0 -1px 0 var(--border-strong);
+}
+.report-table.wide.scrolls thead th:first-child {
+  z-index: 4;
+  background: var(--surface-2);
+}
+.report-table td.num,
+.report-table th.num {
+  white-space: nowrap;
+}
+.report-table .section-row > * {
+  padding-top: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+}
+/* A heading row reads as one band: no line between its label and the rest. */
+.report-table .section-row > td {
+  border-left: none;
+}
+.report-table .total-row td,
+.report-table .net-row td,
+.report-table.wide .total-row td:first-child,
+.report-table.wide .net-row td:first-child {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+.report-table .child-line td:first-child {
+  padding-left: 30px;
+  color: var(--text-2);
+}
+.report-table .group-line .link-button {
+  padding: 0;
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Magnitude in one hue: five steps from the first series colour toward the surface. */
+.reports-page {
+  --heat-1: color-mix(in oklab, var(--series-1) 14%, var(--surface));
+  --heat-2: color-mix(in oklab, var(--series-1) 30%, var(--surface));
+  --heat-3: color-mix(in oklab, var(--series-1) 48%, var(--surface));
+  --heat-4: color-mix(in oklab, var(--series-1) 70%, var(--surface));
+  --heat-5: var(--series-1);
+  /* Tiles carry text, so their steps stop at about half strength: the normal text colour reads
+     on every one, in light and dark. */
+  --tile-1: color-mix(in oklab, var(--series-1) 10%, var(--surface));
+  --tile-2: color-mix(in oklab, var(--series-1) 20%, var(--surface));
+  --tile-3: color-mix(in oklab, var(--series-1) 30%, var(--surface));
+  --tile-4: color-mix(in oklab, var(--series-1) 42%, var(--surface));
+  --tile-5: color-mix(in oklab, var(--series-1) 56%, var(--surface));
+}
+
+/* Donut beside its ranked list */
+.donut-layout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+  margin-top: 4px;
+}
+@container (max-width: 680px) {
+  .donut-layout {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+  .donut-layout .bar-list {
+    width: 100%;
+  }
+}
+.donut {
+  position: relative;
+  flex: none;
+}
+.donut svg {
+  display: block;
+  overflow: visible;
+}
+.donut-slice {
+  stroke: var(--surface);
+  stroke-width: 2;
+  outline: none;
+  transition: opacity 0.12s;
+}
+.donut-slice.whole {
+  stroke: none;
+}
+.donut-slice.dim {
+  opacity: 0.35;
+}
+.donut-slice.selectable {
+  cursor: pointer;
+}
+.donut-slice:focus-visible {
+  stroke: var(--text);
+}
+.donut-empty {
+  stroke: var(--surface-2);
+}
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+.donut-center strong {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.donut-center span {
+  max-width: 120px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Changes either side of a centre line */
+.diverging-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.diverging-list li {
+  display: grid;
+  grid-template-columns: minmax(110px, 1.2fr) minmax(140px, 3fr) 110px 120px;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+  padding: 0 8px;
+}
+.diverging-track {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-self: stretch;
+}
+.diverging-track .half {
+  display: flex;
+  align-items: center;
+}
+.diverging-track .less {
+  justify-content: flex-end;
+  border-right: 1px solid var(--border-strong);
+}
+.diverging-track i {
+  display: block;
+  height: 14px;
+}
+.diverging-track .less i {
+  border-radius: 4px 0 0 4px;
+}
+.diverging-track .more i {
+  border-radius: 0 4px 4px 0;
+}
+
+/* Calendar heatmap */
+.heat-scroll {
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+rect.heat-cell {
+  stroke-width: 0;
+}
+rect.heat-cell.level-0 {
+  fill: var(--surface-2);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+rect.heat-cell.active {
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+.heat-cell.level-1 {
+  fill: var(--heat-1);
+  background: var(--heat-1);
+}
+.heat-cell.level-2 {
+  fill: var(--heat-2);
+  background: var(--heat-2);
+}
+.heat-cell.level-3 {
+  fill: var(--heat-3);
+  background: var(--heat-3);
+}
+.heat-cell.level-4 {
+  fill: var(--heat-4);
+  background: var(--heat-4);
+}
+.heat-cell.level-5 {
+  fill: var(--heat-5);
+  background: var(--heat-5);
+}
+.heat-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.heat-legend i.heat-cell {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+}
+.heat-legend i.level-0 {
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+.heat-scale {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+}
+
+/* Treemap */
+.treemap {
+  position: relative;
+  width: 100%;
+  margin-top: 4px;
+}
+.tm-tile {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+  overflow: hidden;
+  border: none;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px var(--border);
+  color: var(--text);
+  font-size: 12.5px;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+}
+.tm-tile:hover,
+.tm-tile:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+.tm-label {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tm-value {
+  font-variant-numeric: tabular-nums;
+}
+.tm-tile.level-0,
+.tm-tile.level-1 {
+  background: var(--tile-1);
+}
+.tm-tile.level-2 {
+  background: var(--tile-2);
+}
+.tm-tile.level-3 {
+  background: var(--tile-3);
+}
+.tm-tile.level-4 {
+  background: var(--tile-4);
+}
+.tm-tile.level-5 {
+  background: var(--tile-5);
+}
+
+/* Charts take keyboard focus as a whole (arrow keys move through the points). */
+.chart-focus {
+  outline: none;
+}
+.chart-focus:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.key-line.dashed {
+  background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px);
+}
+
+/* Accounts to chart, as toggles that carry their line colour */
+.account-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.chip-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.chip-toggle .key-box {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+.chip-toggle.on {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.chip-toggle.on .key-box {
+  box-shadow: none;
+}
+.chip-toggle:disabled {
+  opacity: 0.5;
+}
+
+/* Small pieces */
+.report-search {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.report-search input {
+  width: 200px;
+}
+.link-button.cell-link {
+  display: block;
+  max-width: 100%;
+  padding: 0;
+  overflow: hidden;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.link-button.cell-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+.forecast-assumption {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.forecast-assumption .field.inline {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-self: start;
+  gap: 10px;
+  margin: 0;
+}
+.forecast-assumption input {
+  width: 150px;
+  text-align: right;
+}
+.forecast-assumption .help {
+  margin: 0;
+}
+.forecast-table tbody tr:not(.spacer-row) td,
+.payee-table tbody tr:not(.spacer-row) td {
+  height: 36px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.payee-table {
+  /* Virtual spacers own the scroll position; browser anchoring would move it
+     when a different group of rows mounts, including away from the last payee. */
+  overflow-anchor: none;
+}
+.report-table .spacer-row td {
+  padding: 0;
+  border: none;
+}
+td.positive {
+  color: var(--positive);
+}
+
+/* The transactions behind a figure */
+.txn-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.txn-dialog-range {
+  margin: -6px 0 0;
+}
+.txn-dialog-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.txn-dialog-figures > div {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.txn-dialog-figures dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.txn-dialog-figures dd {
+  margin: 2px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.txn-dialog .activity-list {
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.txn-dialog .activity-line:last-child {
+  border-bottom: none;
+}
+.txn-dialog .modal-actions {
+  margin-top: 0;
+}
+rect.heat-cell.selectable {
+  cursor: pointer;
+}
+.tm-tile.active {
+  outline: 2px solid var(--text);
+  outline-offset: -2px;
+}
+/* Under the treemap: how to use it, and a way to the payees too small to show. */
+.treemap-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  margin-top: 8px;
+}
+.treemap-foot .help {
+  margin: 0;
+}
+.scroll-anchor {
+  scroll-margin-top: 16px;
+}

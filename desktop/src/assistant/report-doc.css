@@ -1,0 +1,154 @@
+/* A report as a document: dark ink on white, on screen and on paper, whatever the app's theme.
+   Self-contained, so the same rules style the preview and the separate frame that prints it. */
+.report-doc {
+  color: #17191d;
+  font-family: var(--font, "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif);
+  font-size: 10.5pt;
+  line-height: 1.55;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.report-head {
+  margin-bottom: 16pt;
+  padding-bottom: 10pt;
+  border-bottom: 2px solid #17191d;
+}
+.report-budget {
+  color: #6b7280;
+  font-size: 8.5pt;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.report-head h1 {
+  margin: 3pt 0;
+  font-size: 20pt;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.report-head p {
+  margin: 0;
+  color: #454c56;
+  font-size: 9.5pt;
+}
+.report-body p,
+.report-body ul,
+.report-body ol,
+.report-body blockquote,
+.report-body .md-table,
+.report-body .md-code {
+  margin: 0 0 9pt;
+}
+.report-body > :last-child {
+  margin-bottom: 0;
+}
+.report-body .md-heading {
+  margin: 16pt 0 6pt;
+  font-size: 12.5pt;
+  font-weight: 700;
+  break-after: avoid;
+}
+.report-body > .md-heading:first-child {
+  margin-top: 0;
+}
+.report-body ul,
+.report-body ol {
+  padding-left: 16pt;
+}
+.report-body li {
+  margin: 2pt 0;
+}
+.report-body li::marker {
+  color: #6b7280;
+}
+.report-body strong {
+  font-weight: 650;
+}
+.report-body code {
+  padding: 0 3px;
+  border-radius: 3px;
+  background: #eceef2;
+  font-family: var(--mono, ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace);
+  font-size: 0.9em;
+}
+.report-body blockquote {
+  padding-left: 9pt;
+  border-left: 3px solid #cdd2da;
+  color: #454c56;
+}
+.report-body hr {
+  margin: 12pt 0;
+  border: 0;
+  border-top: 1px solid #e2e5ea;
+}
+.report-body .md-link {
+  color: inherit;
+  text-decoration: underline;
+}
+.report-body .md-table {
+  overflow: visible;
+  border: 1px solid #d5d9df;
+  border-radius: 4px;
+}
+.report-body .md-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+  font-variant-numeric: tabular-nums;
+}
+.report-body .md-table th {
+  padding: 5px 9px;
+  border: 0;
+  border-bottom: 1px solid #d5d9df;
+  background: #f3f4f6;
+  color: #454c56;
+  font-size: 8.5pt;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: normal;
+}
+.report-body .md-table td {
+  padding: 5px 9px;
+  border: 0;
+  border-bottom: 1px solid #e6e8ec;
+  background: none;
+}
+.report-body .md-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.report-body .md-table tr {
+  break-inside: avoid;
+}
+.report-body .md-code {
+  padding: 6pt 8pt;
+  border: 1px solid #e2e5ea;
+  border-radius: 4px;
+  background: #f7f8fa;
+  font-family: var(--mono, ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace);
+  font-size: 9pt;
+  white-space: pre-wrap;
+}
+.report-foot {
+  margin-top: 22pt;
+  padding-top: 7pt;
+  border-top: 1px solid #e2e5ea;
+  color: #6b7280;
+  font-size: 8.5pt;
+}
+
+/* On paper: white A4 pages, numbered. */
+@media print {
+  @page {
+    size: A4;
+    margin: 16mm 15mm 18mm;
+    @bottom-right {
+      content: counter(page) " / " counter(pages);
+      color: #6b7280;
+      font-size: 8.5pt;
+    }
+  }
+}

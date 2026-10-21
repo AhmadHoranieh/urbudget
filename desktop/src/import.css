@@ -1,0 +1,500 @@
+/* Importing: the bank-file importer and the YNAB form. Imported by BankImport.tsx and YnabImport.tsx. */
+.bank-import,
+.ynab-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.bank-import > h2 {
+  margin: 0;
+}
+.ynab-form .form-grid {
+  margin-bottom: 0;
+}
+.import-lead {
+  margin: 0;
+  color: var(--text-2);
+}
+.import-account {
+  max-width: 320px;
+}
+/* The file: a big target to click, or to drop a file on. */
+/* Positioned, so its hidden file input stays inside the page instead of stretching the window
+   (a window scrollbar would narrow everything while the Import tab is open). */
+.file-drop {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  transition:
+    border-color 0.12s var(--ease),
+    background-color 0.12s var(--ease);
+}
+.file-drop:hover,
+.file-drop.dragging {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.file-drop:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.file-drop.chosen {
+  border-style: solid;
+}
+.file-drop > svg {
+  flex: none;
+  color: var(--accent);
+}
+.file-drop > span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.file-drop strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 13.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-drop small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.import-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 260px));
+  gap: 12px;
+}
+/* A checkbox beside the selects lines up with them, not with their labels. */
+.import-options .checkbox-label {
+  align-self: end;
+  min-height: 30px;
+}
+/* What a CSV needs, beside a template to start from. */
+.import-help {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.import-help p {
+  flex: 1 1 320px;
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.import-help b {
+  color: var(--text);
+  font-weight: 600;
+}
+.import-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.import-summary > svg {
+  flex: none;
+  color: var(--accent);
+}
+.import-summary > span {
+  flex: 1;
+  min-width: 0;
+}
+.import-note {
+  margin: -4px 0 0;
+}
+/* Actions sit under what they act on, with the main one last. */
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.bank-import .form-actions,
+.ynab-form .form-actions {
+  justify-content: flex-end;
+}
+.bank-import .form-actions .help {
+  margin-right: auto;
+}
+.import-review tr.muted td {
+  color: var(--muted);
+}
+/* The bank's own payee text, beside the name a payee rule gave it. */
+.import-review .bank-text {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 0.85em;
+}
+/* The assistant's offer to help with a file: quiet until the preview fails or looks wrong. */
+.import-assist {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.import-assist.needed {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.import-assist > svg {
+  flex: none;
+  color: var(--accent);
+}
+.import-assist p {
+  display: flex;
+  flex: 1 1 280px;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.import-assist small {
+  color: var(--muted);
+  font-size: 12px;
+}
+/* Bank sync (BankSync.tsx): the connection and the accounts it fills, in Settings › Import. */
+.bank-sync {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.bank-sync > h2 {
+  margin: 0;
+}
+.bank-sync .notice,
+.bank-sync-review .notice {
+  margin: 0;
+}
+.bank-sync-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 20px;
+  color: var(--text-2);
+}
+.bank-sync-token {
+  max-width: 560px;
+}
+.bank-sync-token textarea {
+  height: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  word-break: break-all;
+  resize: vertical;
+}
+.bank-sync .form-actions {
+  justify-content: flex-end;
+}
+.bank-sync .form-actions > :first-child:not(:only-child) {
+  margin-right: auto;
+}
+.bank-sync-accounts {
+  width: 100%;
+}
+.bank-sync-accounts td {
+  vertical-align: middle;
+}
+.bank-sync-accounts .bank-text {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85em;
+}
+.bank-sync-since {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+}
+.bank-sync-remove {
+  flex-wrap: wrap;
+}
+/* A sync's review, in its dialog. */
+.bank-sync-wait {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-2);
+}
+.bank-sync-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 18px;
+}
+.bank-sync-accounts select {
+  width: 100%;
+}
+/* An account's bank sync details. */
+.bank-sync-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.bank-sync-details dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 8px 16px;
+  margin: 0;
+}
+.bank-sync-details dt {
+  color: var(--muted);
+}
+.bank-sync-details dd {
+  margin: 0;
+}
+.bank-sync-details .bank-text {
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: 0.85em;
+}
+.bank-sync-details .notice {
+  margin: 0;
+}
+.bank-sync-details .form-actions {
+  justify-content: flex-end;
+}
+.bank-sync-details .form-actions .text-button {
+  margin-right: auto;
+}
+
+/* The YNAB import: a token (pasted, or a saved one), a plan, how to combine it with this budget. */
+.ynab-import > .import-lead {
+  margin-bottom: 16px;
+}
+.ynab-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.ynab-label,
+.ynab-mode legend {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+.saved-token {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.saved-token > svg {
+  flex: none;
+  color: var(--text-2);
+}
+.saved-token-name {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.saved-token-hint {
+  flex: none;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.saved-token .text-button {
+  flex: none;
+  margin-left: auto;
+}
+.token-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+}
+.token-help summary {
+  width: fit-content;
+  color: var(--text-2);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.token-help p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.ynab-mode {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.ynab-mode legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+.ynab-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  cursor: pointer;
+}
+.ynab-choice.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.ynab-choice input {
+  margin-top: 3px;
+}
+.ynab-choice span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-weight: 500;
+}
+.ynab-choice small {
+  color: var(--muted);
+  font-weight: 400;
+}
+/* An import that stopped, or that waits on its differences from YNAB. */
+.ynab-problem {
+  display: flex;
+  gap: 10px;
+  margin: 4px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+  border-radius: var(--radius);
+  background: var(--warning-soft);
+}
+.ynab-problem > svg {
+  flex: none;
+  margin-top: 2px;
+  color: var(--warning);
+}
+.ynab-problem > div {
+  flex: 1;
+  min-width: 0;
+}
+.ynab-problem p {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.ynab-problem ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.ynab-problem .form-actions {
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+.saved-tokens .token-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.token-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.token-list li.current {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.token-list li > svg {
+  flex: none;
+  color: var(--text-2);
+}
+.token-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.token-text strong {
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.token-text small {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.token-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+.token-current {
+  padding: 0 6px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+}
+.saved-tokens .form-actions {
+  justify-content: flex-end;
+}
+/* The conflict review names each change, then shows both sides as plain values. */
+.ynab-import .conflict-review {
+  margin-bottom: 18px;
+}
+.ynab-import .conflict-review > button {
+  margin-top: 10px;
+}
+.conflict-review td {
+  vertical-align: top;
+}
+.conflict-about {
+  display: block;
+  font-weight: 500;
+}
+.conflict-field {
+  color: var(--muted);
+}
+.conflict-review pre {
+  margin: 0;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Debt payoff calculator: snowball vs avalanche methods</title>
+  <meta name="description" content="Free debt snowball and avalanche calculator: list your debts to see which to pay first, your debt-free month, each method's interest and the payoff order.">
+  <link rel="canonical" href="https://urbudget.app/tools/debt-payoff-calculator/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="Debt payoff calculator: snowball vs avalanche">
+  <meta property="og:description" content="Smallest balance first or highest APR first? Compare your debt-free month, the interest each method costs, and what rolling minimums over saves.">
+  <meta property="og:url" content="https://urbudget.app/tools/debt-payoff-calculator/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Debt payoff calculator: snowball vs avalanche">
+  <meta name="twitter:description" content="Smallest balance first or highest APR first? Compare your debt-free month, the interest each method costs, and what rolling minimums over saves.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <link rel="stylesheet" href="/assets/tools.css">
+  <link rel="stylesheet" href="/assets/debts.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="module" src="/assets/debts.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Tools", "item": "https://urbudget.app/tools/" },
+          { "@type": "ListItem", "position": 3, "name": "Debt payoff calculator", "item": "https://urbudget.app/tools/debt-payoff-calculator/" }
+        ]
+      },
+      {
+        "@type": "WebApplication",
+        "name": "Debt payoff calculator: snowball vs avalanche",
+        "url": "https://urbudget.app/tools/debt-payoff-calculator/",
+        "description": "Pays several debts from one monthly amount, smallest balance first (snowball) or highest APR first (avalanche), and shows the debt-free month, the interest each costs, the payoff order and what both save over paying only the minimums.",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Any",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "publisher": { "@id": "https://urbudget.app/#org" }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">Debt payoff calculator: snowball vs avalanche</h1>
+        <p class="lead">List your debts and what you can pay each month. See when you'd be debt-free paying the smallest balance first or the highest APR first, what each costs in interest, and what both save over paying only the minimums.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <div class="calc">
+          <form class="calc-form" id="debts-form" aria-label="Debt payoff calculator" novalidate>
+            <fieldset class="debts-fieldset" aria-describedby="debts-hint">
+              <legend>Your debts</legend>
+              <p class="hint" id="debts-hint">From each statement: what you owe, the APR, and the minimum payment. Leave a row empty to skip it, or add up to 10 debts.</p>
+              <div class="debts-list" id="debts-list">
+                <fieldset class="debt-row" data-debt>
+                  <legend>Debt 1</legend>
+                  <div class="debt-fields">
+                    <div class="field debt-name"><label for="debt-1-name">Name</label><input class="input" id="debt-1-name" type="text" autocomplete="off" value="Visa" data-key="name"></div>
+                    <div class="field debt-balance"><label for="debt-1-balance">Balance</label><input class="input" id="debt-1-balance" type="text" inputmode="decimal" autocomplete="off" value="6,800" data-key="balance"></div>
+                    <div class="field debt-rate"><label for="debt-1-rate">APR (%)</label><input class="input" id="debt-1-rate" type="text" inputmode="decimal" autocomplete="off" value="24" data-key="rate"></div>
+                    <div class="field debt-minimum"><label for="debt-1-minimum">Minimum</label><input class="input" id="debt-1-minimum" type="text" inputmode="decimal" autocomplete="off" value="204" data-key="minimum"></div>
+                  </div>
+                </fieldset>
+                <fieldset class="debt-row" data-debt>
+                  <legend>Debt 2</legend>
+                  <div class="debt-fields">
+                    <div class="field debt-name"><label for="debt-2-name">Name</label><input class="input" id="debt-2-name" type="text" autocomplete="off" value="Personal loan" data-key="name"></div>
+                    <div class="field debt-balance"><label for="debt-2-balance">Balance</label><input class="input" id="debt-2-balance" type="text" inputmode="decimal" autocomplete="off" value="2,400" data-key="balance"></div>
+                    <div class="field debt-rate"><label for="debt-2-rate">APR (%)</label><input class="input" id="debt-2-rate" type="text" inputmode="decimal" autocomplete="off" value="12" data-key="rate"></div>
+                    <div class="field debt-minimum"><label for="debt-2-minimum">Minimum</label><input class="input" id="debt-2-minimum" type="text" inputmode="decimal" autocomplete="off" value="110" data-key="minimum"></div>
+                  </div>
+                </fieldset>
+                <fieldset class="debt-row" data-debt>
+                  <legend>Debt 3</legend>
+                  <div class="debt-fields">
+                    <div class="field debt-name"><label for="debt-3-name">Name</label><input class="input" id="debt-3-name" type="text" autocomplete="off" value="Car loan" data-key="name"></div>
+                    <div class="field debt-balance"><label for="debt-3-balance">Balance</label><input class="input" id="debt-3-balance" type="text" inputmode="decimal" autocomplete="off" value="9,800" data-key="balance"></div>
+                    <div class="field debt-rate"><label for="debt-3-rate">APR (%)</label><input class="input" id="debt-3-rate" type="text" inputmode="decimal" autocomplete="off" value="6" data-key="rate"></div>
+                    <div class="field debt-minimum"><label for="debt-3-minimum">Minimum</label><input class="input" id="debt-3-minimum" type="text" inputmode="decimal" autocomplete="off" value="295" data-key="minimum"></div>
+                  </div>
+                </fieldset>
+              </div>
+              <div class="debts-add">
+                <button class="btn btn-sm" type="button" data-add-debt disabled>Add a debt</button>
+              </div>
+            </fieldset>
+            <div class="debts-settings">
+              <div class="calc-fields">
+                <div class="field">
+                  <label for="monthly">Total monthly amount</label>
+                  <input class="input" id="monthly" type="text" inputmode="decimal" autocomplete="off" value="900" aria-describedby="monthly-hint">
+                  <p class="hint" id="monthly-hint">What you'll pay toward all these debts each month, minimums included. It stays the same as debts are paid off.</p>
+                </div>
+                <div class="field">
+                  <label for="extra">One-time extra (optional)</label>
+                  <input class="input" id="extra" type="text" inputmode="decimal" autocomplete="off" value="" aria-describedby="extra-hint">
+                  <p class="hint" id="extra-hint">A tax refund or bonus put toward the plan in the first month.</p>
+                </div>
+                <div class="field">
+                  <label for="start">First payment</label>
+                  <input class="input" id="start" type="month" autocomplete="off" value="2026-11" placeholder="YYYY-MM" aria-describedby="start-hint">
+                  <p class="hint" id="start-hint">The month of your next payments.</p>
+                </div>
+              </div>
+              <fieldset class="debts-strategy" aria-describedby="strategy-hint">
+                <legend>Show the payoff order and schedule for</legend>
+                <p class="hint" id="strategy-hint">Both methods are compared either way.</p>
+                <label class="calc-check"><input type="radio" name="strategy" value="snowball" checked> Snowball: smallest balance first</label>
+                <label class="calc-check"><input type="radio" name="strategy" value="avalanche"> Avalanche: highest APR first</label>
+              </fieldset>
+            </div>
+            <div class="form-row">
+              <button class="btn btn-primary" type="submit" disabled>Calculate</button>
+            </div>
+          </form>
+          <noscript><p class="calc-note">The calculator needs JavaScript. Here is what it shows for the numbers above.</p></noscript>
+          <!-- The results and schedule below are calculate() from /assets/debts.js for the debts above, $900 a month,
+               snowball, first payment November 2026, pasted as it printed them. Regenerate them if the defaults or the math change. -->
+          <h2 class="visually-hidden">Results</h2>
+          <div class="calc-results" id="debts-results" aria-live="polite">
+<div class="calc-cards">
+<section class="calc-card is-extra">
+<h3>Snowball: smallest balance first <span>(your choice)</span></h3>
+<dl class="calc-stats">
+  <div><dt>Months to debt-free</dt><dd>24 <span>(2 years)</span></dd></div>
+  <div><dt>Debt-free month</dt><dd>October 2028</dd></div>
+  <div><dt>Total interest</dt><dd>$2,538.17</dd></div>
+  <div><dt>Total paid</dt><dd>$21,538.17</dd></div>
+</dl>
+</section>
+<section class="calc-card">
+<h3>Avalanche: highest APR first</h3>
+<dl class="calc-stats">
+  <div><dt>Months to debt-free</dt><dd>24 <span>(2 years)</span></dd></div>
+  <div><dt>Debt-free month</dt><dd>October 2028</dd></div>
+  <div><dt>Total interest</dt><dd>$2,292.85</dd></div>
+  <div><dt>Total paid</dt><dd>$21,292.85</dd></div>
+</dl>
+</section>
+</div>
+<p class="calc-note">Avalanche costs <b>$245.32 less</b> in interest than snowball, and both are debt-free in the same month. Snowball pays off its first debt, Personal loan, in month 7; avalanche pays off its first, Visa, in month 17.</p>
+<div class="calc-cards is-single">
+<section class="calc-card is-minimum">
+<h3>Paying only the minimums <span>($609.00 in the first month)</span></h3>
+<dl class="calc-stats">
+  <div><dt>Months to debt-free</dt><dd>56 <span>(4 years 8 months)</span></dd></div>
+  <div><dt>Debt-free month</dt><dd>June 2031</dd></div>
+  <div><dt>Total interest</dt><dd>$5,783.03</dd></div>
+  <div><dt>Total paid</dt><dd>$24,783.03</dd></div>
+</dl>
+</section>
+</div>
+<p class="calc-saving">Compared with paying only the minimums, both get you debt-free <b>2 years 8 months sooner</b>. Snowball saves <b>$3,244.86</b> in interest; avalanche saves <b>$3,490.18</b>.</p>
+<h3 class="debts-heading">Payoff order with snowball</h3>
+<p>The money left after the minimums goes to Personal loan first, then Visa, then Car loan.</p>
+<ol class="debts-order">
+<li><b>Personal loan</b>: paid off in May 2027 (month 7), $87.50 in interest</li>
+<li><b>Visa</b>: paid off in May 2028 (month 19), $1,670.89 in interest</li>
+<li><b>Car loan</b>: paid off in October 2028 (month 24), $779.78 in interest</li>
+</ol>
+          </div>
+          <details class="calc-schedule" id="debts-schedule">
+            <summary>Month-by-month schedule with snowball (24 months)</summary>
+            <div class="calc-table-wrap" role="region" aria-label="Payment schedule" tabindex="0" data-schedule>
+<table class="calc-table debts-table">
+<thead><tr><th scope="col">Month</th><th scope="col">Debt</th><th scope="col">Payment</th><th scope="col">Interest</th><th scope="col">Balance</th></tr></thead>
+<tbody>
+<tr><th scope="rowgroup" rowspan="3">Nov 2026</th><th scope="row">Visa</th><td>$204.00</td><td>$136.00</td><td>$6,732.00</td></tr>
+<tr><th scope="row">Personal loan</th><td>$401.00</td><td>$24.00</td><td>$2,023.00</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$49.00</td><td>$9,554.00</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="3">Dec 2026</th><th scope="row">Visa</th><td>$204.00</td><td>$134.64</td><td>$6,662.64</td></tr>
+<tr><th scope="row">Personal loan</th><td>$401.00</td><td>$20.23</td><td>$1,642.23</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$47.77</td><td>$9,306.77</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="3">Jan 2027</th><th scope="row">Visa</th><td>$204.00</td><td>$133.25</td><td>$6,591.89</td></tr>
+<tr><th scope="row">Personal loan</th><td>$401.00</td><td>$16.42</td><td>$1,257.65</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$46.53</td><td>$9,058.30</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="3">Feb 2027</th><th scope="row">Visa</th><td>$204.00</td><td>$131.84</td><td>$6,519.73</td></tr>
+<tr><th scope="row">Personal loan</th><td>$401.00</td><td>$12.58</td><td>$869.23</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$45.29</td><td>$8,808.59</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="3">Mar 2027</th><th scope="row">Visa</th><td>$204.00</td><td>$130.39</td><td>$6,446.12</td></tr>
+<tr><th scope="row">Personal loan</th><td>$401.00</td><td>$8.69</td><td>$476.92</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$44.04</td><td>$8,557.63</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="3">Apr 2027</th><th scope="row">Visa</th><td>$204.00</td><td>$128.92</td><td>$6,371.04</td></tr>
+<tr><th scope="row">Personal loan</th><td>$401.00</td><td>$4.77</td><td>$80.69</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$42.79</td><td>$8,305.42</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="3">May 2027</th><th scope="row">Visa</th><td>$523.50</td><td>$127.42</td><td>$5,974.96</td></tr>
+<tr><th scope="row">Personal loan</th><td>$81.50</td><td>$0.81</td><td>$0.00</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$41.53</td><td>$8,051.95</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">Jun 2027</th><th scope="row">Visa</th><td>$605.00</td><td>$119.50</td><td>$5,489.46</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$40.26</td><td>$7,797.21</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">Jul 2027</th><th scope="row">Visa</th><td>$605.00</td><td>$109.79</td><td>$4,994.25</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$38.99</td><td>$7,541.20</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">Aug 2027</th><th scope="row">Visa</th><td>$605.00</td><td>$99.89</td><td>$4,489.14</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$37.71</td><td>$7,283.91</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">Sep 2027</th><th scope="row">Visa</th><td>$605.00</td><td>$89.78</td><td>$3,973.92</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$36.42</td><td>$7,025.33</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">Oct 2027</th><th scope="row">Visa</th><td>$605.00</td><td>$79.48</td><td>$3,448.40</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$35.13</td><td>$6,765.46</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">Nov 2027</th><th scope="row">Visa</th><td>$605.00</td><td>$68.97</td><td>$2,912.37</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$33.83</td><td>$6,504.29</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">Dec 2027</th><th scope="row">Visa</th><td>$605.00</td><td>$58.25</td><td>$2,365.62</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$32.52</td><td>$6,241.81</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">Jan 2028</th><th scope="row">Visa</th><td>$605.00</td><td>$47.31</td><td>$1,807.93</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$31.21</td><td>$5,978.02</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">Feb 2028</th><th scope="row">Visa</th><td>$605.00</td><td>$36.16</td><td>$1,239.09</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$29.89</td><td>$5,712.91</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">Mar 2028</th><th scope="row">Visa</th><td>$605.00</td><td>$24.78</td><td>$658.87</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$28.56</td><td>$5,446.47</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">Apr 2028</th><th scope="row">Visa</th><td>$605.00</td><td>$13.18</td><td>$67.05</td></tr>
+<tr><th scope="row">Car loan</th><td>$295.00</td><td>$27.23</td><td>$5,178.70</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="2">May 2028</th><th scope="row">Visa</th><td>$68.39</td><td>$1.34</td><td>$0.00</td></tr>
+<tr><th scope="row">Car loan</th><td>$831.61</td><td>$25.89</td><td>$4,372.98</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="1">Jun 2028</th><th scope="row">Car loan</th><td>$900.00</td><td>$21.86</td><td>$3,494.84</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="1">Jul 2028</th><th scope="row">Car loan</th><td>$900.00</td><td>$17.47</td><td>$2,612.31</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="1">Aug 2028</th><th scope="row">Car loan</th><td>$900.00</td><td>$13.06</td><td>$1,725.37</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="1">Sep 2028</th><th scope="row">Car loan</th><td>$900.00</td><td>$8.63</td><td>$834.00</td></tr>
+</tbody>
+<tbody>
+<tr><th scope="rowgroup" rowspan="1">Oct 2028</th><th scope="row">Car loan</th><td>$838.17</td><td>$4.17</td><td>$0.00</td></tr>
+</tbody>
+<tfoot><tr><th scope="row" colspan="2">Total</th><td>$21,538.17</td><td>$2,538.17</td><td></td></tr></tfoot>
+</table>
+            </div>
+          </details>
+        </div>
+
+        <p>The calculator assumes the APRs stay the same, each minimum stays the same, and nothing new is charged to the debts. Each month it charges every debt its APR ÷ 12 in interest, rounded to the cent, pays every minimum, and puts the rest of your monthly amount on the debt the method picks. When a debt is paid off, its minimum stays in the monthly amount and goes to the next one.</p>
+
+        <h2>Snowball and avalanche, in short</h2>
+        <p>Both methods work the same way. Pay the minimum on every debt, and put everything else you can afford on one debt at a time. When that debt is paid off, add what you were paying on it to the next one. They differ only in which debt comes first.</p>
+        <ul>
+          <li><b>Debt snowball: smallest balance first.</b> List your debts from the smallest balance to the largest, whatever their interest rates. The first one is gone quickly, and each payoff makes the payment on the next one bigger, like a snowball rolling downhill.</li>
+          <li><b>Debt avalanche: highest APR first.</b> List your debts from the highest interest rate to the lowest. The extra money goes where it's charged the most, so less of what you pay goes to interest.</li>
+        </ul>
+
+        <h2>A worked example</h2>
+        <p>The calculator starts with three debts and $900 a month for all of them:</p>
+        <div class="compare-wrap" role="region" aria-label="The example's debts" tabindex="0">
+          <table class="compare calc-figures">
+            <thead>
+              <tr><th scope="col">Debt</th><th scope="col">Balance</th><th scope="col">APR</th><th scope="col">Minimum</th><th scope="col">Month 1 interest</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Visa</th><td>$6,800</td><td>24%</td><td>$204</td><td>$136.00</td></tr>
+              <tr><th scope="row">Personal loan</th><td>$2,400</td><td>12%</td><td>$110</td><td>$24.00</td></tr>
+              <tr><th scope="row">Car loan</th><td>$9,800</td><td>6%</td><td>$295</td><td>$49.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The minimums add up to $609, so $291 is left each month for the debt the method picks. The snowball picks the personal loan, the smallest balance. The avalanche picks Visa, the highest APR.</p>
+        <ol class="steps">
+          <li><b>Month 1, snowball.</b> Visa is charged $6,800 × 24% ÷ 12 = $136.00 of interest, the personal loan $24.00 and the car loan $49.00. Each gets its minimum, and the $291 goes to the personal loan: it gets $401 and owes $2,424 − $401 = $2,023.00.</li>
+          <li><b>Month 1, avalanche.</b> The same interest and minimums, but the $291 goes to Visa: it gets $495 and owes $6,936 − $495 = $6,441.00.</li>
+          <li><b>Month 7, snowball.</b> The personal loan's last payment is $81.50. The rest of its $401 goes to Visa, and from month 8 Visa gets $605 a month: its own $204 plus the personal loan's $110 and the $291.</li>
+          <li><b>Month 19, snowball.</b> Visa is paid off. From month 20 the car loan gets the whole $900, and its last payment, in month 24, is $838.17.</li>
+        </ol>
+        <div class="compare-wrap" role="region" aria-label="Snowball, avalanche and paying only the minimums compared" tabindex="0">
+          <table class="compare compare-3 calc-figures">
+            <thead>
+              <tr><th scope="col"></th><th scope="col">Snowball</th><th scope="col">Avalanche</th><th scope="col">Only the minimums</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">First debt paid off</th><td>Personal loan, May 2027 (month 7)</td><td>Visa, March 2028 (month 17)</td><td>Personal loan, November 2028 (month 25)</td></tr>
+              <tr><th scope="row">Debt-free</th><td>October 2028 (24 months)</td><td>October 2028 (24 months)</td><td>June 2031 (56 months)</td></tr>
+              <tr><th scope="row">Total interest</th><td>$2,538.17</td><td>$2,292.85</td><td>$5,783.03</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Both methods are debt-free in the same month here, 2 years 8 months sooner than paying only the minimums. The avalanche costs $245.32 less in interest. The snowball pays off its first debt 10 months sooner. All of these figures are what the calculator above shows for these numbers, with the first payment in November 2026.</p>
+
+        <h2>Which one costs less</h2>
+        <p>The avalanche never costs more in interest. With the same monthly amount, each extra dollar goes to the debt that charges the most for it, so no other order pays less interest. How much it saves depends on how far apart the rates are and how long the debts last: $245.32 in the example.</p>
+        <p>The case for the snowball is about sticking with the plan. Paying off a whole debt is a win you can see, and it leaves one less bill to keep track of. That's the common argument for it, and there's some research behind it. A 2012 study of nearly 6,000 clients of a debt settlement company, by David Gal and Blake McShane of Northwestern's Kellogg School, found that how many of their debts people had paid off predicted whether they finished the program better than the dollar amount they had repaid. The authors still noted that paying the highest rate first is the usual financial advice, and that starting small makes the most sense when the rates are close.</p>
+        <p>So look at both columns for your own debts. If the difference in interest is small, the snowball's early wins may be worth it to you. If it's large, the avalanche is worth the wait for its first payoff.</p>
+
+        <h2>When the two give the same order</h2>
+        <ul>
+          <li><b>The smallest balance has the highest APR.</b> If your debts line up the same way by balance and by rate, both methods pick the same debts in the same order, and the results are identical.</li>
+          <li><b>Equal rates.</b> When two debts have the same APR, this calculator's avalanche pays the smaller balance first, which is the snowball's order.</li>
+          <li><b>No interest.</b> At 0% on every debt there's no interest to save. Both orders finish in the same month, because the same amount is paid every month either way; only which debt goes first changes.</li>
+          <li><b>Close rates.</b> When the rates are close, the orders can differ but the cost barely does.</li>
+        </ul>
+
+        <h2>Why the rollover matters</h2>
+        <p>The rollover is what makes either method work. When a debt is paid off, its minimum doesn't go back into your spending: it stays in the monthly amount and goes to the next debt. The total you pay toward debt stays the same each month while the number of debts falls, so each one is paid off faster than the one before.</p>
+        <p>Paying only the minimums does the opposite. When a debt is paid off, the total you pay drops by its minimum. In the example the minimums add up to $609. Keep paying $609 a month as debts are paid off, with no extra at all, and you're debt-free in 40 months with $5,027.09 of interest. Pay only each debt's minimum, so the total falls to Visa's $204 once the loans are gone, and it takes 56 months and $5,783.03. The extra $291 a month on top of the rollover is what brings it down to 24 months.</p>
+
+        <h2>About the math</h2>
+        <p>Each month, in this order: every debt is charged its balance × the APR ÷ 12 in interest, rounded to the nearest cent; every debt is paid its minimum, or what it owes if that's less; and what's left of the monthly amount goes to the method's first debt that still owes money. If that pays it off, the rest goes to the next debt in the same month. The order is set once, from the balances and APRs you enter, and a one-time extra is added to what's left in the first month.</p>
+        <p>The minimums here are fixed amounts. A credit card's real minimum is worked out again from each statement's balance, so it shrinks as you pay the card down. Paying only a card's shrinking minimum takes longer than this calculator shows; the <a href="/tools/credit-card-payoff-calculator/">credit card payoff calculator</a> works that out for one card. Keep paying the minimum you entered and the figures here apply.</p>
+        <p>Card issuers charge interest by the day, and many lenders count the exact days between payments, so your statements will differ a little from these figures. New charges, fees and rate changes aren't included. If a debt's payment can never get ahead of its interest, the calculator tells you which one, and it stops at 100 years. Everything is worked out in your browser. Nothing you type is sent anywhere.</p>
+
+        <h2>In UrBudget</h2>
+        <p>UrBudget doesn't have a snowball or avalanche planner of its own. Work out the order and the monthly amount here, then put the plan in your budget:</p>
+        <ul>
+          <li><b>A payment category for every card.</b> Each credit card or line of credit gets its own payment category. Assign each card its minimum there, and the extra to the category of the card you're paying off first. The <a href="/guides/credit-cards/">credit card guide</a> shows how paying down an old balance works.</li>
+          <li><b>Targets for the plan.</b> Give each debt's category a Monthly debt payment or Monthly funding target with its amount from the plan, so the budget shows what's still needed each month.</li>
+          <li><b>When a debt is paid off,</b> move its amount to the next debt's target. That's the rollover, in your budget.</li>
+          <li><b>The loan planner for loans.</b> For a car loan, student loan, personal loan or mortgage, it shows the payoff date, the interest and what an extra payment saves, with the same monthly interest as this calculator and the <a href="/tools/loan-payoff-calculator/">loan payoff calculator</a>.</li>
+          <li><b>Watch the total fall.</b> The Net worth report shows your debts month by month next to your assets, and the Balance sheet lists them by type.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Put the plan in your budget</h2>
+          <p>UrBudget is envelope budgeting for Windows and macOS. Free, with no account and no card.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=tool-debt-payoff" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/tools/">More free tools</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related">
+          <li><a href="/tools/credit-card-payoff-calculator/">Credit card payoff calculator</a></li>
+          <li><a href="/tools/loan-payoff-calculator/">Loan payoff calculator</a></li>
+          <li><a href="/guides/credit-cards/">Credit cards in an envelope budget</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

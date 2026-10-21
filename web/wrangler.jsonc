@@ -1,0 +1,58 @@
+{
+  // One Worker serves urbudget.app: the static site in ./public and the API under /api.
+  // Deployment steps are in README.md.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "urbudget",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-15",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    // Everything else is a static file; these paths reach the Worker (the admin page checks who's asking).
+    "run_worker_first": ["/api/*", "/download/windows", "/download/macos", "/download/store", "/releases/*", "/admin", "/admin/*"]
+  },
+  "routes": [{ "pattern": "urbudget.app", "custom_domain": true }],
+  // Daily clean-up of expired sign-in codes and sessions.
+  "triggers": { "crons": ["17 * * * *"] },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "urbudget",
+      // Replace with the id `npx wrangler d1 create urbudget` prints.
+      "database_id": "6dada0ad-1ae4-43a1-bd1f-90c3c7e9adfd",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    // End-to-end encrypted budget snapshots. The server never holds a key.
+    { "binding": "SYNC", "bucket_name": "urbudget-sync" },
+    // Installers, published by `npm run release`.
+    { "binding": "RELEASES", "bucket_name": "urbudget-releases" }
+  ],
+  "vars": {
+    "APP_URL": "https://urbudget.app",
+    "EMAIL_FROM": "UrBudget <hello@urbudget.app>",
+    "SUPPORT_EMAIL": "support@urbudget.app",
+    // "sandbox" while testing (sandbox.polar.sh), "production" once Polar has approved the account.
+    "BILLING_ENV": "production",
+    // The Polar product id of the $3/month Sync plan, the only thing for sale (npm run polar:setup).
+    "POLAR_PRODUCT_SYNC": "29f66385-82ec-4741-9c2b-1cd825aa12df",
+    // The admin page (/admin/) is behind Cloudflare Access; README.md has the setup. From Zero
+    // Trust: the team domain, and the "UrBudget admin" application's AUD tag (Additional settings).
+    "ACCESS_TEAM_DOMAIN": "urbudget.cloudflareaccess.com",
+    "ACCESS_AUD": "96d159176caf030d03f91993e4991cb2137b94fe50391b2ba1432aa1d26cba91",
+    // Who may use it is the ADMIN_EMAILS secret (below), not a var, so no address is in the repository.
+    // Whose GitHub releases' download counts the admin page shows (needs the GITHUB_TOKEN secret).
+    "GITHUB_REPO": "AhmadHoranieh/local-budget"
+  }
+  // Secrets (npx wrangler secret put NAME, or wrangler secret bulk):
+  //   POLAR_ACCESS_TOKEN      Polar organization access token
+  //   POLAR_WEBHOOK_SECRET    the webhook endpoint's secret (whsec_…)
+  //   RESEND_API_KEY          sends sign-in codes
+  //   ADMIN_EMAILS            who may use the admin page, comma-separated; the Access policy
+  //                           "UrBudget admins" must let them in too
+  //   GOOGLE_PLAY_SERVICE_ACCOUNT Google service-account JSON; server only, never in the app
+  //   GITHUB_TOKEN            read-only token for GITHUB_REPO's releases (the admin page's download counts)
+}

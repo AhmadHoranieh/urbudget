@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to export your YNAB data (and what it leaves out)</title>
+  <meta name="description" content="Export your YNAB plan and transactions as CSV from the web app, see what the export leaves out (targets, notes, schedules), and how the API gets the rest.">
+  <link rel="canonical" href="https://urbudget.app/ynab/export/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to export your YNAB data">
+  <meta property="og:description" content="Where YNAB's export button is, what the Plan and Register files hold, what they leave out, and how the API copies targets, notes and schedules too.">
+  <meta property="og:url" content="https://urbudget.app/ynab/export/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to export your YNAB data">
+  <meta name="twitter:description" content="Where YNAB's export button is, what the Plan and Register files hold, what they leave out, and how the API copies targets, notes and schedules too.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Switch from YNAB", "item": "https://urbudget.app/ynab/" },
+          { "@type": "ListItem", "position": 3, "name": "How to export your YNAB data", "item": "https://urbudget.app/ynab/export/" }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to export your YNAB data",
+        "description": "How to export a YNAB plan and its transactions, what the CSV export includes and leaves out, and how YNAB's API copies the rest.",
+        "mainEntityOfPage": "https://urbudget.app/ynab/export/",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-17",
+        "author": { "@id": "https://urbudget.app/#org" },
+        "publisher": { "@id": "https://urbudget.app/#org" }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to export your YNAB data</h1>
+        <p class="lead">YNAB's web app exports your plan and every transaction as two spreadsheet files. That export leaves some things out, so here's what's in it, what isn't, and how to get the rest.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>Export your whole plan</h2>
+        <ol class="steps">
+          <li><b>Open YNAB in a web browser.</b> Exporting is only in the web app, at app.ynab.com. The iPhone and Android apps don't have it.</li>
+          <li><b>Open your plan's menu.</b> Click the name of your plan at the top of the left sidebar.</li>
+          <li><b>Choose Export Plan.</b> YNAB downloads a .zip file whose name starts with "YNAB Export -", then your plan's name and the date. If you have more than one plan, export each one.</li>
+        </ol>
+        <p>There's no need to unzip it if you're moving to UrBudget: it reads the .zip as it is.</p>
+
+        <h2>What's in the export</h2>
+        <p>The .zip holds two files, one ending in Plan and one ending in Register. They're CSV files, or tab-separated (TSV) files when your currency uses a comma for decimals, and any spreadsheet app opens them.</p>
+        <ul>
+          <li><strong>Plan</strong> has a row for each category in each month, with its category group, assigned, activity and available amounts.</li>
+          <li><strong>Register</strong> has a row for each transaction in every account: account, flag, date, payee, category group and category, memo, outflow, inflow and cleared status. Transfers show as "Transfer : " and the other account's name.</li>
+        </ul>
+        <p>Amounts and dates are written the way YNAB shows them in your plan, such as $1,234.56 and 10/16/2026, rather than as plain numbers.</p>
+
+        <h3>What it leaves out</h3>
+        <div class="compare-wrap" role="region" aria-label="What the CSV export and the API include" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col"><span class="visually-hidden">Data</span></th><th scope="col">CSV export</th><th scope="col">API with a token</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Transactions, payees, memos, flags, cleared status</th><td>Yes</td><td>Yes</td></tr>
+              <tr><th scope="row">Categories and each month's assigned, activity and available</th><td>Yes</td><td>Yes</td></tr>
+              <tr><th scope="row">Targets</th><td>No</td><td>Yes</td></tr>
+              <tr><th scope="row">Category, month and account notes</th><td>No</td><td>Yes</td></tr>
+              <tr><th scope="row">Scheduled transactions</th><td>No</td><td>Yes</td></tr>
+              <tr><th scope="row">Account types, and which accounts are closed</th><td>No</td><td>Yes</td></tr>
+              <tr><th scope="row">Receipt photos</th><td>No; download them one at a time</td><td>No</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>YNAB's help center says the export doesn't include targets or category notes. The other gaps are what the files simply don't have columns for. Bank connections and payee rules don't export either way.</p>
+
+        <h2>Export only some transactions</h2>
+        <ol class="steps">
+          <li><b>Open a register.</b> In the web app, click an account, or All Accounts, in the left sidebar.</li>
+          <li><b>Select the transactions.</b> Tick the box beside each one, or search (by category, payee, flag or memo) and filter by date, then tick the box in the table header to select everything shown.</li>
+          <li><b>Export them.</b> Click More in the bar that appears, then Export. The file's name starts with "Selected Transactions for" and your plan's name.</li>
+        </ol>
+
+        <h2>Export reports</h2>
+        <p>Click Reflect in the left sidebar, choose Spending Breakdown, Spending Trends, Net Worth or Income v Expense, set the categories, dates and accounts you want, and click Export. Net Worth gives you each account's balance at the end of every month, which is handy for a tax year or an accountant.</p>
+
+        <h2>The API: everything, as data</h2>
+        <p>YNAB's API returns your plan with everything YNAB keeps for it, including targets, notes, scheduled transactions and closed accounts. YNAB's own documentation calls its plan request "effectively a full plan export". You don't need to be a developer to use it: you make a personal access token, and an app that reads the API does the rest.</p>
+        <ol class="steps">
+          <li><b>Open Account Settings.</b> Sign in to YNAB on the web, click your plan's name and choose Account Settings.</li>
+          <li><b>Make a token.</b> Go to Developer Settings, choose New Token under Personal Access Tokens, enter your password and choose Generate.</li>
+          <li><b>Copy it straight away.</b> YNAB shows the token once. Treat it like your password: anyone with it can read your plans.</li>
+        </ol>
+        <p>A few things to know:</p>
+        <ul>
+          <li>If you sign in to YNAB with Google or Apple, set a YNAB password in Account Settings first; you need one to make a token.</li>
+          <li>Tokens don't expire. Revoke yours in Developer Settings when you've finished with it.</li>
+          <li>The API only answers while you have a subscription or trial. Once it has lapsed, YNAB's API returns an error instead of your data, so export before you <a href="/ynab/cancel/">cancel</a>.</li>
+          <li>A token can make up to 200 requests an hour, plenty for copying a plan.</li>
+        </ul>
+
+        <h2>Bringing it into UrBudget</h2>
+        <p>UrBudget reads both. With a token, it brings over your accounts (open and closed), every transaction, your categories and monthly assignments, and the targets, notes and scheduled transactions the CSV export leaves out. It then checks every month against YNAB's own totals, and you can import again later to pull in what changed. <a href="/ynab/">See how the token import works</a>.</p>
+        <p>No token? Choose <i>No token? Use YNAB's export file</i> in UrBudget and pick the .zip. The same month-by-month check runs, but without the extras above, and a file import can't be refreshed later.</p>
+        <div class="note">
+          <p>UrBudget only reads from YNAB; it never changes anything there. And if you leave UrBudget later, it exports your budget as CSV in YNAB's column layout, or as a full JSON backup.</p>
+        </div>
+
+        <div class="guide-cta">
+          <h2>Keep a copy that's yours</h2>
+          <p>Import your YNAB plan into UrBudget and it lives in a file on your computer. UrBudget is free.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=ynab-export" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/ynab/">How switching works</a>
+          </div>
+        </div>
+
+        <p class="sources">YNAB is a trademark of its owner. UrBudget isn't affiliated with YNAB.</p>
+        <ul class="related" aria-label="Related">
+          <li><a href="/ynab/cancel/">How to cancel YNAB</a></li>
+          <li><a href="/ynab/price/">How much YNAB costs</a></li>
+          <li><a href="/ynab/ynab4/">A YNAB 4 alternative</a></li>
+          <li><a href="/ynab/">Switch from YNAB</a></li>
+          <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+          <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

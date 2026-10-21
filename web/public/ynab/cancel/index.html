@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cancel YNAB and keep your budget: a step-by-step guide</title>
+  <meta name="description" content="Cancel YNAB on the web, iPhone or Android. Save your budget first: after it ends there's no read-only access, and data is kept up to 24 months. Refunds too.">
+  <link rel="canonical" href="https://urbudget.app/ynab/cancel/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to cancel YNAB without losing your budget">
+  <meta property="og:description" content="The steps on the web, through Apple and through Google Play, what happens to your budget when the subscription ends, and how YNAB handles refunds.">
+  <meta property="og:url" content="https://urbudget.app/ynab/cancel/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to cancel YNAB without losing your budget">
+  <meta name="twitter:description" content="The steps on the web, through Apple and through Google Play, what happens to your budget when the subscription ends, and how YNAB handles refunds.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Switch from YNAB", "item": "https://urbudget.app/ynab/" },
+          { "@type": "ListItem", "position": 3, "name": "How to cancel YNAB", "item": "https://urbudget.app/ynab/cancel/" }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to cancel YNAB without losing your budget",
+        "description": "How to cancel a YNAB subscription on the web, through Apple or through Google Play, what happens to your budget afterwards, and how refunds work.",
+        "mainEntityOfPage": "https://urbudget.app/ynab/cancel/",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-17",
+        "author": { "@id": "https://urbudget.app/#org" },
+        "publisher": { "@id": "https://urbudget.app/#org" }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to cancel YNAB without losing your budget</h1>
+        <p class="lead">Canceling stops the next charge, and you keep using YNAB until the end of the period you've paid for. After that, YNAB won't open your plans until you subscribe again, so save a copy before then.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>First, save your budget</h2>
+        <p>Do this while your subscription is still running. Once it ends, YNAB doesn't let you open your plans, and its API stops answering too, so neither of the ways below works until you pay again.</p>
+        <ul>
+          <li><strong>Export it.</strong> In YNAB on the web, click your plan's name and choose Export Plan. You get your categories, monthly amounts and every transaction as spreadsheet files, without targets, notes or scheduled transactions. <a href="/ynab/export/">What the export holds</a>.</li>
+          <li><strong>Copy it into the app you're moving to.</strong> Apps that read YNAB's API with a personal access token can take everything, including targets, notes and scheduled transactions. UrBudget does this in one click and checks every month against YNAB's totals. <a href="/ynab/">How the import works</a>.</li>
+        </ul>
+        <p>If you have more than one plan, save each one.</p>
+
+        <h2>Check how you subscribed</h2>
+        <p>Where you cancel depends on who bills you. Open YNAB on the web and go to Account Settings: the Subscription section shows it. If you subscribed in the iPhone or iPad app, Apple bills you; in the Android app, Google does. Otherwise it's YNAB.</p>
+
+        <h2>Cancel on the web</h2>
+        <p>For a subscription you bought from YNAB directly.</p>
+        <ol class="steps">
+          <li><b>Open YNAB in a browser.</b> Billing isn't in YNAB's phone apps. On a phone, open app.ynab.com/settings in your browser instead.</li>
+          <li><b>Go to Account Settings.</b> Click your plan's name at the top of the left sidebar, then Account Settings.</li>
+          <li><b>Cancel.</b> Scroll down, click Cancel Subscription and confirm. You won't be charged again.</li>
+        </ol>
+        <p>You can also email help@ynab.com from the address on your YNAB account and ask them to cancel it for you.</p>
+
+        <h2>Cancel through Apple</h2>
+        <p>For a subscription started in YNAB's iPhone or iPad app.</p>
+        <ol class="steps">
+          <li><b>Open Settings on your iPhone or iPad.</b> Tap your name, then Subscriptions.</li>
+          <li><b>Choose YNAB.</b> Tap Cancel Subscription. If there's no Cancel button, or you see an expiration message in red, it's already canceled.</li>
+        </ol>
+        <p>In YNAB's app, Account Settings also has a link to manage the subscription with Apple. Deleting your YNAB account doesn't cancel an Apple subscription, so cancel it with Apple first.</p>
+
+        <h2>Cancel through Google Play</h2>
+        <p>For a subscription started in YNAB's Android app.</p>
+        <ol class="steps">
+          <li><b>Open the Play Store.</b> Tap your profile picture, then Payments &amp; subscriptions, then Subscriptions.</li>
+          <li><b>Choose YNAB.</b> Tap Cancel subscription and follow the steps.</li>
+        </ol>
+        <p>Uninstalling the app doesn't cancel the subscription. Deleting your YNAB account does cancel a Google Play subscription.</p>
+
+        <h2>What happens to your budget</h2>
+        <ul>
+          <li><strong>Until the paid period ends,</strong> nothing changes. You can still use YNAB, and you can resume the subscription if you change your mind.</li>
+          <li><strong>When it ends,</strong> you lose access to your plans. YNAB's pages describe no read-only mode: if you sign in, you'll need to subscribe again to see your budget.</li>
+          <li><strong>Your data is kept for a while.</strong> Canceling doesn't delete anything. YNAB's privacy policy says it keeps most account data for up to 24 months after a subscription expires, and YNAB says it will remind you before the data is deleted. Subscribe again within that time and your plans come back.</li>
+          <li><strong>Deleting your account is different.</strong> You can delete it yourself in Account Settings, and a deleted account can't be restored. An account that only ever had a trial is deleted 120 days after the trial ends.</li>
+        </ul>
+
+        <h2>Refunds</h2>
+        <ul>
+          <li><strong>Bought from YNAB:</strong> canceling takes effect at the end of the billing period you've paid for. YNAB's cancellation policy says it doesn't give retroactive refunds, discounts or extensions based on how much you used it or on service problems, including Direct Import outages. If you have a question about a charge, email help@ynab.com.</li>
+          <li><strong>In the UK, Switzerland or the EEA,</strong> you may have more rights, including a 14-day cooling-off period when you subscribe or resubscribe.</li>
+          <li><strong>Through Apple:</strong> Apple's refund rules apply. Request one from Apple at reportaproblem.apple.com: choose <i>Request a refund</i>, then the YNAB subscription. Apple says to allow 24 to 48 hours for an answer.</li>
+          <li><strong>Through Google Play:</strong> YNAB's help center says to request a refund from Google within 48 hours of subscribing, and that a Google Play trial turns into a paid subscription automatically.</li>
+          <li><strong>Gift subscriptions</strong> can't be refunded once they've been redeemed. Unredeemed ones can go back to the original payment method.</li>
+        </ul>
+
+        <h2>If price is the reason</h2>
+        <p>If you like YNAB but the monthly charge adds up, the yearly plan is $109 instead of $179.88 a year, and one subscription can be shared with up to five other people. <a href="/ynab/price/">YNAB's prices in full</a>.</p>
+        <p>If you'd rather stop paying for a subscription at all, UrBudget uses the same envelope method on Windows and macOS, and it's free. Import your YNAB budget with a token before your subscription ends, try UrBudget alongside YNAB for a while, then cancel.</p>
+
+        <div class="guide-cta">
+          <h2>Take your budget with you</h2>
+          <p>Free, with no account and no card. Your YNAB budget comes over with its targets, notes and schedules, and stays on your computer.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=ynab-cancel" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/ynab/">How switching works</a>
+          </div>
+        </div>
+
+        <p class="sources">YNAB is a trademark of its owner. UrBudget isn't affiliated with YNAB, Apple or Google.</p>
+        <ul class="related" aria-label="Related">
+          <li><a href="/ynab/export/">How to export your YNAB data</a></li>
+          <li><a href="/ynab/price/">How much YNAB costs</a></li>
+          <li><a href="/ynab/ynab4/">A YNAB 4 alternative</a></li>
+          <li><a href="/ynab/">Switch from YNAB</a></li>
+          <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+          <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

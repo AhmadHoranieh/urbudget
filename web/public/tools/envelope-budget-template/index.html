@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Envelope budget template: free for Excel and Google Sheets</title>
+  <meta name="description" content="A free envelope budget spreadsheet for Excel, Google Sheets and Numbers: categories with Assigned, Spent and Available, fed by a Transactions sheet.">
+  <link rel="canonical" href="https://urbudget.app/tools/envelope-budget-template/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="Free envelope budget template for Excel, Google Sheets and Numbers">
+  <meta property="og:description" content="Assign your money to categories, record what you spend, and see what's left in each. Formulas included; no sign-up.">
+  <meta property="og:url" content="https://urbudget.app/tools/envelope-budget-template/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Free envelope budget template for Excel, Google Sheets and Numbers">
+  <meta name="twitter:description" content="Assign your money to categories, record what you spend, and see what's left in each. Formulas included; no sign-up.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <link rel="stylesheet" href="/assets/tools.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+      { "@type": "ListItem", "position": 2, "name": "Tools", "item": "https://urbudget.app/tools/" },
+      { "@type": "ListItem", "position": 3, "name": "Envelope budget template", "item": "https://urbudget.app/tools/envelope-budget-template/" }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">Envelope budget template</h1>
+        <p class="lead">A free spreadsheet for envelope budgeting in Excel, Google Sheets or Numbers. Give your money to categories, record what you spend, and see what's left in each one.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>Download</h2>
+        <div class="cta-row downloads">
+          <a class="btn btn-primary btn-lg" href="/files/envelope-budget-template.xlsx" download>Budget template <span>.xlsx, 12 KB</span></a>
+          <a class="btn btn-lg" href="/files/envelope-budget-template.csv" download>Transactions only <span>.csv</span></a>
+        </div>
+        <p>Free to use, copy and change, with no sign-up and no email address. The .xlsx file opens in Excel and Numbers, and in Google Sheets with File &gt; Import &gt; Upload.</p>
+
+        <h2>What's in it</h2>
+        <ul>
+          <li><b>Budget.</b> Your categories in three sample groups (Bills, Everyday and Savings goals), each with Carried over, Assigned, Spent and Available. Above them: what's left over from last month, this month's income, what you've assigned, and <b>Ready to assign</b>, the money that doesn't have a job yet.</li>
+          <li><b>Transactions.</b> One row per purchase, paycheck or refund: Date, Payee, Category, Memo, Outflow and Inflow. The Spent column on the Budget sheet adds these up by category.</li>
+          <li><b>How to use.</b> The steps below, inside the file.</li>
+        </ul>
+        <p>It comes filled in with a sample month so you can see it working. Here is the Everyday group a few weeks into November:</p>
+        <div class="compare-wrap" role="region" aria-label="The Everyday group in the sample budget" tabindex="0">
+          <table class="compare calc-figures">
+            <thead>
+              <tr><th scope="col">Category</th><th scope="col">Carried over</th><th scope="col">Assigned</th><th scope="col">Spent</th><th scope="col">Available</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Groceries</th><td>$35.20</td><td>$600.00</td><td>$168.56</td><td>$466.64</td></tr>
+              <tr><th scope="row">Gas and transit</th><td>$0.00</td><td>$180.00</td><td>$42.10</td><td>$137.90</td></tr>
+              <tr><th scope="row">Eating out</th><td>$20.00</td><td>$150.00</td><td>$27.50</td><td>$142.50</td></tr>
+              <tr><th scope="row">Household and personal</th><td>$0.00</td><td>$100.00</td><td>$0.00</td><td>$100.00</td></tr>
+              <tr><th scope="row">Fun money</th><td>$0.00</td><td>$100.00</td><td>$0.00</td><td>$100.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Groceries' $168.56 is two shops of $85.40 and $96.15, less a $12.99 refund. The sample's $280.00 left over and two $1,700 paychecks are all assigned, so Ready to assign is $0.00.</p>
+
+        <h2>How to use it</h2>
+        <ol class="steps">
+          <li><b>Set up your categories.</b> Rename the sample groups and categories, delete the ones you don't need and add your own. For a new category, type its name in an empty row of the table and copy the Spent and Available formulas from the row above.</li>
+          <li><b>Fill in what you have.</b> In your first month, Left over from last month is the money in your checking and savings accounts today. Clear the sample amounts in Carried over.</li>
+          <li><b>Record income.</b> On the Transactions sheet, add each paycheck with the category Income and the amount in Inflow. It shows up in Income this month.</li>
+          <li><b>Give every dollar a job.</b> Type amounts in Assigned until Ready to assign is $0.00. Start with the bills due before your next paycheck, then everyday spending, then savings goals.</li>
+          <li><b>Record your spending.</b> Add each purchase on the Transactions sheet, with the amount in Outflow and the category typed exactly as it is on the Budget sheet. A refund goes in Inflow, with the category the purchase came from.</li>
+          <li><b>Cover overspending.</b> When a category's Available turns red, lower Assigned in a category that has money to spare and raise the overspent one by the same amount.</li>
+        </ol>
+        <h3>Each new month</h3>
+        <p>Save a copy of the file for the new month. In the copy, copy the Available column and paste it into Carried over as values only (Paste Special &gt; Values in Excel). Put the old Ready to assign into Left over from last month, set Assigned back to zero or keep the amounts that repeat, clear the old transactions and change the month. That carry-over is what makes it an envelope budget: money you didn't spend stays in its category.</p>
+
+        <h2>How the formulas work</h2>
+        <ul>
+          <li><b>Spent</b> adds up the Transactions sheet for that category: <code class="wrap">SUMIFS(Outflow, Category, name) − SUMIFS(Inflow, Category, name)</code>. A refund in Inflow lowers it.</li>
+          <li><b>Available</b> is Carried over + Assigned − Spent.</li>
+          <li><b>Income this month</b> is the Inflow of every transaction with the category Income, and <b>Ready to assign</b> is Left over from last month + Income this month − Assigned this month.</li>
+          <li><b>Spending with no matching category</b> should be $0.00. If it isn't, a transaction's category is blank or doesn't match a category name exactly.</li>
+        </ul>
+        <p>The formulas use only SUM, SUMIFS and ROUND, so they work the same in Excel, Google Sheets and Numbers. They read rows 2 to 2,000 of the Transactions sheet.</p>
+        <p class="note">List spending and income only. Moving money between your own accounts, like paying a credit card bill from checking, isn't spending: the purchases were recorded when you made them.</p>
+
+        <h2>What envelope budgeting is</h2>
+        <p>Envelope budgeting means budgeting the money you have, not the money you expect. Every dollar goes into a category, the way people once put cash into envelopes for rent and groceries. You spend from those categories, move money between them when plans change, and whatever is left carries into next month. <a href="/getting-started/">Getting started with envelope budgeting</a> goes through it in five steps.</p>
+
+        <h2>The CSV file</h2>
+        <p>The CSV has the Transactions sheet's columns and two sample rows: a paycheck and a grocery shop. Use it to start a transactions list in another app, or as the pattern for moving a spreadsheet budget's history into UrBudget.</p>
+        <p>UrBudget's Import file reads its Date, Payee, Memo, Outflow and Inflow columns as they are, and skips Category. The workbook's Transactions sheet saved as CSV works the same way, because its amounts have no dollar sign and its dates are written year-month-day. Choose the year-month-day date order when you import. Imported spending goes to Uncategorized unless a payee rule picks the category.</p>
+
+        <h2>A spreadsheet or an app?</h2>
+        <p>A spreadsheet is free, opens anywhere and does exactly what you build. If this one works for you, keep using it. If you budget on your phone, a Google Sheets copy may suit you better than UrBudget, which has no phone app.</p>
+        <p>Where a spreadsheet gets tedious is the routine: carrying every category into the next month, typing each transaction, keeping category names matched. UrBudget does the same method without formulas, on Windows and macOS:</p>
+        <ul>
+          <li>Money left in a category rolls into next month on its own.</li>
+          <li>It imports the files your bank gives you (CSV, OFX, QFX or QIF), shows every row before saving, and skips ones you've already imported.</li>
+          <li>Targets work out what to set aside each month for bigger bills, like car insurance due in March.</li>
+          <li>Credit cards get a payment category, so card spending is covered when the bill comes.</li>
+          <li>Your budget is a file on your own computer. It works offline, with automatic backups, and needs no account.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>The same budget, without formulas</h2>
+          <p>Free on all your own computers, with no account and no card.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=tool-envelope-template" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/getting-started/">Getting started</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related">
+          <li><a href="/tools/">All free tools</a></li>
+          <li><a href="/tools/loan-payoff-calculator/">Loan payoff calculator</a></li>
+          <li><a href="/tools/credit-card-payoff-calculator/">Credit card payoff calculator</a></li>
+          <li><a href="/tools/ofx-to-csv/">OFX and QFX to CSV converter</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

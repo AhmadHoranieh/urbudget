@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 2,
+  "name": "Shared compatibility fixture",
+  "currency": "USD",
+  "fixtureNotice": "Synthetic data only; no real account or person.",
+  "futureClientMetadata": {"keep": [1, "two", {"three": true}]},
+  "accounts": [
+    {"id": "checking", "name": "Everyday", "kind": "cash", "openingBalance": 100000, "archived": false, "futureAccountField": "preserve"},
+    {"id": "card", "name": "Credit card", "kind": "credit", "openingBalance": -5000, "archived": false},
+    {"id": "tracking", "name": "Investment", "kind": "tracking", "openingBalance": 20000, "archived": false}
+  ],
+  "categories": [
+    {"id": "food", "name": "Groceries", "group": "Everyday", "target": 20000, "notes": "Shared note", "futureCategoryField": {"keep": true}},
+    {"id": "utilities", "name": "Utilities", "group": "Bills", "target": 10000},
+    {"id": "payment", "name": "Credit card payment", "group": "Card payments", "target": 0, "paymentAccountId": "card"}
+  ],
+  "assignments": [
+    {"month": "2026-10", "categoryId": "food", "amount": 20000, "futureAssignmentField": "preserve"},
+    {"month": "2026-10", "categoryId": "utilities", "amount": 10000},
+    {"month": "2026-10", "categoryId": "payment", "amount": 5000}
+  ],
+  "transactions": [
+    {"id": "income", "date": "2026-10-01", "accountId": "checking", "payee": "Example employer", "memo": "Synthetic income", "amount": 50000, "status": "cleared", "splits": [{"categoryId": null, "amount": 50000}], "transferAccountId": null, "transferStatus": null},
+    {"id": "cash-spend", "date": "2026-10-02", "accountId": "checking", "payee": "Example market", "memo": "Cash groceries", "amount": -4000, "status": "cleared", "splits": [{"categoryId": "food", "amount": -4000, "futureSplitField": {"keep": "yes"}}], "transferAccountId": null, "transferStatus": null, "futureTransactionField": ["preserve", 42]},
+    {"id": "credit-spend", "date": "2026-10-03", "accountId": "card", "payee": "Example market", "memo": "Funded card groceries", "amount": -3000, "status": "uncleared", "splits": [{"categoryId": "food", "amount": -3000}], "transferAccountId": null, "transferStatus": null},
+    {"id": "card-payment", "date": "2026-10-04", "accountId": "checking", "payee": "Transfer", "memo": "Card payment", "amount": -2000, "status": "cleared", "splits": [], "transferAccountId": "card", "transferStatus": "cleared"}
+  ]
+}

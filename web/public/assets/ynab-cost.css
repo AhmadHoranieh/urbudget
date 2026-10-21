@@ -1,0 +1,131 @@
+/* /ynab/price/: the cost calculator (ynab-cost.js) and its fallback table.
+   Built on site.css's tokens, beside compare.css. */
+
+.cost-calc {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+/* ---------- Years slider ---------- */
+
+.cost-years {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-3) var(--space-4);
+  align-items: center;
+}
+.cost-years label {
+  color: var(--text);
+  font-weight: 620;
+  font-size: var(--step--1);
+}
+.cost-years input[type="range"] {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  accent-color: var(--brand);
+  cursor: pointer;
+}
+.cost-years input[type="range"]:focus-visible {
+  outline: 2px solid var(--focus, var(--brand));
+  outline-offset: 2px;
+}
+.cost-years output {
+  min-width: 5.5em;
+  color: var(--text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* ---------- Bars ---------- */
+
+.guide .cost-bars {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.guide .cost-bars li {
+  display: grid;
+  grid-template-columns: minmax(9rem, 13rem) 1fr minmax(5.5rem, auto);
+  gap: var(--space-3);
+  align-items: center;
+  margin: 0;
+  font-size: var(--step--1);
+}
+.cost-name {
+  color: var(--text-2);
+}
+.cost-bars .us .cost-name {
+  color: var(--text);
+  font-weight: 600;
+}
+.cost-bar {
+  display: block;
+  height: 0.85rem;
+  border-radius: 999px;
+  background: var(--bg-soft);
+  overflow: hidden;
+}
+.cost-bar > span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--text-3);
+  transition: width 0.2s ease;
+}
+.cost-bars .us .cost-bar > span {
+  background: var(--brand);
+}
+.cost-total {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.guide .cost-summary {
+  margin: 0;
+  color: var(--text-2);
+}
+
+@media (max-width: 559.98px) {
+  .cost-calc {
+    padding: var(--space-4);
+  }
+  /* Name and total share a line; the bar runs underneath. */
+  .guide .cost-bars li {
+    grid-template-columns: 1fr auto;
+    gap: var(--space-1) var(--space-3);
+  }
+  .cost-bar {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cost-bar > span {
+    transition: none;
+  }
+}
+
+/* ---------- Fallback table ---------- */
+
+.cost-table td {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.cost-table thead th:not(:first-child) {
+  text-align: right;
+}
+.cost-table tbody th {
+  width: 34%;
+}

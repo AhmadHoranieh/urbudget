@@ -1,0 +1,520 @@
+/* Shared controls: popovers, menus, comboboxes, date pickers, toasts, tabs. */
+.popover {
+  position: fixed;
+  z-index: 60;
+  max-height: min(420px, calc(100vh - 16px));
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  animation: pop-in 0.12s var(--ease);
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+/* Menu */
+.menu {
+  min-width: 180px;
+  padding: 4px;
+}
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  text-align: left;
+}
+.menu-item + .menu-item {
+  margin-top: var(--stack-gap);
+}
+.menu-item:hover:not(:disabled),
+.menu-item:focus-visible {
+  background: var(--accent-soft);
+  outline: none;
+}
+.menu-item.danger {
+  color: var(--negative);
+}
+.menu-item kbd {
+  margin-left: auto;
+  color: var(--muted);
+  font: 11px var(--font);
+}
+.menu-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  color: var(--text-2);
+}
+.menu-separator {
+  height: 1px;
+  margin: 4px 2px;
+  background: var(--border);
+}
+
+/* Combobox */
+.combobox {
+  position: relative;
+  min-width: 0;
+}
+.combobox input {
+  width: 100%;
+  padding-right: 24px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+}
+.combobox-caret {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  color: var(--muted);
+  transform: translateY(-50%);
+  cursor: pointer;
+}
+.combobox-popover {
+  max-height: 320px;
+}
+.combobox-popover ul {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+}
+.combobox-group {
+  padding: 6px 8px 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.combobox-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+  cursor: default;
+}
+.combobox-option > span:first-child {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.combobox-option small {
+  color: var(--muted);
+}
+.combobox-option.active {
+  background: var(--accent-soft);
+}
+.combobox-option.selected > span:first-child {
+  font-weight: 600;
+}
+/* "Create category “…”": pinned below the matches however far the list scrolls, in the
+   accent colour, on an opaque background so the rows scrolling under it don't show. */
+.combobox-option.create {
+  position: sticky;
+  bottom: 0;
+  margin-top: 2px;
+  color: var(--accent);
+  font-weight: 600;
+  background: var(--surface);
+}
+.combobox-option.create.active {
+  background: linear-gradient(var(--accent-soft), var(--accent-soft)), var(--surface);
+}
+.combobox-option.create:not(:first-child) {
+  border-top: 1px solid var(--border);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.combobox-option.create > span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.combobox-detail {
+  color: var(--text-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.combobox-detail.negative {
+  color: var(--negative);
+}
+.combobox-detail.positive {
+  color: var(--positive);
+}
+.combobox-empty {
+  padding: 6px 8px;
+  color: var(--muted);
+}
+
+/* Month grid */
+.month-grid {
+  width: 240px;
+  padding: 8px;
+}
+.month-grid-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.month-grid-body {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.month-grid-body button {
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+}
+.month-grid-body button:hover {
+  background: var(--hover);
+}
+.month-grid-body button.today {
+  border-color: var(--border-strong);
+}
+.month-grid-body button.selected {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Date range */
+.range-button {
+  font-variant-numeric: tabular-nums;
+}
+.range-popover {
+  display: flex;
+  gap: 4px;
+  padding: 6px;
+}
+.range-presets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--stack-gap);
+  min-width: 140px;
+  padding-right: 6px;
+  border-right: 1px solid var(--border);
+}
+.range-presets button {
+  height: 28px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  text-align: left;
+}
+.range-presets button:hover {
+  background: var(--hover);
+}
+.range-presets button.selected {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.range-custom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 6px;
+}
+
+/* Toasts */
+.toasts {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 6px 6px 6px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--toast-bg);
+  color: var(--toast-text);
+  /* The outline is a ring, not a border, so it takes no room: transparent on the light theme. */
+  box-shadow: 0 0 0 1px var(--toast-border), var(--shadow-lg);
+  pointer-events: auto;
+  animation: toast-in 0.16s ease-out;
+}
+.toast.error {
+  --toast-border: var(--toast-error-border);
+  background: var(--toast-error-bg);
+  color: var(--toast-error-text);
+}
+.toast > span {
+  flex: 1;
+}
+.toast .icon-button {
+  color: inherit;
+  opacity: 0.75;
+}
+.toast-action {
+  padding: 4px 8px;
+  border: none;
+  border-radius: 5px;
+  background: var(--toast-action);
+  color: var(--toast-action-text);
+  font-weight: 600;
+}
+.toast-action:hover {
+  background: var(--toast-action-hover);
+}
+.toast.error .toast-action {
+  background: rgba(255, 255, 255, 0.16);
+  color: inherit;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* Tabs */
+/* Tabs stay on one line; when they don't fit they scroll sideways, fading at the cut edge. */
+.tabs {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: var(--stack-gap);
+  min-width: 0;
+  max-width: 100%;
+  padding: 3px;
+  overflow-x: auto;
+  border-radius: 8px;
+  background: var(--tab-track);
+  box-shadow: inset 0 0 0 1px var(--border);
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+.tabs[data-fade="end"] {
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+.tabs[data-fade="start"] {
+  mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent);
+}
+.tabs[data-fade="both"] {
+  mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent);
+}
+.tabs button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.tabs button:hover:not(.selected) {
+  color: var(--text);
+}
+.tabs button.selected {
+  background: var(--tab-active);
+  color: var(--text);
+  box-shadow: var(--shadow), inset 0 0 0 1px var(--border);
+}
+.tabs small {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Column dividers on table headers: always visible, with a wide grab area centred on the line;
+   drag to resize, double-click to reset. A plain divider marks columns that can't be resized. */
+.col-grip,
+.col-divider {
+  position: absolute;
+  top: 0;
+  right: -6px;
+  bottom: 0;
+  z-index: 2;
+  width: 12px;
+}
+.col-grip {
+  cursor: col-resize;
+  touch-action: none;
+}
+/* The cells' own borders draw the dividers; the grip only lights up while you resize. */
+.col-grip::after {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 5.5px;
+  width: 1px;
+  background: transparent;
+  content: "";
+}
+.col-grip:hover::after,
+.col-grip:active::after {
+  left: 4.5px;
+  width: 3px;
+  background: var(--accent);
+}
+
+/* ---------- Date field and calendar ---------- */
+.date-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.date-input input {
+  width: 100%;
+  padding-right: 26px;
+  font-variant-numeric: tabular-nums;
+}
+.date-input.invalid input {
+  border-color: var(--negative);
+}
+.date-input-button {
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--muted);
+  transform: translateY(-50%);
+}
+.date-input-button:hover,
+.date-input-button[aria-expanded="true"] {
+  background: var(--hover);
+  color: var(--accent);
+}
+.calendar-popover {
+  padding: 10px;
+}
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 252px;
+}
+.calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.calendar-head strong {
+  font-size: 13px;
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.calendar-weekday {
+  padding: 2px 0 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+.calendar-day {
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.calendar-day:hover {
+  background: var(--hover);
+}
+.calendar-day:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.calendar-day.outside {
+  color: var(--muted);
+  opacity: 0.6;
+}
+.calendar-day.today {
+  border-color: var(--accent);
+  font-weight: 600;
+}
+.calendar-day.selected,
+.calendar-day.selected:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  opacity: 1;
+}
+.calendar-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+
+/* Tooltips: one look for titles (TooltipLayer) and chart tooltips alike. */
+.tooltip,
+.chart-tooltip {
+  background: var(--tooltip-bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  pointer-events: none;
+}
+.tooltip {
+  position: fixed;
+  z-index: 80;
+  max-width: 300px;
+  padding: 4px 9px;
+  white-space: pre-line;
+  overflow-wrap: break-word;
+  animation: tooltip-in 0.1s var(--ease);
+}
+@keyframes tooltip-in {
+  from {
+    opacity: 0;
+  }
+}

@@ -1,0 +1,10 @@
+[workspace]
+members = ["urbudget-core", "urbudget-services", "urbudget-android", "urbudget-ios"]
+resolver = "2"
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[profile.release]
+lto = "thin"
+strip = "debuginfo"

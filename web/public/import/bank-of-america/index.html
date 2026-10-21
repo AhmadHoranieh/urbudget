@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to download Bank of America transactions (CSV)</title>
+  <meta name="description" content="Bank of America ended Quicken (QFX) files in 2025, so its CSV download is what's left. How to get it from Online Banking, fix common issues, and import it.">
+  <link rel="canonical" href="https://urbudget.app/import/bank-of-america/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to download Bank of America transactions (CSV)">
+  <meta property="og:description" content="Why Bank of America's QFX files are gone, how to download the CSV from Online Banking, and what to check before importing it into a budget.">
+  <meta property="og:url" content="https://urbudget.app/import/bank-of-america/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to download Bank of America transactions (CSV)">
+  <meta name="twitter:description" content="Why Bank of America's QFX files are gone, how to download the CSV from Online Banking, and what to check before importing it into a budget.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "UrBudget",
+            "item": "https://urbudget.app/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Bank import guides",
+            "item": "https://urbudget.app/import/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Bank of America",
+            "item": "https://urbudget.app/import/bank-of-america/"
+          }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to download Bank of America transactions",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-17",
+        "author": {
+          "@id": "https://urbudget.app/#org"
+        },
+        "publisher": {
+          "@id": "https://urbudget.app/#org"
+        },
+        "mainEntityOfPage": "https://urbudget.app/import/bank-of-america/"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to download Bank of America transactions</h1>
+        <p class="lead">Bank of America stopped offering Quicken (QFX) files in 2025, so the file to download now is its spreadsheet file, a CSV. Here's how to get it from Online Banking, what to check in it, and how to import it into UrBudget.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>What Bank of America offers now</h2>
+        <ul>
+          <li><strong>No more QFX or OFX files.</strong> A Quicken notice dated September 30, 2025 says Bank of America discontinued all of its OFX services, including Web Connect (QFX) files. Quicken users now connect through Quicken's own link, which needs your bank login.</li>
+          <li><strong>A spreadsheet download.</strong> Bank of America's help still lists downloading transactions for use with financial software in Online Banking. The spreadsheet format saves a .csv file, which is what you'll import.</li>
+          <li><strong>Up to 12 months on credit cards.</strong> Bank of America's credit card help says you can request up to 12 months of detailed transaction information in Online Banking.</li>
+        </ul>
+
+        <h2>Download your transactions from Online Banking</h2>
+        <p>Bank of America's help pages describe the download in Online Banking on a computer. They don't name every button for personal accounts, so the labels on your screen may differ a little from these steps.</p>
+        <ol class="steps">
+          <li><b>Sign in to Online Banking and select the account.</b> Checking, savings or credit card. Each file holds one account.</li>
+          <li><b>Choose Download.</b> It's on the account's activity page, with the transactions.</li>
+          <li><b>Pick the period.</b> Cover the dates since your last download. An overlap does no harm.</li>
+          <li><b>Choose the spreadsheet file type, then Download transactions.</b> Save the .csv file somewhere you'll find it.</li>
+        </ol>
+
+        <h2>Check the CSV before you import it</h2>
+        <p>With no QFX file, the CSV's layout decides how cleanly it imports. Bank of America doesn't publish its column layout, so let UrBudget's preview show you. UrBudget needs:</p>
+        <ul>
+          <li><strong>Column names on the first line:</strong> a date (Date, Transaction Date, Posted Date or Posting Date), a description (Payee, Description, Name or Merchant), and either Amount or separate Debit and Credit columns.</li>
+          <li><strong>Money out as a negative amount</strong>, when there's a single Amount column. If yours are the other way round, tick <b>Purchases are positive</b> (UrBudget 1.0.3 and later).</li>
+          <li><strong>Numbers it can read.</strong> Commas, minus signs and a $ sign are all fine in 1.0.3 and later.</li>
+        </ul>
+        <p>If the preview complains, open the file in a text editor or spreadsheet and fix the one thing it points to:</p>
+        <ul>
+          <li><strong>Summary lines above the column names.</strong> Delete every line above the row of column names, so that row is the first line, and save as CSV.</li>
+          <li><strong>A line with no amount,</strong> such as a balance line. Delete that row.</li>
+          <li><strong>Purchases written as positive numbers.</strong> Tick <b>Purchases are positive</b> and preview again.</li>
+        </ul>
+
+        <h2>Import it into UrBudget</h2>
+        <ol class="steps">
+          <li><b>Open the account.</b> In UrBudget, select the account the file came from and choose <b>Import file</b> above its transactions.</li>
+          <li><b>Add the .csv file.</b> Choose <i>Choose a file</i>, or drag the file onto the box.</li>
+          <li><b>Set the date order.</b> US dates are month first, so set <i>Dates in the file</i> to Month/day/year, then choose <i>Preview transactions</i>.</li>
+          <li><b>Look over every row.</b> Check one purchase and one deposit or payment: purchases should be money out. Rows you imported before are marked as already imported and skipped, and rows that look like transactions you entered yourself (same amount, within 10 days) are offered as matches.</li>
+          <li><b>Import.</b> Choose the import button. The transactions land in the register, waiting for your approval.</li>
+        </ol>
+
+        <h2>If something looks wrong</h2>
+        <ul>
+          <li><strong>UrBudget says the CSV needs Date, Payee and Amount headers.</strong> The first line of the file isn't the row of column names. Remove the lines above it and try again.</li>
+          <li><strong>UrBudget can't read a date.</strong> <i>Dates in the file</i> is set to another order. Choose Month/day/year.</li>
+          <li><strong>A transaction from last week comes in again.</strong> A CSV has no transaction IDs, so UrBudget recognizes repeats by date, payee and amount. If Bank of America changed a description since your last download, the row looks new. Set it to <i>Skip</i>.</li>
+          <li><strong>Your card history stops after 12 months.</strong> That's as much detail as Bank of America's card help says you can request online. Older months are in your PDF statements; starting your budget from today's balance means you don't need them.</li>
+          <li><strong>You were using QFX files before.</strong> Rows from those files and rows from the new CSV are recognized differently, so the first CSV that overlaps them can show repeats. Start the CSV the day after your last QFX file ended.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Budget from your Bank of America file</h2>
+          <p>Free on Windows and macOS. Your bank login stays with you.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=import-bank-of-america" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/import/">All bank guides</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related guides">
+          <li><a href="/import/">All bank import guides</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+          <li><a href="/import/wells-fargo/">Download Wells Fargo transactions</a></li>
+          <li><a href="/import/chase/">Download Chase transactions</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

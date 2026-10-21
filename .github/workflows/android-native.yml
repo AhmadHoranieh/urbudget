@@ -1,0 +1,83 @@
+name: Native Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["android/**", "!android/**/*.md", "crates/**", "!crates/urbudget-ios/**", "shared/android/**", "shared/fixtures/**", ".github/workflows/android-native.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["android/**", "!android/**/*.md", "crates/**", "!crates/urbudget-ios/**", "shared/android/**", "shared/fixtures/**", ".github/workflows/android-native.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  shared-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: crates -> target
+      - run: cargo test --locked --manifest-path crates/Cargo.toml
+
+  android:
+    needs: shared-engine
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          cmdline-tools-version: '15859902'
+      - name: Install Android toolchain
+        run: |
+          sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "ndk;30.0.16248370"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: crates -> ../android/app/build/rust-target
+      # The preview build is release with the debug identity: Run workflow builds it and keeps
+      # the APKs to install; pushes check debug and release only.
+      - name: Test, lint and build native Android debug and release
+        working-directory: android
+        run: >-
+          bash gradlew --no-daemon :app:testDebugUnitTest :app:lintDebug :app:lintRelease
+          :app:assembleDebug :app:assembleRelease
+          ${{ github.event_name == 'workflow_dispatch' && ':app:assemblePreview' || '' }}
+      # Artifacts count against the account's storage, so APKs are kept only from Run workflow
+      # and reports only when something failed.
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          name: native-android-apks
+          retention-days: 3
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/apk/preview/*.apk
+            android/app/build/outputs/apk/release/*.apk
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: native-android-reports
+          retention-days: 7
+          path: |
+            android/app/build/reports/tests/**
+            android/app/build/reports/lint-results-debug.*
+            android/app/build/reports/lint-results-release.*

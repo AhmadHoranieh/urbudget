@@ -1,0 +1,1191 @@
+/* UrBudget — utilitarian theme. Colors are tokens; dark mode follows the system unless
+   Settings forces a theme (data-theme on <html>). */
+:root {
+  color-scheme: light;
+  /* macOS-style light: one white canvas (page, header, cards), a soft cool-grey sidebar and
+     title bar, hairlines in black alpha so they sit right on any tint underneath. */
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f5f5f7;
+  --sidebar: #efeff2;
+  --hover: rgba(0, 0, 0, 0.045);
+  /* The sidebar's current page or account: a step darker than hovering, with an accent bar. */
+  --selected: color-mix(in srgb, var(--text) 7%, transparent);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --text: #1d1d1f;
+  --text-2: #4b4b52;
+  --muted: #65656c;
+  /* A select's caret: lucide's chevron-down, as the combobox shows, in --muted. */
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2365656c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  /* System blue, a step darker than #007aff so it passes AA as text on every light surface. */
+  --accent: #0068da;
+  --accent-hover: #0058bd;
+  --accent-soft: #e8f1fe;
+  /* Apple's green, red and orange, deepened for text; the soft fills are pale tints of them. */
+  --positive: #197a35;
+  --positive-soft: #e6f6eb;
+  --negative: #cc2229;
+  --negative-soft: #ffebea;
+  --warning: #ad4f00;
+  --warning-soft: #fff1df;
+  /* Something that needs you, as a filled label ("Needs a category"): YNAB's yellow, with dark
+     text on it in both themes (11.1:1 here, 9.4:1 in dark). */
+  --attention: #ffcc00;
+  --on-attention: #1d1d1f;
+  /* The attention colour as a mark on the page (icons, rings): yellow that still shows on white. */
+  --attention-ink: #9a6b00;
+  --zero-soft: #f1f1f4;
+  /* Transaction flags (register.css): Apple's system hues, as fills beside a name, never as text. */
+  --flag-red: #ff3b30;
+  --flag-orange: #ff9500;
+  --flag-yellow: #ffcc00;
+  --flag-green: #34c759;
+  --flag-blue: #007aff;
+  --flag-purple: #af52de;
+  /* Segmented tabs: a recessed track with a raised pill for the chosen tab. */
+  --tab-track: #ededf0;
+  --tab-active: #ffffff;
+  /* Tooltips sit a step above the surfaces they cover. */
+  --tooltip-bg: #ffffff;
+  /* Toasts: dark on the light theme; a raised panel on the dark one. */
+  --toast-bg: #1d1d1f;
+  --toast-text: #f5f5f7;
+  --toast-border: transparent;
+  --toast-action: rgba(255, 255, 255, 0.14);
+  --toast-action-hover: rgba(255, 255, 255, 0.24);
+  --toast-action-text: #f5f5f7;
+  --toast-error-bg: #cc2229;
+  --toast-error-text: #ffffff;
+  --toast-error-border: transparent;
+  /* Elevation: resting cards, floating popovers, dialogs. Neutral black, soft and wide. */
+  --shadow: 0 0.5px 1px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 10px 30px -6px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 28px 64px -12px rgba(0, 0, 0, 0.26), 0 6px 16px rgba(0, 0, 0, 0.07);
+  /* Dims the page under a dialog. */
+  --scrim: rgba(0, 0, 0, 0.42);
+  --scrollbar: rgba(0, 0, 0, 0.22);
+  --scrollbar-hover: rgba(0, 0, 0, 0.4);
+  /* Radii: controls, cards and panels, dialogs. */
+  --radius: 6px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --row: 34px;
+  /* Space between stacked items that highlight (nav, lists, menus, tabs), so a hovered item
+     never runs into a selected one. Rings on selected items are drawn inset for the same reason. */
+  --stack-gap: 2px;
+  /* The margin on every side of the budget and register pages. */
+  --gutter: 24px;
+  /* Scroll areas next to a page edge pad by the margin minus this, so both sides match. */
+  --scrollbar-size: 10px;
+  /* The sidebar's is narrower: it fits in the sidebar's 8px margin (shell.css). */
+  --sidebar-scrollbar: 8px;
+  --sidebar-width: 248px;
+  --header: 48px;
+  /* The app-drawn title bar on Windows (shell.css); none where the system draws one. */
+  --titlebar: 0px;
+  --font: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
+    BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  /* Segoe's display cut for headline figures: tighter and crisper at larger sizes. */
+  --font-display: "Segoe UI Variable Display", "Segoe UI", system-ui, -apple-system,
+    BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0f1215;
+    --surface: #171b20;
+    --surface-2: #1c2127;
+    --sidebar: #13161a;
+    --hover: rgba(255, 255, 255, 0.05);
+    --selected: color-mix(in srgb, var(--text) 8%, transparent);
+    --border: #282e36;
+    --border-strong: #38404b;
+    --text: #e5e8ec;
+    --text-2: #b4bbc4;
+    --muted: #8b939e;
+    --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b939e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    --accent: #5b93ff;
+    --accent-hover: #78a7ff;
+    --accent-soft: #1b2944;
+    --positive: #56c67f;
+    --positive-soft: #15301f;
+    --negative: #ff8077;
+    --negative-soft: #3b1d1b;
+    --warning: #e2b44a;
+    --warning-soft: #392e13;
+    --attention: #e2b44a;
+    --on-attention: #14161a;
+    --attention-ink: #e2b44a;
+    --zero-soft: #252b32;
+    --flag-red: #e5484d;
+    --flag-orange: #f76b15;
+    --flag-yellow: #e2a336;
+    --flag-green: #30a46c;
+    --flag-blue: #3e63dd;
+    --flag-purple: #8e4ec6;
+    --tab-track: #101317;
+    --tab-active: #2a3139;
+  --tooltip-bg: #232930;
+    --toast-bg: #262c34;
+    --toast-text: #e5e8ec;
+    --toast-border: #3a424d;
+    --toast-action: #1f3157;
+    --toast-action-hover: #283d6b;
+    --toast-action-text: #8fb5ff;
+    --toast-error-bg: #3b1d1b;
+    --toast-error-text: #ffd2ce;
+    --toast-error-border: #6b2f2a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.22);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.32);
+    --scrim: rgba(8, 11, 15, 0.5);
+    --scrollbar: rgba(255, 255, 255, 0.18);
+    --scrollbar-hover: rgba(255, 255, 255, 0.34);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0f1215;
+  --surface: #171b20;
+  --surface-2: #1c2127;
+  --sidebar: #13161a;
+  --hover: rgba(255, 255, 255, 0.05);
+  --selected: color-mix(in srgb, var(--text) 8%, transparent);
+  --border: #282e36;
+  --border-strong: #38404b;
+  --text: #e5e8ec;
+  --text-2: #b4bbc4;
+  --muted: #8b939e;
+  --select-caret: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b939e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --accent: #5b93ff;
+  --accent-hover: #78a7ff;
+  --accent-soft: #1b2944;
+  --positive: #56c67f;
+  --positive-soft: #15301f;
+  --negative: #ff8077;
+  --negative-soft: #3b1d1b;
+  --warning: #e2b44a;
+  --warning-soft: #392e13;
+  --attention: #e2b44a;
+  --on-attention: #14161a;
+  --attention-ink: #e2b44a;
+  --zero-soft: #252b32;
+  --flag-red: #e5484d;
+  --flag-orange: #f76b15;
+  --flag-yellow: #e2a336;
+  --flag-green: #30a46c;
+  --flag-blue: #3e63dd;
+  --flag-purple: #8e4ec6;
+  --tab-track: #101317;
+  --tab-active: #2a3139;
+  --tooltip-bg: #232930;
+  --toast-bg: #262c34;
+  --toast-text: #e5e8ec;
+  --toast-border: #3a424d;
+  --toast-action: #1f3157;
+  --toast-action-hover: #283d6b;
+  --toast-action-text: #8fb5ff;
+  --toast-error-bg: #3b1d1b;
+  --toast-error-text: #ffd2ce;
+  --toast-error-border: #6b2f2a;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.22);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.32);
+  --scrim: rgba(8, 11, 15, 0.5);
+  --scrollbar: rgba(255, 255, 255, 0.18);
+  --scrollbar-hover: rgba(255, 255, 255, 0.34);
+}
+/* ---------- Base ---------- */
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font: 13px/1.45 var(--font);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.3;
+}
+h1 {
+  font-size: 17px;
+}
+h2 {
+  font-size: 14px;
+}
+h3 {
+  font-size: 13px;
+}
+p {
+  margin: 0 0 8px;
+}
+p:last-child {
+  margin-bottom: 0;
+}
+small {
+  font-size: 12px;
+}
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.center {
+  text-align: center;
+}
+.positive {
+  color: var(--positive);
+}
+.negative {
+  color: var(--negative);
+}
+.muted {
+  color: var(--muted);
+}
+.help {
+  color: var(--muted);
+  font-size: 12px;
+}
+.mono {
+  font-family: var(--mono);
+  font-size: 12px;
+  word-break: break-all;
+}
+/* Scrollbars: thin and rounded, no arrow buttons or track, the same in every scroll area. */
+::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+::-webkit-scrollbar-button {
+  display: none;
+}
+::-webkit-scrollbar-thumb {
+  min-height: 36px;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: var(--scrollbar) padding-box;
+}
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--scrollbar-hover);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.spacer {
+  flex: 1;
+}
+.float-right {
+  float: right;
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* ---------- Controls ---------- */
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.primary,
+.secondary,
+.danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color 0.12s var(--ease),
+    border-color 0.12s var(--ease),
+    box-shadow 0.12s var(--ease),
+    transform 0.06s var(--ease);
+}
+:is(.primary, .secondary, .danger):active:not(:disabled) {
+  transform: translateY(1px);
+}
+.primary {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--accent) 28%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+.primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.secondary {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow);
+}
+.secondary:hover:not(:disabled) {
+  background: var(--surface-2);
+  border-color: color-mix(in srgb, var(--border-strong) 60%, var(--muted));
+}
+.secondary.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.danger {
+  background: var(--negative);
+  color: #fff;
+}
+.primary.small,
+.secondary.small,
+.danger.small {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12.5px;
+}
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-2);
+  transition:
+    background-color 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.icon-button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+.icon-button.bordered {
+  width: 30px;
+  height: 30px;
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+button:not([class]) {
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  font-size: 12px;
+}
+button:not([class]):hover:not(:disabled) {
+  background: var(--surface-2);
+}
+.link-button,
+.text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-weight: 500;
+}
+.link-button:hover:not(:disabled),
+.text-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+.link-button.danger {
+  color: var(--negative);
+  background: none;
+  height: auto;
+}
+input,
+select,
+textarea {
+  height: 30px;
+  min-width: 0;
+  padding: 0 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  transition:
+    border-color 0.12s var(--ease),
+    box-shadow 0.12s var(--ease);
+}
+:is(input, select, textarea):hover:not(:focus):not(:disabled):not([type="checkbox"]):not([type="radio"]) {
+  border-color: color-mix(in srgb, var(--border-strong) 60%, var(--muted));
+}
+::placeholder {
+  color: var(--muted);
+  opacity: 0.85;
+}
+textarea {
+  height: auto;
+  min-height: 56px;
+  padding: 6px 8px;
+  resize: vertical;
+}
+/* Selects are drawn here too: left to the system, macOS paints its own pop-up button (bezel,
+   gloss and arrows) over the styles above. The caret sits where the combobox's does. */
+select {
+  appearance: none;
+  padding-right: 24px;
+  background-image: var(--select-caret);
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 14px;
+}
+/* The system dimmed a disabled one; this dims it as a disabled button is. */
+select:disabled {
+  opacity: 0.5;
+}
+select[multiple] {
+  height: 140px;
+  padding: 4px;
+  background-image: none;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+/* Checkboxes and radios are drawn here (not natively), so they match in light and dark. */
+input[type="checkbox"],
+input[type="radio"] {
+  appearance: none;
+  display: inline-grid;
+  flex: none;
+  place-content: center;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 4px;
+  background: var(--surface);
+  box-shadow: none;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: background-color 0.1s, border-color 0.1s;
+}
+input[type="radio"] {
+  border-radius: 50%;
+}
+input[type="checkbox"]::before {
+  width: 10px;
+  height: 10px;
+  background: #fff;
+  clip-path: polygon(12% 50%, 0 64%, 40% 100%, 100% 22%, 87% 9%, 39% 72%);
+  content: "";
+  transform: scale(0);
+  transition: transform 0.1s;
+}
+input[type="radio"]::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  content: "";
+  transform: scale(0);
+}
+input[type="checkbox"]:checked,
+input[type="checkbox"]:indeterminate,
+input[type="radio"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+input[type="checkbox"]:checked::before,
+input[type="radio"]:checked::before {
+  transform: scale(1);
+}
+input[type="checkbox"]:indeterminate::before {
+  height: 2px;
+  clip-path: none;
+  transform: scale(1);
+}
+input[type="checkbox"]:hover:not(:disabled),
+input[type="radio"]:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+input[type="checkbox"]:focus,
+input[type="radio"]:focus {
+  box-shadow: none;
+}
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+input[type="checkbox"]:disabled,
+input[type="radio"]:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+input[aria-invalid="true"] {
+  border-color: var(--negative);
+}
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+label > input,
+label > select,
+label > textarea {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+}
+/* A labelled control that isn't a single input (a combobox, a pair of fields). */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.field > span:first-child {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+label small {
+  color: var(--muted);
+  font-weight: 400;
+}
+.checkbox-label {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px 12px;
+  margin-bottom: 10px;
+}
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.form-error,
+.error {
+  color: var(--negative);
+  font-size: 12px;
+}
+.optional {
+  margin-left: 4px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.warning-text {
+  color: var(--warning);
+}
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  margin-bottom: 12px;
+  border-radius: 7px;
+  background: var(--zero-soft);
+}
+.segmented button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.segmented button.selected {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+details > summary {
+  padding: 4px 0;
+  color: var(--text-2);
+  cursor: pointer;
+}
+progress {
+  width: 100%;
+  height: 6px;
+  accent-color: var(--accent);
+}
+/* Data pages use the full width; form pages (.narrow) sit centred at a readable width. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+/* Settings › Flag names: each color beside its name. */
+.flag-names {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.flag-names label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+.flag-names input {
+  flex: 1;
+}
+.page.narrow {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.page-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.page-intro p {
+  margin: 0;
+  color: var(--muted);
+}
+/* A row of figures separated by hairlines (each a .stat). */
+.figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+}
+.figures > .stat + .stat {
+  padding-left: 20px;
+  border-left: 1px solid var(--border);
+}
+.panel {
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+.panel > h2,
+.panel-title {
+  margin-bottom: 10px;
+}
+.panel h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.panel-title h2 {
+  margin: 0;
+}
+.panel > label,
+.panel > .button-row {
+  margin-bottom: 8px;
+}
+.panel > details {
+  margin-top: 4px;
+}
+/* A panel that is just a table: square, like the other tables. */
+.panel.flush {
+  padding: 0;
+  overflow: hidden;
+  border-color: var(--border-strong);
+  border-radius: 0;
+}
+.panel.muted {
+  background: var(--surface-2);
+  box-shadow: none;
+}
+.panel.muted p {
+  color: var(--text-2);
+}
+.status-badge {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--positive-soft);
+  color: var(--positive);
+  font-size: 12px;
+}
+.status-badge.pending,
+.status-badge.saving,
+.status-badge.loading {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.status-badge.conflict,
+.status-badge.error {
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+.detail-list {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+}
+.detail-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.detail-list dt {
+  color: var(--muted);
+}
+.detail-list dd {
+  min-width: 0;
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.empty-state {
+  max-width: 520px;
+  margin: 40px auto;
+  padding: 40px 24px;
+  text-align: center;
+}
+.empty-state h2 {
+  margin-bottom: 6px;
+  font-size: 16px;
+}
+.empty-state p {
+  color: var(--muted);
+}
+.empty-state .button-row {
+  justify-content: center;
+  margin-top: 14px;
+}
+.empty-state.compact {
+  max-width: none;
+  margin: 0;
+  padding: 20px;
+}
+/* ---------- Tables ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+th {
+  padding: 6px 10px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+tbody tr:last-child td {
+  border-bottom: none;
+}
+tbody tr:hover td {
+  background: var(--hover);
+}
+th.numeric,
+td.numeric,
+th.num,
+td.num {
+  text-align: right;
+}
+tr.muted td {
+  color: var(--muted);
+}
+.panel table {
+  margin-top: 8px;
+}
+.panel.flush table {
+  margin: 0;
+}
+.table-scroll {
+  overflow: auto;
+}
+.data-table td {
+  white-space: nowrap;
+}
+.row-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+.row-actions .link-button {
+  font-size: 12px;
+}
+.rta > span,
+.stats dt,
+.stat > span,
+.report-cards span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.rta small,
+.stat small,
+.inspector-amount small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+/* ---------- Paying a credit card (CardPayment.tsx) ---------- */
+.pay-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.pay-facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.pay-facts span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.pay-facts strong {
+  font-size: 17px;
+}
+.pay-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 0;
+  border: 0;
+}
+.pay-options legend {
+  margin-bottom: 6px;
+  padding: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
+}
+.pay-option {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.pay-option.chosen {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.pay-option > span {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+.pay-option strong {
+  font-weight: 600;
+}
+.pay-option b {
+  font-weight: 650;
+}
+.pay-option > .num-input {
+  width: 120px;
+}
+
+/* ---------- Dialogs ---------- */
+/* Holds clicks while a save runs, before its dialog is worth showing (App.tsx). */
+.operation-guard {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+}
+.modal-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--scrim);
+  backdrop-filter: blur(3px);
+  animation: shade-in 0.16s var(--ease);
+}
+.modal {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 48px);
+  padding: 18px 22px 22px;
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  animation: modal-in 0.18s var(--ease);
+}
+@keyframes shade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+.modal.wide {
+  width: min(860px, 100%);
+}
+.modal-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.modal-heading h2 {
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.modal form > label,
+.modal form > .checkbox-label {
+  margin-bottom: 10px;
+}
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 14px;
+}
+.modal > .spin {
+  display: block;
+  margin: 8px auto 0;
+}
+.split-section {
+  margin: 4px 0 12px;
+  padding: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.split-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+.split-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.split-row select,
+.split-row .combobox {
+  flex: 1 1 200px;
+}
+.split-row .combobox input {
+  width: 100%;
+}
+.split-row > input {
+  flex: 1 1 100px;
+}
+.tip {
+  margin: 8px 0;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--positive-soft);
+}
+.tip.warning {
+  background: var(--warning-soft);
+}
+.import-result {
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-2);
+}
+.import-review,
+.conflict-review {
+  margin-top: 10px;
+}
+/* Long bank files scroll inside the review, which renders only the rows in view (each row
+   is a fixed 41px, matching REVIEW_ROW in BankImport.tsx). */
+.import-review {
+  max-height: 420px;
+  border: 1px solid var(--border-strong);
+}
+.import-review table {
+  margin: 0;
+}
+.import-review thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  box-shadow: inset 0 -1px 0 var(--border-strong);
+}
+.import-review tbody tr:not(.spacer-row) {
+  height: 41px;
+}
+.import-review td {
+  padding-top: 0;
+  padding-bottom: 0;
+  white-space: nowrap;
+}
+.spacer-row td {
+  padding: 0;
+  border: none;
+}
+.credential-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 8px 0;
+}
+.planning-table {
+  max-height: 360px;
+  margin-top: 8px;
+  overflow: auto;
+}
+/* Inline alerts and notices */
+.alert,
+.notice {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 16px 0;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+}
+.alert {
+  background: var(--negative-soft);
+  color: var(--text);
+}
+.alert > svg {
+  flex: none;
+  color: var(--negative);
+}
+.notice {
+  background: var(--accent-soft);
+}
+.notice.error {
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+.alert span,
+.notice span {
+  flex: 1;
+}
+/* Tables with fixed, user-resizable column widths (see ui/columns.tsx). */
+table.fixed {
+  table-layout: fixed;
+  width: 100%;
+}
+/* Spreadsheet-like, matching the budget and transaction tables: a line between columns and
+   room inside each cell. */
+table.fixed th,
+table.fixed td {
+  padding: 8px 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+table.fixed :is(th, td) + :is(th, td) {
+  border-left: 1px solid var(--border);
+}
+table.fixed thead th {
+  border-bottom-color: var(--border-strong);
+}
+table.fixed th {
+  position: relative;
+  overflow: visible;
+}
+/* Row buttons never truncate into an ellipsis. */
+table.fixed td.row-actions {
+  overflow: visible;
+  text-overflow: clip;
+}
+/* The spare-width column (and the row buttons after it) aren't data columns: no lines around them. */
+table.fixed :is(th, td)[aria-hidden],
+table.fixed :is(th, td)[aria-hidden] + :is(th, td) {
+  border-left: none;
+}

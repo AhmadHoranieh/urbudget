@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to download Wells Fargo transactions (CSV or QFX)</title>
+  <meta name="description" content="Wells Fargo downloads 90 days of activity by default, up to 18 months for some accounts, as a comma-delimited file or Quicken (QFX). Which to pick and how.">
+  <link rel="canonical" href="https://urbudget.app/import/wells-fargo/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to download Wells Fargo transactions (CSV or QFX)">
+  <meta property="og:description" content="Where Download Account Activity is in Wells Fargo Online, how far back each account goes, and why the Quicken file suits a budget.">
+  <meta property="og:url" content="https://urbudget.app/import/wells-fargo/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to download Wells Fargo transactions (CSV or QFX)">
+  <meta name="twitter:description" content="Where Download Account Activity is in Wells Fargo Online, how far back each account goes, and why the Quicken file suits a budget.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "UrBudget",
+            "item": "https://urbudget.app/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Bank import guides",
+            "item": "https://urbudget.app/import/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Wells Fargo",
+            "item": "https://urbudget.app/import/wells-fargo/"
+          }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to download Wells Fargo transactions",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-17",
+        "author": {
+          "@id": "https://urbudget.app/#org"
+        },
+        "publisher": {
+          "@id": "https://urbudget.app/#org"
+        },
+        "mainEntityOfPage": "https://urbudget.app/import/wells-fargo/"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to download Wells Fargo transactions</h1>
+        <p class="lead">Wells Fargo Online downloads your account activity as a comma-delimited spreadsheet file or as a Quicken Web Connect (QFX) file, 90 days at a time unless you ask for more. For a budget, take the Quicken file. Here's where the download is, how far back it reaches, and how to import it into UrBudget.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>What Wells Fargo offers</h2>
+        <ul>
+          <li><strong>Two formats.</strong> <i>Comma Delimited (ASCII, Spreadsheet)</i> for spreadsheet programs, and Quicken Web Connect for Quicken.</li>
+          <li><strong>90 days by default.</strong> A download covers the last 90 days unless you choose another time frame. For some account types, up to 18 months is available.</li>
+          <li><strong>How much history is online.</strong> Checking, savings and money market accounts keep up to 18 months. Lines of credit and installment loans keep up to 24 months. Credit cards keep up to 90 days or 300 transactions.</li>
+          <li><strong>One account per file.</strong> Wells Fargo's steps have you repeat the download for each account and give each file its own name.</li>
+        </ul>
+
+        <h2>Download your activity from Wells Fargo Online</h2>
+        <p>Wells Fargo's help describes the download in Wells Fargo Online, so use a browser on a computer.</p>
+        <ol class="steps">
+          <li><b>Sign on to Wells Fargo Online and choose an account.</b> Each download covers one account.</li>
+          <li><b>Open Download Account Activity.</b> Wells Fargo puts it under the <i>Accounts</i> tab.</li>
+          <li><b>Check the From and To dates.</b> Start from the day of your last download. Choose a longer time frame if you need more than 90 days.</li>
+          <li><b>Choose Quicken Web Connect.</b> Pick <i>Comma Delimited (ASCII, Spreadsheet)</i> only if you want the spreadsheet; the next section explains why.</li>
+          <li><b>Select Download and save the file.</b> Note which folder it goes to. Then do the same for your other accounts, naming each file after its account.</li>
+        </ol>
+
+        <h2>Quicken Web Connect or comma-delimited?</h2>
+        <p>Take Quicken Web Connect. It saves a .qfx file, which is OFX underneath, and that suits a budget for two reasons:</p>
+        <ul>
+          <li>Amounts carry the standard signs, money out negative and money in positive, so a card purchase and a debit card purchase both arrive as spending.</li>
+          <li>Each transaction has Wells Fargo's own ID. When this week's file overlaps last week's, UrBudget knows which rows it already has.</li>
+        </ul>
+        <p>The comma-delimited file is made for spreadsheets. UrBudget reads a CSV only when its first line holds column names: a date, a description, and Amount (or Debit and Credit). If the preview says the file is missing those headers, or purchases come in as money in, use the Quicken file instead.</p>
+
+        <h2>Import it into UrBudget</h2>
+        <ol class="steps">
+          <li><b>Select the account in UrBudget.</b> Open the account the file belongs to and choose <b>Import file</b> above its transactions. Each Wells Fargo file goes into its own account.</li>
+          <li><b>Choose the file.</b> Pick the .qfx, or drag it onto the box. UrBudget sets the format from the file name.</li>
+          <li><b>Preview.</b> Choose <i>Preview transactions</i>. There's no date order to set for a QFX file; for a CSV, set <i>Dates in the file</i> to Month/day/year first.</li>
+          <li><b>Check duplicates and matches.</b> Rows already in your budget from an earlier file are skipped. Rows that look like transactions you entered (same amount, dated within 10 days) are offered as matches, which keeps your category and memo.</li>
+          <li><b>Import.</b> Choose the import button. The rows appear in the register, waiting for your approval.</li>
+        </ol>
+
+        <h2>If something looks wrong</h2>
+        <ul>
+          <li><strong>You downloaded a statement.</strong> Monthly statements are PDFs, made for your records, and no budgeting app can import them. For a budget you need the transaction file from Download Account Activity, in the Quicken or comma-delimited format.</li>
+          <li><strong>Your credit card file only covers a few weeks.</strong> Wells Fargo keeps card activity online for up to 90 days or 300 transactions. Download your card at least once a month and nothing falls off the end.</li>
+          <li><strong>Only 90 days came down.</strong> That's the default. Choose a longer time frame before you download; some accounts go back 18 months.</li>
+          <li><strong>A pending amount changed.</strong> Wells Fargo notes that a pending amount can differ from the final one. UrBudget offers a match only for the same amount, so if you typed the pending amount, the posted row arrives as new. Skip it and correct your own entry, or add it and delete yours.</li>
+          <li><strong>You can't tell the files apart.</strong> Wells Fargo suggests a different file name for each account. Rename them before importing so your checking file doesn't end up in your card.</li>
+          <li><strong>Purchases show up as money coming in.</strong> You imported the comma-delimited file. Cancel and import the Quicken Web Connect file.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Budget from your Wells Fargo file</h2>
+          <p>Free on Windows and macOS. No account to create and no bank login to hand over.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=import-wells-fargo" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/import/">All bank guides</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related guides">
+          <li><a href="/import/">All bank import guides</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+          <li><a href="/import/bank-of-america/">Download Bank of America transactions</a></li>
+          <li><a href="/import/chase/">Download Chase transactions</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

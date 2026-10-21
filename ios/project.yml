@@ -1,0 +1,119 @@
+# XcodeGen spec for the native iOS app. Run `xcodegen` in this folder after adding or removing
+# files; the generated UrBudget.xcodeproj is committed so Xcode opens it directly.
+name: UrBudget
+options:
+  bundleIdPrefix: app.urbudget
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  developmentLanguage: en
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0.7"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: MXMPFG4LU5
+    CODE_SIGN_STYLE: Automatic
+    # The Rust build phase writes into crates/target, outside Xcode's sandboxed script inputs.
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+targets:
+  UrBudget:
+    type: application
+    platform: iOS
+    sources:
+      - path: UrBudget
+        excludes:
+          - "Bridge/*.h"
+      - path: UrBudget/Bridge
+        buildPhase: none
+    info:
+      path: UrBudget/Info.plist
+      properties:
+        CFBundleDisplayName: UrBudget
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        # Bank statements, YNAB exports and JSON backups open in UrBudget from Files, Mail and AirDrop
+        # (as a copy). It's never the default app for these types.
+        LSSupportsOpeningDocumentsInPlace: false
+        # Long-pressing the app icon offers a new transaction.
+        UIApplicationShortcutItems:
+          - UIApplicationShortcutItemType: app.urbudget.newTransaction
+            UIApplicationShortcutItemTitle: New transaction
+            UIApplicationShortcutItemIconSymbolName: plus.circle
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Bank statement
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.comma-separated-values-text, app.urbudget.ofx, app.urbudget.qfx, app.urbudget.qif]
+          - CFBundleTypeName: Budget backup or YNAB export
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.json, public.zip-archive, public.tab-separated-values-text]
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: app.urbudget.ofx
+            UTTypeDescription: OFX bank statement
+            UTTypeConformsTo: [public.data]
+            UTTypeTagSpecification: { public.filename-extension: [ofx], public.mime-type: [application/x-ofx] }
+          - UTTypeIdentifier: app.urbudget.qfx
+            UTTypeDescription: Quicken bank statement
+            UTTypeConformsTo: [public.data]
+            UTTypeTagSpecification: { public.filename-extension: [qfx] }
+          - UTTypeIdentifier: app.urbudget.qif
+            UTTypeDescription: QIF bank statement
+            UTTypeConformsTo: [public.data, public.text]
+            UTTypeTagSpecification: { public.filename-extension: [qif] }
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_NAME: UrBudget
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SWIFT_OBJC_BRIDGING_HEADER: UrBudget/Bridge/UrBudget-Bridging-Header.h
+        LIBRARY_SEARCH_PATHS: $(BUILT_PRODUCTS_DIR)/rust
+        OTHER_LDFLAGS: -lurbudget_ios -liconv
+      configs:
+        # Debug installs beside a release build, so testing never touches real budgets.
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: app.urbudget.native
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: app.urbudget
+    dependencies:
+      - sdk: Security.framework
+      - sdk: CoreFoundation.framework
+    preBuildScripts:
+      - name: Build Rust engine
+        script: '"$SRCROOT/scripts/build-rust.sh"'
+        basedOnDependencyAnalysis: false
+  UrBudgetTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: UrBudgetTests
+    dependencies:
+      - target: UrBudget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.urbudget.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/UrBudget.app/UrBudget
+        BUNDLE_LOADER: $(TEST_HOST)
+schemes:
+  UrBudget:
+    build:
+      targets:
+        UrBudget: all
+    test:
+      targets:
+        - UrBudgetTests

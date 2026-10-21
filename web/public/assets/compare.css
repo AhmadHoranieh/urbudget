@@ -1,0 +1,263 @@
+/* Guides and comparisons: /ynab/, /vs/*, /getting-started/. Built on site.css's tokens. */
+
+/* The page heading is centred, so its buttons are too. */
+.page-head .cta-row {
+  justify-content: center;
+}
+
+/* ---------- Long-form text ---------- */
+
+.guide {
+  max-width: 72ch;
+  margin-inline: auto;
+}
+.guide h2 {
+  margin: var(--space-8) 0 var(--space-3);
+  font-size: var(--step-2);
+}
+.guide h2:first-child {
+  margin-top: 0;
+}
+.guide h3 {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: 1.1rem;
+}
+.guide p,
+.guide li {
+  color: var(--text-2);
+  line-height: var(--leading);
+}
+.guide strong,
+.guide b {
+  color: var(--text);
+}
+.guide ul {
+  padding-left: 1.3rem;
+}
+.guide li + li {
+  margin-top: var(--space-2);
+}
+.guide p + p,
+.guide p + ul,
+.guide ul + p,
+.guide ol + p,
+.guide p + ol {
+  margin-top: var(--space-3);
+}
+.guide .note {
+  margin-top: var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  border-left: 3px solid var(--brand);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--brand-softer, var(--bg-soft));
+}
+.guide .note p {
+  margin: 0;
+}
+
+/* ---------- Numbered steps ---------- */
+
+.steps {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+.steps > li {
+  position: relative;
+  min-height: 2rem;
+  margin: 0;
+  padding-left: 2.9rem;
+  counter-increment: step;
+}
+.steps > li + li {
+  margin-top: 0;
+}
+.steps > li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -0.1rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--on-brand);
+  font-weight: 700;
+  font-size: var(--step--1);
+}
+.steps > li > b:first-child {
+  display: block;
+  margin-bottom: var(--space-1);
+  color: var(--text);
+}
+
+/* ---------- Comparison table ---------- */
+
+.compare-wrap {
+  margin: var(--space-5) 0;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.compare {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+@media (max-width: 559.98px) {
+  .compare th,
+  .compare td {
+    padding: 0.6rem 0.55rem;
+    font-size: 0.8rem;
+  }
+}
+.compare th,
+.compare td {
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+  color: var(--text-2);
+}
+.compare tr:last-child th,
+.compare tr:last-child td {
+  border-bottom: none;
+}
+.compare thead th {
+  background: var(--bg-soft);
+  color: var(--text);
+  font-weight: 700;
+}
+.compare tbody th {
+  width: 26%;
+  color: var(--text);
+  font-weight: 600;
+}
+.compare .us {
+  background: color-mix(in srgb, var(--brand) 6%, transparent);
+}
+.compare thead .us {
+  color: var(--brand-text);
+}
+
+/* ---------- Who should pick which ---------- */
+
+.choose {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+}
+@media (min-width: 720px) {
+  .choose {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.choose > div {
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.choose > div.us {
+  border-color: var(--brand-line, var(--brand));
+}
+.choose h3 {
+  margin-top: 0;
+}
+.choose ul {
+  margin-top: var(--space-3);
+}
+
+/* ---------- The /vs/ hub: one card per comparison or guide ---------- */
+
+.hub {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-8);
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 640px) {
+  .hub {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.guide .hub {
+  padding-left: 0;
+}
+.guide .hub li + li {
+  margin-top: 0;
+}
+.hub a {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text-2);
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+.hub a:hover {
+  border-color: var(--brand);
+  text-decoration: none;
+}
+.hub b {
+  color: var(--text);
+  font-size: var(--step-1);
+}
+.hub b::after {
+  content: "\00a0→";
+  color: var(--brand-text);
+}
+
+/* Three products side by side: narrower cells, and the row labels give up some room. */
+.compare-3 tbody th {
+  width: 20%;
+}
+
+/* ---------- Closing call to action and sources ---------- */
+
+.guide-cta {
+  margin-top: var(--space-8);
+  padding: var(--space-6);
+  border-radius: var(--radius-xl);
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+.guide-cta h2 {
+  margin-top: 0;
+}
+.guide-cta .cta-row {
+  justify-content: center;
+  margin-top: var(--space-5);
+}
+.sources {
+  margin-top: var(--space-6);
+  color: var(--text-3);
+  font-size: var(--step--1);
+}
+.guide .sources {
+  color: var(--text-3);
+}
+.related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin-top: var(--space-4);
+  padding: 0;
+  list-style: none;
+}
+.guide .related li + li {
+  margin-top: 0;
+}

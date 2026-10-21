@@ -1,0 +1,341 @@
+/* Free tools: /tools/ and the pages under it. The payoff calculators (payoff.js) and the template
+   page's download buttons. Built on site.css's tokens and compare.css's guide styles. */
+
+/* ---------- Calculator panel ---------- */
+
+.calc {
+  --calc-pad: clamp(1.25rem, 1rem + 1.5vw, 2rem);
+  margin: 0 0 var(--space-8);
+  padding: var(--calc-pad);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.calc-fields {
+  display: grid;
+  gap: var(--space-4);
+}
+@media (min-width: 560px) {
+  .calc-fields {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+/* In the grid, the gap spaces the fields (site.css adds a top margin between stacked ones). */
+.calc .field + .field {
+  margin-top: 0;
+}
+.calc .field {
+  align-content: start;
+}
+.calc .field .hint {
+  margin: 0;
+  line-height: 1.45;
+}
+.calc .input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+/* "Or pick a payoff month": a second way to use the same form. */
+.calc-target {
+  margin: var(--space-5) 0 0;
+  padding: var(--space-5) 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  min-width: 0;
+}
+.calc-target legend {
+  float: left;
+  width: 100%;
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-weight: 650;
+}
+.calc-target legend + * {
+  clear: both;
+}
+.calc-target > .hint {
+  margin: 0 0 var(--space-3);
+  color: var(--text-3);
+  font-size: var(--step--1);
+}
+/* The card's minimum payment terms, set off like the payoff-month finder. */
+.calc-minimum {
+  margin: var(--space-5) 0 0;
+  padding: var(--space-5) 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  min-width: 0;
+}
+.calc-minimum legend {
+  float: left;
+  width: 100%;
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-weight: 650;
+}
+.calc-minimum legend + * {
+  clear: both;
+}
+.calc-minimum > .hint {
+  margin: 0 0 var(--space-3);
+  color: var(--text-3);
+  font-size: var(--step--1);
+}
+.calc-check {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  margin-top: var(--space-3);
+  cursor: pointer;
+}
+.calc-check input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+  accent-color: var(--brand);
+}
+.calc-target-row {
+  display: grid;
+  gap: var(--space-3);
+  align-items: end;
+}
+@media (min-width: 560px) {
+  .calc-target-row {
+    grid-template-columns: 1fr auto;
+  }
+}
+
+/* ---------- Results ---------- */
+
+.calc-results {
+  margin-top: var(--space-6);
+}
+.calc-cards {
+  display: grid;
+  gap: var(--space-4);
+}
+@media (min-width: 640px) {
+  .calc-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+  .calc-cards.is-single {
+    grid-template-columns: 1fr;
+  }
+}
+.calc-card {
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+}
+.calc-card.is-extra {
+  border-color: var(--brand-line);
+  background: var(--brand-softer);
+}
+.guide .calc-card h3 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--step-0);
+  font-weight: 650;
+}
+/* One row per figure: the label on the left, the number on the right. */
+.calc-stats {
+  margin: 0;
+}
+.calc-stats > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border);
+}
+.calc-stats > div:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.calc-stats > div:last-child {
+  padding-bottom: 0;
+}
+.calc-stats dt {
+  color: var(--text-2);
+  font-size: var(--step--1);
+}
+.calc-stats dd {
+  margin: 0 0 0 auto;
+  color: var(--text);
+  font-size: var(--step-0);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.calc-stats dd span {
+  display: block;
+  color: var(--text-3);
+  font-size: var(--step--1);
+  font-weight: 400;
+}
+.calc-card.is-extra .calc-stats > div {
+  border-color: var(--brand-line);
+}
+
+.guide .calc-saving,
+.guide .calc-note,
+.guide .calc-problem {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  line-height: 1.5;
+}
+.guide .calc-saving,
+.guide .calc-note {
+  border-left: 3px solid var(--brand);
+  background: var(--brand-softer);
+  color: var(--text);
+}
+.guide .calc-note {
+  margin: 0 0 var(--space-4);
+}
+.guide .calc-problem {
+  margin: 0;
+  border: 1px solid var(--danger-line);
+  background: var(--danger-bg);
+  color: var(--text);
+}
+.guide .calc-card .calc-problem {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--danger);
+}
+
+/* ---------- Payment schedule ---------- */
+
+.calc-schedule {
+  margin-top: var(--space-5);
+}
+.calc-schedule summary {
+  color: var(--brand-text);
+  font-weight: 620;
+  cursor: pointer;
+}
+.calc-table-wrap {
+  max-height: 30rem;
+  margin-top: var(--space-3);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.calc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+.calc-table th,
+.calc-table td {
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+  color: var(--text-2);
+}
+.calc-table th:first-child {
+  text-align: left;
+}
+.calc-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--bg-soft);
+  color: var(--text);
+  font-weight: 650;
+}
+.calc-table tbody th {
+  font-weight: 400;
+}
+.calc-table tfoot th,
+.calc-table tfoot td {
+  border-bottom: 0;
+  color: var(--text);
+  font-weight: 650;
+}
+/* On a phone the table runs to the panel's edges, so five columns fit without scrolling. */
+@media (max-width: 559.98px) {
+  .calc-table-wrap {
+    margin-inline: calc(-1 * var(--calc-pad));
+    border-inline: 0;
+    border-radius: 0;
+  }
+  .calc-table th,
+  .calc-table td {
+    padding: 0.4rem 0.3rem;
+    font-size: 0.78rem;
+  }
+  .calc-table th:first-child {
+    padding-left: 0.75rem;
+  }
+  .calc-table td:last-child {
+    padding-right: 0.75rem;
+  }
+}
+
+/* ---------- Worked examples and downloads in the text ---------- */
+
+.guide .calc-figures td,
+.guide .calc-figures th {
+  font-variant-numeric: tabular-nums;
+}
+.guide .calc-figures tbody th {
+  width: auto;
+}
+.guide .compare-wrap + p,
+.guide .downloads + p {
+  margin-top: var(--space-4);
+}
+.guide .downloads {
+  justify-content: flex-start;
+  margin-top: var(--space-4);
+}
+.guide .downloads .btn span {
+  color: inherit;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* Paying only the minimum: shown first, for comparison. */
+.calc-card.is-minimum {
+  border-style: dashed;
+}
+.calc-card h3 span {
+  color: var(--text-3);
+  font-size: var(--step--1);
+  font-weight: 500;
+}
+
+/* Download or print the schedule. */
+.calc-schedule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0;
+}
+
+@media print {
+  .site-header,
+  .site-footer,
+  .skip-link,
+  .calc-form,
+  .calc-schedule-actions,
+  .guide-cta,
+  .related {
+    display: none !important;
+  }
+  .calc-table-wrap {
+    overflow: visible;
+    max-height: none;
+  }
+}

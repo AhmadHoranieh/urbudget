@@ -1,0 +1,82 @@
+/* Reports the assistant writes: a preview window, and the page the print dialog sees. */
+.report-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 18, 21, 0.55);
+}
+.report-window {
+  display: flex;
+  flex-direction: column;
+  width: min(900px, 100%);
+  height: min(100%, 1040px);
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  background: var(--bg);
+  box-shadow: var(--shadow-lg);
+}
+.report-toolbar {
+  display: flex;
+  flex: none;
+  gap: 10px;
+  align-items: center;
+  height: 52px;
+  padding: 0 10px 0 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.report-toolbar strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.report-toolbar-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+.report-toolbar .primary {
+  margin-left: auto;
+}
+.report-scroll {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 0;
+  padding: 28px 24px 40px;
+  overflow: auto;
+}
+.report-paper {
+  width: min(210mm, 100%);
+  min-height: 297mm;
+  padding: 18mm 16mm;
+  border-radius: 3px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.14), 0 10px 30px rgba(0, 0, 0, 0.16);
+}
+.report-error {
+  color: var(--negative);
+}
+
+/* Printing from the app's own page, where a separate frame isn't used: only the report shows. */
+.report-print-root {
+  display: none;
+}
+@media print {
+  html:has(body.printing-report),
+  body.printing-report {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  body.printing-report > :not(.report-print-root) {
+    display: none !important;
+  }
+  body.printing-report > .report-print-root {
+    display: block;
+  }
+}

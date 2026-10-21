@@ -1,0 +1,68 @@
+# UrBudget
+
+> UrBudget is an envelope (zero-based) budgeting app for Windows 10 and 11 and macOS 12 or later. The budget is a file on the user's own computer: it works offline, needs no account, and needs no bank connection. Version 1.0.4 adds optional SimpleFIN bank sync for supported US and Canadian institutions, with a subscription paid separately to SimpleFIN. Users press Sync and review transactions before saving; it is not continuous background bank sync. It's free, with every feature, on all of a person's own computers, with future updates, and it's open source under the AGPL-3.0. Optional end-to-end encrypted sync between computers is $3 a month; that's the only paid part. It imports a YNAB budget in one click with a YNAB personal access token, including targets, notes and scheduled transactions, and checks every month against YNAB's totals.
+
+UrBudget isn't affiliated with YNAB or any other product named here. It has no publicly available phone or web version and no shared budgets for several people. CSV, OFX, QFX and QIF file import works without a bank connection. It cannot open original YNAB 4 budget files, but can import per-account register CSV transactions without categories or historical budgets. Its interface is in English; any currency works.
+
+## Product
+
+- [Home](https://urbudget.app/): features, privacy, pricing and FAQ
+- [Pricing](https://urbudget.app/pricing/): the app is free, with nothing locked; optional $3 a month device sync; SimpleFIN and AI provider charges are separate
+- [Download](https://urbudget.app/download/): the Microsoft Store for Windows (or the Windows installer), and the macOS installer
+- [Source code](https://github.com/AhmadHoranieh/urbudget): UrBudget's code on GitHub, under the AGPL-3.0
+
+- [SimpleFIN bank sync](https://urbudget.app/bank-sync/): supported US and Canadian banks, separate provider cost, setup, review, privacy and troubleshooting
+
+## Leaving YNAB
+
+- [Switch from YNAB](https://urbudget.app/ynab/): how the one-click YNAB import works, what comes over and what doesn't
+- [How much YNAB costs](https://urbudget.app/ynab/price/): YNAB's current prices, its price history, and a cost-over-time calculator
+- [How to export your YNAB data](https://urbudget.app/ynab/export/): YNAB's own export, what it includes, and the token import
+- [How to cancel YNAB without losing your budget](https://urbudget.app/ynab/cancel/): cancelling on the web, App Store or Google Play, and what happens to the budget afterwards
+- [YNAB 4 alternative](https://urbudget.app/ynab/ynab4/): options for people still on YNAB's old desktop app, and the honest limits of moving from it
+- [YNAB alternatives](https://urbudget.app/ynab-alternatives/): twelve budget apps compared on price, platforms, method, bank sync and where your data lives
+- [Mint alternatives](https://urbudget.app/mint-alternatives/): what happened to Intuit Mint, and eleven replacements (Credit Karma, Monarch, Simplifi, Copilot, Empower, Rocket Money, YNAB, EveryDollar, Goodbudget, PocketSmith, UrBudget) compared on price, bank sync and budgets
+
+## Comparisons
+
+- [All comparisons](https://urbudget.app/vs/)
+- [UrBudget vs YNAB](https://urbudget.app/vs/ynab/): price, platforms, data, bank connections and sharing compared
+- [UrBudget vs Actual Budget](https://urbudget.app/vs/actual-budget/): two free, open-source envelope budgets compared on sync, hosting, bank connections and YNAB import
+- [UrBudget vs Buckets](https://urbudget.app/vs/buckets/): two desktop envelope budgets, one $64 once and one free, compared on price, sync, bank imports and YNAB import
+- [UrBudget vs Principal Plan](https://urbudget.app/vs/principal-plan/): two offline envelope budgets for Windows and Mac, compared on price, trial, phone app and sync
+- [UrBudget vs Goodbudget](https://urbudget.app/vs/goodbudget/): a desktop Goodbudget alternative, compared on price, free-plan limits, bank sync and sharing
+- [UrBudget vs EveryDollar](https://urbudget.app/vs/everydollar/): Ramsey's zero-based app compared on price, file import, rollover and sharing
+- [UrBudget vs Monarch Money](https://urbudget.app/vs/monarch/): a bank-synced tracker compared with an envelope budget kept on your computer
+- [UrBudget vs Copilot Money](https://urbudget.app/vs/copilot/): an Apple-only tracker for US banks compared with an envelope budget for Windows and Mac
+- [UrBudget vs Moneydance](https://urbudget.app/vs/moneydance/): a Quicken-style finance manager compared with an envelope budget
+- [UrBudget vs Quicken](https://urbudget.app/vs/quicken/): Quicken Classic's yearly plans, what still works after you stop paying (the Data Access Guarantee), and a free envelope budget
+- [How much does Quicken cost?](https://urbudget.app/vs/quicken/price/): Quicken Classic Starter, Deluxe, Premier and Business & Personal, and Quicken Simplifi: first-year offers against renewal prices, how auto-renewal works, what Classic still does without a subscription (the Data Access Guarantee), and 1, 3 and 5-year totals against UrBudget, which is free. Prices checked October 17, 2026.
+- [UrBudget vs Microsoft Money](https://urbudget.app/vs/microsoft-money/): a Microsoft Money alternative for the budgeting part, with what UrBudget doesn't do and a fresh-start move from Money Plus Sunset
+
+## Budgeting guides
+
+- [Getting started](https://urbudget.app/getting-started/): envelope budgeting in five steps
+- [All guides](https://urbudget.app/guides/)
+- [Credit cards in an envelope budget](https://urbudget.app/guides/credit-cards/): how card purchases move money to the card's payment category, paying the card, and paying down old debt
+- [Budgeting irregular income](https://urbudget.app/guides/irregular-income/): a baseline budget, assigning each payment, living on last month's income, and self-employment tax
+- [Sinking funds](https://urbudget.app/guides/sinking-funds/): turning yearly and irregular bills into monthly amounts, with worked examples
+- [Overspending](https://urbudget.app/guides/overspending/): covering it from another category, cash versus credit card overspending, and stopping it repeating
+- [Zero-based budgeting](https://urbudget.app/guides/zero-based-budgeting/): a full example month, compared with 50/30/20 and tracking-only apps
+- [Budget by paycheck](https://urbudget.app/guides/budget-by-paycheck/): weekly or biweekly pay and monthly bills, an eight-week example, and the months with a third paycheck
+
+## Importing from your bank
+
+- [Budget without linking your bank](https://urbudget.app/import/): which file to download (QFX, OFX, CSV, QIF) and how to import it
+- [Chase](https://urbudget.app/import/chase/), [Bank of America](https://urbudget.app/import/bank-of-america/), [Wells Fargo](https://urbudget.app/import/wells-fargo/), [Citi](https://urbudget.app/import/citi/), [U.S. Bank](https://urbudget.app/import/us-bank/), [PNC](https://urbudget.app/import/pnc/), [American Express](https://urbudget.app/import/american-express/), [Ally Bank](https://urbudget.app/import/ally/) and [Apple Card](https://urbudget.app/import/apple-card/): where each one's download is, the formats it offers, and which to pick
+- [PayPal](https://urbudget.app/import/paypal/): downloading activity as CSV, renaming Net to Amount, and counting payments funded from a bank or card once
+- [Capital One](https://urbudget.app/import/capital-one/), [Truist](https://urbudget.app/import/truist/), [Discover](https://urbudget.app/import/discover/), [Schwab](https://urbudget.app/import/schwab/), [USAA](https://urbudget.app/import/usaa/), [Navy Federal](https://urbudget.app/import/navy-federal/): where to download each bank's transactions, which format to choose, and importing a statement through the assistant when there's no file
+
+## Free tools
+
+- [All tools](https://urbudget.app/tools/)
+- [Loan payoff calculator](https://urbudget.app/tools/loan-payoff-calculator/): payoff date, interest and the effect of extra payments, with the same math as UrBudget's loan planner
+- [Credit card payoff calculator](https://urbudget.app/tools/credit-card-payoff-calculator/): how long a card balance takes to pay off, paying only the minimum compared with a fixed payment, and what extra payments save
+- [Envelope budget template](https://urbudget.app/tools/envelope-budget-template/): a free spreadsheet for Excel, Google Sheets and Numbers
+- [Car loan payoff calculator](https://urbudget.app/tools/car-loan-payoff-calculator/): an auto loan's payoff month and interest, with an extra monthly payment and a one-time lump sum such as a tax refund
+- [Debt payoff calculator, snowball vs avalanche](https://urbudget.app/tools/debt-payoff-calculator/): several debts paid from one monthly amount, smallest balance first or highest APR first, with the debt-free month, the interest each costs, the payoff order and what both save over paying only the minimums
+- [OFX and QFX to CSV converter](https://urbudget.app/tools/ofx-to-csv/): converts a bank's OFX, QFX or QBO statement file to CSV in the browser, without uploading it

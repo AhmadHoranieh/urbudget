@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Account: UrBudget</title>
+  <meta name="description" content="Sign in to manage your UrBudget Sync subscription, or delete your account.">
+  <link rel="canonical" href="https://urbudget.app/account/">
+  <meta name="robots" content="noindex">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#111317" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="Your account: UrBudget">
+  <meta property="og:description" content="Sign in to manage your UrBudget Sync subscription, or delete your account.">
+  <meta property="og:url" content="https://urbudget.app/account/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Your account: UrBudget">
+  <meta name="twitter:description" content="Sign in to manage your UrBudget Sync subscription, or delete your account.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="module" src="/assets/account.js?v=2"></script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">Account</h1>
+        <p class="lead">Sign in to manage sync. The app itself doesn't need an account.</p>
+      </div>
+    </section>
+
+    <div class="container container-narrow page-body">
+      <noscript>
+        <style>#account-loading { display: none; }</style>
+        <p class="notice notice-warn">The account page needs JavaScript to sign you in. Please turn it on for urbudget.app, or write to support@urbudget.app for help with Sync.</p>
+      </noscript>
+      <div id="account-loading" class="panel loading-panel" role="status">
+        <span class="spinner" aria-hidden="true"></span> Checking whether you're signed in…
+      </div>
+
+      <div id="account-error" class="notice notice-error account-error" role="alert" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <div>
+          <p id="account-error-text">Can't reach UrBudget right now.</p>
+          <button id="account-retry" class="link-button" type="button">Try again</button>
+        </div>
+      </div>
+
+      <section id="signin" class="panel" aria-labelledby="signin-title" hidden>
+        <h2 id="signin-title">Sign in</h2>
+        <p>We'll email you a 6-digit code. There's no password, and a new email address gets an account automatically.</p>
+        <p id="subscribe-hint" class="notice notice-info signin-hint" hidden>Sign in first, and the Sync checkout opens right after.</p>
+
+        <form id="email-form" class="signin-form" novalidate>
+          <div class="field">
+            <label for="email">Email address</label>
+            <input id="email" name="email" class="input" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required>
+          </div>
+          <div class="form-row">
+            <button id="email-submit" class="btn btn-primary" type="submit">Email me a code</button>
+          </div>
+        </form>
+
+        <form id="code-form" class="signin-form" novalidate hidden>
+          <p class="code-sent">Enter the code we sent to <b id="code-email"></b>.</p>
+          <div class="field">
+            <label for="code">6-digit code</label>
+            <input id="code" name="code" class="input input-code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
+            <p id="dev-code-hint" class="hint" hidden>Local development: the code <code id="dev-code"></code> was filled in for you.</p>
+          </div>
+          <div class="form-row">
+            <button id="code-submit" class="btn btn-primary" type="submit">Sign in</button>
+            <button id="resend-code" class="link-button" type="button">Send a new code</button>
+            <button id="change-email" class="link-button" type="button">Use a different email</button>
+          </div>
+        </form>
+
+        <p id="signin-status" class="status" role="status" aria-live="polite"></p>
+      </section>
+
+      <div id="dashboard" hidden>
+        <section class="panel account-head" aria-labelledby="dashboard-title">
+          <div>
+            <h2 id="dashboard-title" tabindex="-1">Signed in</h2>
+            <p class="account-email"><b id="account-email"></b></p>
+            <p id="account-since" class="muted small"></p>
+          </div>
+          <button id="signout" class="btn" type="button">Sign out</button>
+          <p id="account-status" class="status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="panel" id="sync-card" aria-labelledby="sync-title">
+          <div class="panel-head">
+            <h2 id="sync-title">Sync</h2>
+            <span id="sync-badge" class="badge" hidden></span>
+          </div>
+          <p id="sync-summary"></p>
+          <p id="sync-usage" class="muted small" hidden></p>
+          <div id="sync-success" class="notice notice-success sync-success" tabindex="-1" role="status" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <p><b>Sync is on.</b> In UrBudget, open Settings → Account &amp; sync.</p>
+          </div>
+          <div class="form-row">
+            <button id="subscribe" class="btn btn-primary" type="button" hidden><span><span data-label>Subscribe</span> (<span data-price="sync">$3</span> a month)</span></button>
+            <button id="manage-sub" class="btn" type="button" hidden>Manage subscription</button>
+          </div>
+          <p id="sync-status" class="status" role="status" aria-live="polite"></p>
+          <p class="muted small panel-foot">Budgets are encrypted on your computers before they're uploaded, so we can't read them. Canceling doesn't affect the budgets on your computers.</p>
+        </section>
+
+        <details class="panel danger-zone" id="delete-zone">
+          <summary>Delete account</summary>
+          <p>This deletes your account and the encrypted copies of any budgets synced to it. The budgets on your computers aren't touched.</p>
+          <p>If you subscribe to Sync, cancel it first under Manage subscription so you aren't charged again.</p>
+          <form id="delete-form" class="delete-form" novalidate>
+            <div class="field">
+              <label for="delete-confirm">Type your email address to confirm</label>
+              <input id="delete-confirm" class="input" type="email" autocomplete="off" autocapitalize="off" spellcheck="false">
+            </div>
+            <div class="form-row">
+              <button id="delete-submit" class="btn btn-danger" type="submit" disabled>Delete my account</button>
+            </div>
+          </form>
+          <p id="delete-status" class="status" role="status" aria-live="polite"></p>
+        </details>
+      </div>
+
+      <p class="account-help muted small">Trouble signing in? Write to <a href="mailto:support@urbudget.app">support@urbudget.app</a>.</p>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

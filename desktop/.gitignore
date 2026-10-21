@@ -1,0 +1,17 @@
+node_modules/
+dist/
+src-tauri/target/
+# Rebuilt by every build.
+src-tauri/gen/schemas/
+# Signing keys never go into the repository.
+*.jks
+*.keystore
+*.db
+*.db-shm
+*.db-wal
+*.sqlite*
+.DS_Store
+*.tsbuildinfo
+.smoke-data/
+# Signing keys made by scripts/mac-signing.mjs
+.signing/

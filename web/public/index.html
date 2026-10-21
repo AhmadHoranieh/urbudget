@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UrBudget: zero-based budgeting app for Windows and Mac</title>
+  <meta name="description" content="Zero-based envelope budgeting for Windows and Mac, kept in a file on your own computer. Import your YNAB budget in one click. Free and open source.">
+  <link rel="canonical" href="https://urbudget.app/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="UrBudget: zero-based budgeting app for Windows and Mac">
+  <meta property="og:description" content="Zero-based envelope budgeting for Windows and Mac, kept on your own computer. Bring your YNAB budget over in one click. Free and open source.">
+  <meta property="og:url" content="https://urbudget.app/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="UrBudget: zero-based budgeting app for Windows and Mac">
+  <meta name="twitter:description" content="Zero-based envelope budgeting for Windows and Mac, kept on your own computer. Bring your YNAB budget over in one click. Free and open source.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <!-- For search engines: what UrBudget is, where it runs and what it costs. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://urbudget.app/#org",
+        "name": "UrBudget",
+        "url": "https://urbudget.app/",
+        "logo": "https://urbudget.app/img/icon-512.png",
+        "email": "support@urbudget.app",
+        "description": "Makes UrBudget, a zero-based envelope budgeting app for Windows and macOS."
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://urbudget.app/#site",
+        "name": "UrBudget",
+        "alternateName": "urbudget.app",
+        "url": "https://urbudget.app/",
+        "publisher": { "@id": "https://urbudget.app/#org" }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://urbudget.app/#app",
+        "name": "UrBudget",
+        "url": "https://urbudget.app/",
+        "description": "Zero-based envelope budgeting for Windows and Mac that keeps your budget on your own computer, with no bank connection required. Imports a YNAB budget, including targets, notes and scheduled transactions, and checks every month against YNAB's totals.",
+        "applicationCategory": "FinanceApplication",
+        "applicationSubCategory": "Zero-based envelope budgeting",
+        "operatingSystem": "Windows 10, Windows 11, macOS 12 or later",
+        "downloadUrl": "https://urbudget.app/download/",
+        "installUrl": "https://apps.microsoft.com/detail/9PMQMBZJG06R",
+        "sameAs": ["https://apps.microsoft.com/detail/9PMQMBZJG06R"],
+        "image": "https://urbudget.app/img/og.png?v=5d5426e5",
+        "screenshot": "https://urbudget.app/img/budget-light-1280.webp",
+        "publisher": { "@id": "https://urbudget.app/#org" },
+        "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+        "offers": {
+          "@type": "Offer",
+          "name": "UrBudget",
+          "price": "0",
+          "priceCurrency": "USD",
+          "url": "https://urbudget.app/download/"
+        }
+      }
+    ]
+  }
+  </script>
+  <link rel="preload" href="/fonts/fraunces.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/home.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="module" src="/assets/ref.js"></script>
+  <script type="module" src="/assets/home.js"></script>
+</head>
+<body class="home">
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero: the promise, and a budget you can fill yourself. -->
+    <section class="hero2" aria-labelledby="hero-title">
+      <div class="container hero2-grid">
+        <div class="hero2-copy">
+          <h1 id="hero-title">Your budget, on your&nbsp;computer.</h1>
+          <p class="lead">UrBudget is a zero-based envelope budgeting app for Windows and macOS. You give every dollar you have a category, and the budget stays in a file on your own computer instead of on someone else's server.</p>
+          <div class="cta-row hero2-cta">
+            <a class="btn btn-primary btn-lg" href="/download/" data-download-label>Download</a>
+            <a class="btn btn-lg btn-quiet" href="#pricing">See pricing</a>
+          </div>
+          <p class="hero2-price"><span class="price-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17M9 15l2 2 4-4"/></svg></span><span>Free, with nothing locked. Sync is optional, at <b data-price="sync">$3</b> a month.</span></p>
+          <p class="hero2-switch">Coming from YNAB? <a href="#ynab">Bring your budget over in one click</a></p>
+        </div>
+
+        <div class="demo" data-demo role="group" aria-labelledby="demo-title" aria-describedby="demo-hint">
+          <div class="live-bar">
+            <svg class="live-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 9.5l10 4-4.3 1.4-1.6 4.2z"/><path d="M8.6 3.2l.7 2.9M3.3 8.5l2.9.7M13.8 4.4l-1.9 2.2M4.5 13.6l2.2-1.8"/></svg>
+            <p class="live-do" id="demo-hint" data-demo-hint aria-live="polite">Click an envelope to fill it</p>
+            <span class="live-note">Sample budget</span>
+          </div>
+          <div class="demo-head">
+            <div>
+              <p class="demo-month" id="demo-title">October budget</p>
+              <p class="demo-label" data-demo-label>Ready to assign</p>
+            </div>
+            <output class="demo-pool" data-demo-pool aria-live="off">$3,200.00</output>
+          </div>
+          <ul class="demo-list">
+            <li><button class="env" type="button" data-amount="1450" style="--c: #7c5cff"><span class="env-swatch" aria-hidden="true"></span><span class="env-name">Rent</span><span class="env-sub">Due on the 1st</span><span class="env-chip" data-env-chip>+$1,450</span><span class="env-bar" aria-hidden="true"><i></i></span></button></li>
+            <li><button class="env" type="button" data-amount="520" style="--c: #1f9d6b"><span class="env-swatch" aria-hidden="true"></span><span class="env-name">Groceries</span><span class="env-sub">About $130 a week</span><span class="env-chip" data-env-chip>+$520</span><span class="env-bar" aria-hidden="true"><i></i></span></button></li>
+            <li><button class="env" type="button" data-amount="230" style="--c: #2f7fe0"><span class="env-swatch" aria-hidden="true"></span><span class="env-name">Utilities</span><span class="env-sub">Power, water, internet</span><span class="env-chip" data-env-chip>+$230</span><span class="env-bar" aria-hidden="true"><i></i></span></button></li>
+            <li><button class="env" type="button" data-amount="95" style="--c: #ef8a2e"><span class="env-swatch" aria-hidden="true"></span><span class="env-name">Car insurance</span><span class="env-sub">Toward $570 due in March</span><span class="env-chip" data-env-chip>+$95</span><span class="env-bar" aria-hidden="true"><i></i></span></button></li>
+            <li><button class="env" type="button" data-amount="180" style="--c: #e5566a"><span class="env-swatch" aria-hidden="true"></span><span class="env-name">Dining out</span><span class="env-sub">Fun money</span><span class="env-chip" data-env-chip>+$180</span><span class="env-bar" aria-hidden="true"><i></i></span></button></li>
+            <li><button class="env" type="button" data-amount="725" style="--c: #d9a400"><span class="env-swatch" aria-hidden="true"></span><span class="env-name">Savings</span><span class="env-sub">Emergency fund</span><span class="env-chip" data-env-chip>+$725</span><span class="env-bar" aria-hidden="true"><i></i></span></button></li>
+          </ul>
+          <div class="demo-foot">
+            <button class="btn btn-sm" type="button" data-demo-quick>Quick assign</button>
+            <button class="btn btn-sm btn-ghost" type="button" data-demo-reset hidden>Start over</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- The real app, sitting on a purple band of quick facts. -->
+    <section class="showcase" aria-label="The UrBudget app">
+      <div class="container">
+        <figure class="window bezel">
+          <picture>
+            <source media="(prefers-color-scheme: dark)" type="image/webp" srcset="/img/budget-dark-800.webp 800w, /img/budget-dark-1280.webp 1280w, /img/budget-dark-2560.webp 2560w" sizes="(min-width: 1264px) 1186px, calc(100vw - 48px)">
+            <img src="/img/budget-light-1280.webp" srcset="/img/budget-light-800.webp 800w, /img/budget-light-1280.webp 1280w, /img/budget-light-2560.webp 2560w" sizes="(min-width: 1264px) 1186px, calc(100vw - 48px)" width="1280" height="800" decoding="async" alt="The UrBudget budget screen for October 2026. Nothing is left unassigned; envelopes grouped under Credit Card Payments, Bills and Everyday show assigned, activity and available amounts, with progress bars for their targets. On the right, this month's funding is complete, and Quick assign offers to repeat past months or clean up.">
+          </picture>
+        </figure>
+      </div>
+      <div class="band">
+        <div class="container">
+          <ul class="facts">
+            <li><b>Windows and macOS</b><span>Windows 10 and 11, macOS 12 or later</span></li>
+            <li><b>Works offline</b><span>No account or bank connection required</span></li>
+            <li><b>Yours to keep</b><span>Each budget is a file you can back up</span></li>
+            <li><b>Bank sync or files</b><span>Optional SimpleFIN, CSV, OFX, QFX and QIF</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tour: on wide screens the picture stays put while the text scrolls past it. -->
+    <section class="tour" id="features" aria-labelledby="tour-title">
+      <div class="container">
+        <h2 id="tour-title" class="visually-hidden">Features</h2>
+        <div class="tour-grid">
+          <div class="tour-steps">
+
+            <article class="tour-step" data-tour-step="budget" aria-labelledby="f-budget">
+              <h2 id="f-budget">Budget</h2>
+              <p>Start with what's in your accounts and give all of it a category: rent, groceries, the car insurance that's due in March. Spending comes out of its category. If you overspend somewhere, move money over from another one, and whatever is left carries into next month.</p>
+              <ul class="ticks">
+                <li>Targets for weekly, monthly and yearly bills, or for an amount by a date.</li>
+                <li>Credit card spending moves money into the card's payment category, so the bill is covered when it comes.</li>
+                <li>Quick assign fills underfunded categories or repeats last month, and shows the changes before applying them.</li>
+              </ul>
+              <figure class="tour-inline shot-card">
+                <div class="bezel">
+                  <picture>
+                    <source media="(prefers-color-scheme: dark)" type="image/webp" srcset="/img/budget-table-dark-720.webp 720w, /img/budget-table-dark-1440.webp 1440w" sizes="150vw">
+                    <img src="/img/budget-table-light-720.webp" srcset="/img/budget-table-light-720.webp 720w, /img/budget-table-light-1440.webp 1440w" sizes="150vw" width="720" height="756" loading="lazy" decoding="async" alt="Envelopes in UrBudget for October 2026, with $0.00 left to assign: Credit Card Payments and Bills categories with assigned, activity and available columns. A full progress bar under each bill shows its target is funded or fully spent.">
+                  </picture>
+                </div>
+              </figure>
+            </article>
+
+            <article class="tour-step" data-tour-step="register" aria-labelledby="f-register">
+              <h2 id="f-register">Transactions</h2>
+              <p>Click a row in the register and type. Payees remember their last category, and amount fields do arithmetic, so 42.10+8 works.</p>
+              <ul class="ticks">
+                <li>Transfers and split transactions are edited in the row.</li>
+                <li>Search with filters such as <code>payee:</code>, <code>amount:&gt;100</code> or <code>is:cleared</code>.</li>
+                <li>Select many rows to categorize, approve or clear them together.</li>
+              </ul>
+              <figure class="tour-inline shot-card">
+                <div class="bezel">
+                  <picture>
+                    <source media="(prefers-color-scheme: dark)" type="image/webp" srcset="/img/register-dark-720.webp 720w, /img/register-dark-1440.webp 1440w" sizes="150vw">
+                    <img src="/img/register-light-720.webp" srcset="/img/register-light-720.webp 720w, /img/register-light-1440.webp 1440w" sizes="150vw" width="720" height="713" loading="lazy" decoding="async" alt="The All transactions register, with net worth above the toolbar. A search box accepts payee:, category:, amount: and is: filters above rows of transactions with date, payee, account, category and memo. Upcoming scheduled transactions sit at the top.">
+                  </picture>
+                </div>
+              </figure>
+            </article>
+
+            <article class="tour-step" data-tour-step="plans" aria-labelledby="f-plans">
+              <h2 id="f-plans">Scheduled transactions and loans</h2>
+              <p>Enter your paycheck, rent and subscriptions once. UrBudget adds them when they're due and leaves them unapproved until you've looked at them, and upcoming bills count toward what their category needs.</p>
+              <p>The loan planner shows the amortization schedule, what an extra payment saves, and the payment it takes to finish by a given date.</p>
+              <figure class="tour-inline shot-card">
+                <div class="bezel">
+                  <picture>
+                    <source media="(prefers-color-scheme: dark)" type="image/webp" srcset="/img/loans-dark-720.webp 720w, /img/loans-dark-1440.webp 1440w" sizes="150vw">
+                    <img src="/img/loans-light-720.webp" srcset="/img/loans-light-720.webp 720w, /img/loans-light-1440.webp 1440w" sizes="150vw" width="720" height="630" loading="lazy" decoding="async" alt="The payoff planner for a car loan with $9,000.00 owed at 4.9% interest and $750 a month. With $150 extra each month it saves $39.17 in interest and two months, paid off in September 2027 instead of November, and a chart compares the two balances.">
+                  </picture>
+                </div>
+              </figure>
+            </article>
+
+          </div>
+
+          <div class="tour-stage" aria-hidden="true">
+            <div class="tour-frame is-active" data-tour-frame="budget">
+              <figure class="shot-card">
+                <div class="bezel">
+                  <picture>
+                    <source media="(prefers-color-scheme: dark)" type="image/webp" srcset="/img/budget-table-dark-720.webp 720w, /img/budget-table-dark-1440.webp 1440w" sizes="(min-width: 1264px) 700px, 56vw">
+                    <img src="/img/budget-table-light-720.webp" srcset="/img/budget-table-light-720.webp 720w, /img/budget-table-light-1440.webp 1440w" sizes="(min-width: 1264px) 700px, 56vw" width="720" height="756" loading="lazy" decoding="async" alt="">
+                  </picture>
+                </div>
+              </figure>
+            </div>
+            <div class="tour-frame" data-tour-frame="register">
+              <figure class="shot-card">
+                <div class="bezel">
+                  <picture>
+                    <source media="(prefers-color-scheme: dark)" type="image/webp" srcset="/img/register-dark-720.webp 720w, /img/register-dark-1440.webp 1440w" sizes="(min-width: 1264px) 700px, 56vw">
+                    <img src="/img/register-light-720.webp" srcset="/img/register-light-720.webp 720w, /img/register-light-1440.webp 1440w" sizes="(min-width: 1264px) 700px, 56vw" width="720" height="713" loading="lazy" decoding="async" alt="">
+                  </picture>
+                </div>
+              </figure>
+            </div>
+            <div class="tour-frame" data-tour-frame="plans">
+              <figure class="shot-card">
+                <div class="bezel">
+                  <picture>
+                    <source media="(prefers-color-scheme: dark)" type="image/webp" srcset="/img/loans-dark-720.webp 720w, /img/loans-dark-1440.webp 1440w" sizes="(min-width: 1264px) 700px, 56vw">
+                    <img src="/img/loans-light-720.webp" srcset="/img/loans-light-720.webp 720w, /img/loans-light-1440.webp 1440w" sizes="(min-width: 1264px) 700px, 56vw" width="720" height="630" loading="lazy" decoding="async" alt="">
+                  </picture>
+                </div>
+              </figure>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reports on an ink slab. -->
+    <section class="slab" aria-labelledby="f-reports">
+      <div class="container">
+        <div class="reports">
+          <div class="reports-head" data-rise>
+            <h2 id="f-reports">Twelve reports</h2>
+            <p>From spending by category to net worth and a forecast of your balances. Each one filters by date, account and category, and exports to CSV. Try five of them below, with a sample household's numbers.</p>
+          </div>
+          <div class="rw" data-reports>
+            <div class="live-bar">
+              <svg class="live-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 9.5l10 4-4.3 1.4-1.6 4.2z"/><path d="M8.6 3.2l.7 2.9M3.3 8.5l2.9.7M13.8 4.4l-1.9 2.2M4.5 13.6l2.2-1.8"/></svg>
+              <p class="live-do">Pick a report, then <span class="if-mouse">point at</span><span class="if-touch">tap</span> the chart</p>
+              <span class="live-note">Sample household</span>
+            </div>
+            <div class="rw-side" role="group" aria-label="Reports">
+              <p class="rw-group">Spending</p>
+              <button type="button" data-report="category" aria-current="true"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg><span>Spending by category</span></button>
+              <button type="button" data-report="payee" aria-current="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h16M5 10l1-5h12l1 5M6 10v9h12v-9M10 19v-5h4v5"/></svg><span>Spending by payee</span></button>
+              <p class="rw-group">Income</p>
+              <button type="button" data-report="income" aria-current="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v16M5 8l7-4 7 4M5 8l-2 6h4zM19 8l-2 6h4z"/></svg><span>Income vs. expense</span></button>
+              <p class="rw-group">Wealth</p>
+              <button type="button" data-report="networth" aria-current="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8M15 7h6v6"/></svg><span>Net worth</span></button>
+              <button type="button" data-report="forecast" aria-current="false"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-5 4 3 9-9"/><path d="M14 6h7v7" stroke-dasharray="2 3"/></svg><span>Forecast</span></button>
+              <p class="rw-more">And seven more in the app: spending over time, spending calendar, income breakdown, money in and out, balance sheet, balance over time and cash age.</p>
+            </div>
+            <div class="rw-main">
+              <div class="rw-top">
+                <div>
+                  <h3 data-rw-title>Spending by category</h3>
+                  <p data-rw-sub>Where your money went, by group.</p>
+                </div>
+                <div class="rw-range" role="group" aria-label="Date range">
+                  <button type="button" data-range="3" aria-pressed="false">3 months</button>
+                  <button type="button" data-range="6" aria-pressed="false">6 months</button>
+                  <button type="button" data-range="12" aria-pressed="true">12 months</button>
+                </div>
+              </div>
+              <div class="rw-kpis" data-rw-kpis></div>
+              <div class="rw-chart" data-rw-chart>
+                <!-- Without the script, the report as it looks in the app. -->
+                <picture>
+                  <source media="(prefers-color-scheme: dark)" type="image/webp" srcset="/img/report-reports-dark-1008.webp 1008w, /img/report-reports-dark-2016.webp 2016w" sizes="(min-width: 1144px) 820px, calc(100vw - 32px)">
+                  <img src="/img/report-reports-light-1008.webp" srcset="/img/report-reports-light-1008.webp 1008w, /img/report-reports-light-2016.webp 2016w" sizes="(min-width: 1144px) 820px, calc(100vw - 32px)" width="1008" height="568" loading="lazy" decoding="async" alt="The Spending by category report for the last 12 months: total spending, the monthly average and the biggest group, above a donut chart and ranked bars by group.">
+                </picture>
+              </div>
+              <p class="rw-legend" data-rw-legend></p>
+              <div class="rw-tip" data-rw-tip role="presentation" hidden></div>
+              <table class="visually-hidden" data-rw-table></table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- The assistant: sample conversations you can play, what it does, and where it stops. -->
+    <section class="ai" id="assistant" aria-labelledby="ai-title">
+      <div class="container">
+        <div class="ai-head" data-rise>
+          <p class="ai-kicker"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 2.5l2 5.6 5.5 1.9-5.5 1.9-2 5.6-2-5.6-5.5-1.9 5.5-1.9z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>Assistant, optional</p>
+          <h2 id="ai-title">An assistant that knows your budget.</h2>
+          <p class="lead">Ask how the month is going, have it cover overspending, or drop in a receipt or a statement.</p>
+        </div>
+
+        <div class="ai-stage" data-ai>
+          <div class="ai-window">
+            <div class="live-bar">
+              <svg class="live-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 9.5l10 4-4.3 1.4-1.6 4.2z"/><path d="M8.6 3.2l.7 2.9M3.3 8.5l2.9.7M13.8 4.4l-1.9 2.2M4.5 13.6l2.2-1.8"/></svg>
+              <p class="live-do">Pick a question to play it</p>
+              <span class="live-note">Sample conversation</span>
+            </div>
+            <div class="ai-log" data-ai-log role="log" aria-label="Sample conversation" tabindex="0">
+              <div class="ai-msg ai-me"><p>Cover the 2 overspent categories</p></div>
+              <div class="ai-msg ai-bot">
+                <p>Groceries is $64.20 over and Coffee $6.57. Dining out has $115.80 and no target, so this takes both from there and leaves it $45.03.</p>
+                <div class="ai-card">
+                  <div class="ai-card-head"><small>Proposal · Budget</small><b>Cover overspending in October</b></div>
+                  <div class="ai-row"><span class="ai-row-label"><i class="ai-sw" style="--c: #e5566a"></i>Dining out <span class="ai-arrow">→</span> <i class="ai-sw" style="--c: #1f9d6b"></i>Groceries</span><span class="num">$64.20</span></div>
+                  <div class="ai-row"><span class="ai-row-label"><i class="ai-sw" style="--c: #e5566a"></i>Dining out <span class="ai-arrow">→</span> <i class="ai-sw" style="--c: #8b5a2b"></i>Coffee</span><span class="num">$6.57</span></div>
+                  <div class="ai-row ai-total"><span>Moved</span><span class="num">$70.77</span></div>
+                  <div class="ai-actions"><span class="ai-btn ai-btn-primary">Apply</span><span class="ai-btn">Discard</span><span class="ai-hint">One undo step</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="ai-input" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.6 8.6a5 5 0 01-7.1-7.1l8.6-8.6a3.3 3.3 0 014.7 4.7l-8.6 8.6a1.7 1.7 0 01-2.4-2.4l7.9-7.9"/></svg>
+              <span class="ai-placeholder">Ask about your budget, or drop a file</span>
+              <span class="ai-send"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></span>
+            </div>
+          </div>
+
+          <div class="ai-try">
+            <p class="ai-try-label" id="ai-try-label">Try asking</p>
+            <ul class="ai-prompts" aria-labelledby="ai-try-label">
+              <li><button type="button" data-ai-play="month" aria-current="false"><b>How is October going?</b><span>A summary of the month so far</span></button></li>
+              <li><button type="button" data-ai-play="cover" aria-current="false"><b>Cover the 2 overspent categories</b><span>Proposes a budget change you apply</span></button></li>
+              <li><button type="button" data-ai-play="receipt" aria-current="false"><b>Add this receipt to the Visa</b><span>Reads photos and PDFs, and splits purchases</span></button></li>
+              <li><button type="button" data-ai-play="categorize" aria-current="false"><b>Categorize the 6 new transactions</b><span>Follows your history and adds payee rules</span></button></li>
+              <li><button type="button" data-ai-play="statement" aria-current="false"><b>Import this statement</b><span>Turns statements into an import you review</span></button></li>
+              <li><button type="button" data-ai-play="report" aria-current="false"><b>Make a PDF of how October went</b><span>Writes reports and Excel files</span></button></li>
+            </ul>
+          </div>
+        </div>
+
+        <ul class="ai-can">
+          <li data-rise>
+            <span class="ai-can-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></span>
+            <h3>Your real numbers</h3>
+            <p>Before it answers, it reads this month, your transactions, how you've categorized each payee, reports, the forecast and your loans. Its figures come from your budget.</p>
+          </li>
+          <li data-rise>
+            <span class="ai-can-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M8 12l3 3 5-6"/></svg></span>
+            <h3>You apply every change</h3>
+            <p>Moving money, auto-assign, categorizing, new transactions, renaming and merging payees: each is a card with Apply and Discard, and an applied card can be undone.</p>
+          </li>
+          <li data-rise>
+            <span class="ai-can-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5l-8.6 8.6a5 5 0 01-7.1-7.1l8.6-8.6a3.3 3.3 0 014.7 4.7l-8.6 8.6a1.7 1.7 0 01-2.4-2.4l7.9-7.9"/></svg></span>
+            <h3>Receipts and statements</h3>
+            <p>Receipts and statements as photos or PDFs, and CSV or Excel files. Statements go to the import review, with the totals checked and duplicates matched.</p>
+          </li>
+          <li data-rise>
+            <span class="ai-can-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg></span>
+            <h3>Reports and spreadsheets</h3>
+            <p>A month in review as a PDF, or transactions, budgets and spending as an Excel workbook, built from your budget so every row is exact.</p>
+          </li>
+        </ul>
+
+        <div class="ai-facts" data-rise>
+          <div>
+            <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3M16 7l3 3M14 9l2 2"/></svg>Your AI account</h3>
+            <p>Sign in with ChatGPT and your Plus or Pro plan covers it, or use your own OpenAI or Anthropic API key, kept in an encrypted vault protected by your operating system. UrBudget adds no AI fees.</p>
+          </div>
+          <div>
+            <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"/></svg>What it sends</h3>
+            <p>Your messages, the files you attach and the figures it looks up go to OpenAI or Anthropic, whichever you choose. From a spreadsheet, only the rows it reads. Conversations stay in your budget's folder.</p>
+          </div>
+          <div>
+            <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>What it won't do</h3>
+            <p>Delete anything, change settings or move real money, and it isn't a financial adviser. It uses generative AI, so check what it proposes; every reply has a Report link.</p>
+          </div>
+          <div>
+            <h3><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 01-12 0zM12 17v5"/></svg>Claude Desktop, too</h3>
+            <p>Claude Desktop and other apps that support MCP can read the open budget: months, transactions, reports and forecasts. They can't change anything.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- From YNAB: a token and one click, then every month checked against YNAB's own numbers. -->
+    <section class="section imp" id="ynab" aria-labelledby="ynab-title">
+      <div class="container imp-grid">
+        <div class="imp-copy" data-rise>
+          <h2 id="ynab-title">Bring your YNAB budget over.</h2>
+          <p>Paste a YNAB token, click <b>Import</b>, and your whole budget comes over: every account, category, transaction and month, with your targets, notes and scheduled transactions.</p>
+          <ul class="ticks">
+            <li><b>Checked to the cent.</b> UrBudget recalculates every month and compares it with YNAB's own numbers: account balances, each category's assigned, activity and available, and Ready to Assign. Any difference is listed.</li>
+            <li><b>Try it side by side.</b> Import again whenever you like and only what changed in YNAB comes down. What you changed in UrBudget is kept, and if both changed, you choose.</li>
+            <li><b>Read-only.</b> UrBudget never changes anything in YNAB. The token is used for the import, or saved in the encrypted vault if you choose Remember.</li>
+          </ul>
+          <p><a href="/ynab/">Read the switching guide</a> or <a href="/vs/ynab/">compare UrBudget and YNAB</a>.</p>
+          <p class="muted">To make a token, open YNAB's Account Settings, then Developer Settings, and choose New Token. No token? YNAB's export file works too, without targets, notes or scheduled transactions. UrBudget isn't affiliated with YNAB.</p>
+        </div>
+        <div class="mock mock-import" aria-hidden="true" data-rise>
+          <div class="import-file"><span class="import-name">Import from YNAB</span><span class="import-count">Checked against YNAB</span></div>
+          <ul class="import-rows">
+            <li><span class="d">✓</span><span class="p">Account balances</span><span class="a">48</span><span class="tag tag-match">Match</span></li>
+            <li><span class="d">✓</span><span class="p">Category months</span><span class="a">1,107</span><span class="tag tag-match">Match</span></li>
+            <li><span class="d">✓</span><span class="p">Ready to Assign, by month</span><span class="a">27</span><span class="tag tag-match">Match</span></li>
+            <li><span class="d">✓</span><span class="p">Transactions</span><span class="a">2,656</span><span class="tag tag-new">Imported</span></li>
+          </ul>
+          <div class="chips"><span>Targets</span><span>Notes</span><span>Schedules</span><span>Splits</span><span>Flags</span><span>Closed accounts</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bank files: a file before it's added, each row saying what will happen to it. -->
+    <section class="section imp imp-flip" aria-labelledby="f-import">
+      <div class="container imp-grid">
+        <div class="imp-copy" data-rise>
+          <h2 id="f-import">Connect your bank. Or import its files.</h2>
+          <p>Use optional <a href="/bank-sync/">SimpleFIN bank sync</a> for supported US and Canadian banks, with a separate subscription paid to SimpleFIN. Press Sync to fetch transactions and review them before saving.</p>
+          <p>Or download your transactions from your bank as a CSV, OFX, QFX or QIF file. You see each row before it's added, duplicates are skipped, and rows that match transactions you already entered are paired with them. A statement PDF, or a photo of one, can go through the assistant into the same review.</p>
+        </div>
+        <div class="mock mock-import" aria-hidden="true" data-rise>
+          <div class="import-file"><span class="import-name">checking-october.ofx</span><span class="import-count">50 rows</span></div>
+          <ul class="import-rows">
+            <li><span class="d">Oct 14</span><span class="p">Green Market</span><span class="a">−64.20</span><span class="tag tag-new">New</span></li>
+            <li><span class="d">Oct 13</span><span class="p">City Power</span><span class="a">−118.40</span><span class="tag tag-match">Matched</span></li>
+            <li><span class="d">Oct 12</span><span class="p">Payroll</span><span class="a in">+2,850.00</span><span class="tag tag-new">New</span></li>
+            <li class="is-skipped"><span class="d">Oct 12</span><span class="p">Green Market</span><span class="a">−64.20</span><span class="tag tag-skip">Duplicate</span></li>
+          </ul>
+          <div class="chips"><span>CSV</span><span>OFX</span><span>QFX</span><span>QIF</span><span>YNAB</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Privacy and sync: the same rows, readable here and sealed on the server. -->
+    <section class="vault" id="privacy" aria-labelledby="privacy-title">
+      <div class="container">
+        <div class="vault-head" data-rise>
+          <h2 id="privacy-title">Your budget lives on your computer.</h2>
+          <p class="lead">Each budget is a SQLite file in the app's data folder. UrBudget works offline, needs no account, and keeps automatic backups. Optional device sync uploads an encrypted copy of your budget. Bank sync fetches transactions through SimpleFIN, and the assistant sends the information you choose to your AI provider. See the <a href="/privacy/">privacy policy</a> for how each optional service handles data.</p>
+        </div>
+        <div class="vault-grid">
+          <figure class="ledger">
+            <figcaption>On your computer</figcaption>
+            <ul>
+              <li><span>Rent</span><span>$1,450.00</span></li>
+              <li><span>Groceries</span><span>$520.00</span></li>
+              <li><span>Car insurance</span><span>$95.00</span></li>
+              <li><span>Savings</span><span>$725.00</span></li>
+            </ul>
+          </figure>
+          <div class="vault-lock" aria-hidden="true">
+            <span class="vault-wire"></span>
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>
+            <span class="vault-lock-label">Sealed with your passphrase</span>
+          </div>
+          <figure class="ledger ledger-sealed" data-cipher>
+            <figcaption>On our server, with sync</figcaption>
+            <p class="visually-hidden">The same budget, encrypted: unreadable without your passphrase.</p>
+            <ul aria-hidden="true">
+              <li><span>x9Qe</span><span>k2Rv8+Wq0</span></li>
+              <li><span>Hb0tz7Fm/</span><span>Zp4Lw=yN</span></li>
+              <li><span>Tg3 Yd8sQx1c</span><span>3fVr0e</span></li>
+              <li><span>uM6aQ2b</span><span>Jn+7cKs</span></li>
+            </ul>
+          </figure>
+        </div>
+        <div class="vault-notes">
+          <p id="sync"><b>Device sync, if you want it.</b> For <span data-price="sync">$3</span> a month, sync keeps your budgets the same on all your computers. Each computer encrypts a budget with your passphrase before uploading it (Argon2id and XChaCha20-Poly1305), so the server only holds data it can't read. If you forget the passphrase, your budgets are still on your computers: reset sync and upload them again. <a href="/account/?subscribe=1">Turn on sync</a></p>
+          <p><b>No tracking on this website.</b> There are no ads, no third-party analytics and no tracking cookies. Page views are counted per day, without cookies or anything that identifies you; the <a href="/privacy/">privacy policy</a> has the details.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- What it costs over five years, next to a typical subscription. -->
+    <section class="section cost" aria-labelledby="cost-title">
+      <div class="container cost-grid">
+        <div class="cost-copy" data-rise>
+          <h2 id="cost-title">Pay nothing.</h2>
+          <p class="lead">YNAB is <a href="/ynab/price/">$109 a year</a> and Monarch Money $99.99, so a $100-a-year subscription comes to $500 over five years. UrBudget is free.</p>
+        </div>
+        <figure class="chart" aria-labelledby="chart-caption">
+          <div class="chart-head" aria-hidden="true">
+            <span>Over five years</span>
+            <b><span class="chart-them">$500</span> <small>vs</small> <span class="chart-us">$0</span></b>
+          </div>
+          <div class="chart-plot" aria-hidden="true">
+            <div class="chart-col"><span class="bar bar-sub" style="--v: 20%"><em>$100</em></span><span class="bar bar-ours" style="--v: 0%"></span><span class="chart-year">Year 1</span></div>
+            <div class="chart-col"><span class="bar bar-sub" style="--v: 40%"><em>$200</em></span><span class="bar bar-ours" style="--v: 0%"></span><span class="chart-year">2</span></div>
+            <div class="chart-col"><span class="bar bar-sub" style="--v: 60%"><em>$300</em></span><span class="bar bar-ours" style="--v: 0%"></span><span class="chart-year">3</span></div>
+            <div class="chart-col"><span class="bar bar-sub" style="--v: 80%"><em>$400</em></span><span class="bar bar-ours" style="--v: 0%"></span><span class="chart-year">4</span></div>
+            <div class="chart-col"><span class="bar bar-sub" style="--v: 100%"><em>$500</em></span><span class="bar bar-ours" style="--v: 0%"><em class="ours-label">$0</em></span><span class="chart-year">5</span></div>
+          </div>
+          <figcaption id="chart-caption"><span class="key key-sub"></span>A $100-a-year subscription <span class="key key-ours"></span>UrBudget</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section pricing-section" id="pricing" aria-labelledby="pricing-title">
+      <div class="container">
+        <h2 id="pricing-title" class="section-title center">Pricing</h2>
+        <div class="pricing" data-rise>
+          <article class="price-card is-featured" aria-labelledby="plan-app">
+            <h3 id="plan-app">App</h3>
+            <p class="price"><b>Free</b><span>with every feature</span></p>
+            <p>All of UrBudget, on all your own computers, with future updates. No account or card, and nothing locked.</p>
+            <a class="btn btn-primary btn-block" href="/download/">Download</a>
+          </article>
+          <article class="price-card" aria-labelledby="plan-sync">
+            <h3 id="plan-sync">Device sync</h3>
+            <p class="price"><b data-price="sync">$3</b><span>a month</span></p>
+            <p>Optional encrypted sync between your computers. Cancel any time; it runs until the end of the month you paid for.</p>
+            <a class="btn btn-block" href="/account/?subscribe=1">Turn on sync</a>
+          </article>
+        </div>
+        <p class="pricing-note">Polar runs checkout as our merchant of record and adds sales tax or VAT where it applies. Optional <a href="/bank-sync/#cost">SimpleFIN bank sync</a> and your chosen AI service have their own charges, separate from these plans.</p>
+      </div>
+    </section>
+
+    <section class="section faq-section" id="faq" aria-labelledby="faq-title">
+      <div class="container faq-grid">
+        <div class="faq-side" data-rise>
+          <h2 id="faq-title">Questions</h2>
+          <p class="muted">Something else? Write to <a href="mailto:support@urbudget.app">support@urbudget.app</a>.</p>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>Is UrBudget really free?</summary>
+            <div class="answer">
+              <p>Yes. Every feature is free, on all your own computers, with no time limit. The only paid part is optional device sync, at <span data-price="sync">$3</span> a month.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Is UrBudget open source?</summary>
+            <div class="answer">
+              <p>Yes, under the AGPL-3.0. The code is on <a href="https://github.com/AhmadHoranieh/urbudget">GitHub</a>.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Do I need sync to use two computers?</summary>
+            <div class="answer">
+              <p>No. You can export a budget on one computer and import it on the other. Sync does that for you, continuously.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Does it connect to my bank?</summary>
+            <div class="answer">
+              <p>Yes, optionally, through SimpleFIN for supported US and Canadian banks. SimpleFIN charges separately from UrBudget and device sync. Press Sync to fetch transactions, then review them before saving. You can also import bank files or enter transactions yourself. <a href="/bank-sync/">See availability, cost and setup</a>.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Which systems does it run on?</summary>
+            <div class="answer">
+              <p>Windows 10 and 11 (64-bit) and macOS 12 or later. There's no phone or web version.</p>
+            </div>
+          </details>
+          <details>
+            <summary>How do I get updates?</summary>
+            <div class="answer">
+              <p>The Microsoft Store version updates itself through the Store. The version from this site looks for updates when it opens and once a day. When there's one, an <b>Update</b> button appears at the top of the window, and <b>Install &amp; restart</b> saves your budget and opens the new version. Nothing is installed until you choose it.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Where is my data stored?</summary>
+            <div class="answer">
+              <p>Each budget is its own SQLite file in UrBudget's data folder on your computer, with its backups next to it. The <a href="/download/#data">download page</a> lists the folders for Windows, macOS and the Microsoft Store version.</p>
+            </div>
+          </details>
+          <details>
+            <summary>Can I get a refund?</summary>
+            <div class="answer">
+              <p>For sync, yes, within 14 days of starting it; the app itself is free. Email <a href="mailto:support@urbudget.app">support@urbudget.app</a>, or see the <a href="/refunds/">refund policy</a>.</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- Last call: a night-violet card with the app running off its edge. -->
+    <section class="finale" aria-labelledby="finale-title">
+      <div class="container">
+        <div class="finale-card">
+          <div class="finale-copy" data-rise>
+            <h2 id="finale-title">Start this month's budget.</h2>
+            <p>It's free. No account and no card.</p>
+            <div class="cta-row">
+              <a class="btn btn-light btn-lg" href="/download/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg><span data-download-label>Download</span></a>
+            </div>
+            <ul class="finale-facts">
+              <li>Windows and macOS</li>
+              <li>Free and open source</li>
+              <li>Works offline</li>
+            </ul>
+          </div>
+
+          <!-- The app itself, running past the card's edge. Always the dark screenshot: the card is
+               dark in both color schemes. -->
+          <figure class="finale-shot" aria-hidden="true">
+            <img src="/img/budget-dark-1280.webp" srcset="/img/budget-dark-800.webp 800w, /img/budget-dark-1280.webp 1280w, /img/budget-dark-2560.webp 2560w" sizes="(min-width: 860px) 820px, 100vw" width="1280" height="800" loading="lazy" decoding="async" alt="">
+          </figure>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

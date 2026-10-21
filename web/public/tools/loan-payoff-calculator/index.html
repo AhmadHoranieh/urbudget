@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loan payoff calculator with extra payments: UrBudget</title>
+  <meta name="description" content="Free loan payoff calculator: see your payoff month, total interest and what an extra monthly payment saves, or find the payment that clears it by a date.">
+  <link rel="canonical" href="https://urbudget.app/tools/loan-payoff-calculator/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="Loan payoff calculator with extra payments">
+  <meta property="og:description" content="See your payoff month and total interest, what an extra payment each month saves, or the payment that clears a loan by a month you pick.">
+  <meta property="og:url" content="https://urbudget.app/tools/loan-payoff-calculator/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Loan payoff calculator with extra payments">
+  <meta name="twitter:description" content="See your payoff month and total interest, what an extra payment each month saves, or the payment that clears a loan by a month you pick.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <link rel="stylesheet" href="/assets/tools.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="module" src="/assets/payoff.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Tools", "item": "https://urbudget.app/tools/" },
+          { "@type": "ListItem", "position": 3, "name": "Loan payoff calculator", "item": "https://urbudget.app/tools/loan-payoff-calculator/" }
+        ]
+      },
+      {
+        "@type": "WebApplication",
+        "name": "Loan payoff calculator",
+        "url": "https://urbudget.app/tools/loan-payoff-calculator/",
+        "description": "Works out a loan's payoff month, total interest and what an extra monthly payment saves, or the payment needed to pay it off by a chosen month.",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Any",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "publisher": { "@id": "https://urbudget.app/#org" }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">Loan payoff calculator</h1>
+        <p class="lead">See when your loan will be paid off and what it costs in interest, how much an extra payment each month saves, or what you'd need to pay to be done by a month you pick.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <div class="calc">
+          <form class="calc-form" id="payoff-form" aria-label="Loan payoff calculator" novalidate>
+            <div class="calc-fields">
+              <div class="field">
+                <label for="balance">Loan balance</label>
+                <input class="input" id="balance" type="text" inputmode="decimal" autocomplete="off" value="15,000" aria-describedby="balance-hint">
+                <p class="hint" id="balance-hint">What you owe now, from your latest statement.</p>
+              </div>
+              <div class="field">
+                <label for="rate">Interest rate (APR, %)</label>
+                <input class="input" id="rate" type="text" inputmode="decimal" autocomplete="off" value="7.5" aria-describedby="rate-hint">
+                <p class="hint" id="rate-hint">The yearly rate on your statement or loan agreement.</p>
+              </div>
+              <div class="field">
+                <label for="payment">Monthly payment</label>
+                <input class="input" id="payment" type="text" inputmode="decimal" autocomplete="off" value="350" aria-describedby="payment-hint">
+                <p class="hint" id="payment-hint">Principal and interest only: leave out escrow for taxes and insurance.</p>
+              </div>
+              <div class="field">
+                <label for="extra">Extra each month (optional)</label>
+                <input class="input" id="extra" type="text" inputmode="decimal" autocomplete="off" value="100" aria-describedby="extra-hint">
+                <p class="hint" id="extra-hint">Added to every payment, starting with the first.</p>
+              </div>
+              <div class="field">
+                <label for="start">First payment</label>
+                <input class="input" id="start" type="month" autocomplete="off" value="2026-11" placeholder="YYYY-MM" aria-describedby="start-hint">
+                <p class="hint" id="start-hint">The month of your next payment.</p>
+              </div>
+            </div>
+            <div class="form-row">
+              <button class="btn btn-primary" type="submit" disabled>Calculate</button>
+            </div>
+            <fieldset class="calc-target">
+              <legend>Or pick a payoff month</legend>
+              <p class="hint">Finds the smallest monthly payment that clears the balance by then, and puts it in Monthly payment.</p>
+              <div class="calc-target-row">
+                <div class="field">
+                  <label for="target">Pay it off by</label>
+                  <input class="input" id="target" type="month" autocomplete="off" value="2029-10" placeholder="YYYY-MM">
+                </div>
+                <button class="btn" type="button" data-find-payment disabled>Find the payment</button>
+              </div>
+            </fieldset>
+          </form>
+          <noscript><p class="calc-note">The calculator needs JavaScript. Here is what it shows for the numbers above.</p></noscript>
+          <h2 class="visually-hidden">Results</h2>
+          <div class="calc-results" id="payoff-results" aria-live="polite">
+<div class="calc-cards">
+<section class="calc-card">
+<h3>Paying $350 a month</h3>
+<dl class="calc-stats">
+  <div><dt>Months to payoff</dt><dd>51 <span>(4 years 3 months)</span></dd></div>
+  <div><dt>Payoff month</dt><dd>January 2031</dd></div>
+  <div><dt>Total interest</dt><dd>$2,514.22</dd></div>
+  <div><dt>Total paid</dt><dd>$17,514.22</dd></div>
+</dl>
+</section>
+<section class="calc-card is-extra">
+<h3>With $100 extra: $450 a month</h3>
+<dl class="calc-stats">
+  <div><dt>Months to payoff</dt><dd>38 <span>(3 years 2 months)</span></dd></div>
+  <div><dt>Payoff month</dt><dd>December 2029</dd></div>
+  <div><dt>Total interest</dt><dd>$1,873.12</dd></div>
+  <div><dt>Total paid</dt><dd>$16,873.12</dd></div>
+</dl>
+</section>
+</div>
+<p class="calc-saving">The extra $100 a month pays it off <b>1 year 1 month sooner</b> and saves <b>$641.10</b> in interest.</p>
+          </div>
+          <details class="calc-schedule" id="payoff-schedule">
+            <summary>Payment schedule with the extra payment (38 payments)</summary>
+            <div class="calc-table-wrap" role="region" aria-label="Payment schedule" tabindex="0" data-schedule>
+<table class="calc-table">
+<thead><tr><th scope="col">Month</th><th scope="col">Payment</th><th scope="col">Interest</th><th scope="col">Principal</th><th scope="col">Balance</th></tr></thead>
+<tbody>
+<tr><th scope="row">Nov 2026</th><td>$450.00</td><td>$93.75</td><td>$356.25</td><td>$14,643.75</td></tr>
+<tr><th scope="row">Dec 2026</th><td>$450.00</td><td>$91.52</td><td>$358.48</td><td>$14,285.27</td></tr>
+<tr><th scope="row">Jan 2027</th><td>$450.00</td><td>$89.28</td><td>$360.72</td><td>$13,924.55</td></tr>
+<tr><th scope="row">Feb 2027</th><td>$450.00</td><td>$87.03</td><td>$362.97</td><td>$13,561.58</td></tr>
+<tr><th scope="row">Mar 2027</th><td>$450.00</td><td>$84.76</td><td>$365.24</td><td>$13,196.34</td></tr>
+<tr><th scope="row">Apr 2027</th><td>$450.00</td><td>$82.48</td><td>$367.52</td><td>$12,828.82</td></tr>
+<tr><th scope="row">May 2027</th><td>$450.00</td><td>$80.18</td><td>$369.82</td><td>$12,459.00</td></tr>
+<tr><th scope="row">Jun 2027</th><td>$450.00</td><td>$77.87</td><td>$372.13</td><td>$12,086.87</td></tr>
+<tr><th scope="row">Jul 2027</th><td>$450.00</td><td>$75.54</td><td>$374.46</td><td>$11,712.41</td></tr>
+<tr><th scope="row">Aug 2027</th><td>$450.00</td><td>$73.20</td><td>$376.80</td><td>$11,335.61</td></tr>
+<tr><th scope="row">Sep 2027</th><td>$450.00</td><td>$70.85</td><td>$379.15</td><td>$10,956.46</td></tr>
+<tr><th scope="row">Oct 2027</th><td>$450.00</td><td>$68.48</td><td>$381.52</td><td>$10,574.94</td></tr>
+<tr><th scope="row">Nov 2027</th><td>$450.00</td><td>$66.09</td><td>$383.91</td><td>$10,191.03</td></tr>
+<tr><th scope="row">Dec 2027</th><td>$450.00</td><td>$63.69</td><td>$386.31</td><td>$9,804.72</td></tr>
+<tr><th scope="row">Jan 2028</th><td>$450.00</td><td>$61.28</td><td>$388.72</td><td>$9,416.00</td></tr>
+<tr><th scope="row">Feb 2028</th><td>$450.00</td><td>$58.85</td><td>$391.15</td><td>$9,024.85</td></tr>
+<tr><th scope="row">Mar 2028</th><td>$450.00</td><td>$56.41</td><td>$393.59</td><td>$8,631.26</td></tr>
+<tr><th scope="row">Apr 2028</th><td>$450.00</td><td>$53.95</td><td>$396.05</td><td>$8,235.21</td></tr>
+<tr><th scope="row">May 2028</th><td>$450.00</td><td>$51.47</td><td>$398.53</td><td>$7,836.68</td></tr>
+<tr><th scope="row">Jun 2028</th><td>$450.00</td><td>$48.98</td><td>$401.02</td><td>$7,435.66</td></tr>
+<tr><th scope="row">Jul 2028</th><td>$450.00</td><td>$46.47</td><td>$403.53</td><td>$7,032.13</td></tr>
+<tr><th scope="row">Aug 2028</th><td>$450.00</td><td>$43.95</td><td>$406.05</td><td>$6,626.08</td></tr>
+<tr><th scope="row">Sep 2028</th><td>$450.00</td><td>$41.41</td><td>$408.59</td><td>$6,217.49</td></tr>
+<tr><th scope="row">Oct 2028</th><td>$450.00</td><td>$38.86</td><td>$411.14</td><td>$5,806.35</td></tr>
+<tr><th scope="row">Nov 2028</th><td>$450.00</td><td>$36.29</td><td>$413.71</td><td>$5,392.64</td></tr>
+<tr><th scope="row">Dec 2028</th><td>$450.00</td><td>$33.70</td><td>$416.30</td><td>$4,976.34</td></tr>
+<tr><th scope="row">Jan 2029</th><td>$450.00</td><td>$31.10</td><td>$418.90</td><td>$4,557.44</td></tr>
+<tr><th scope="row">Feb 2029</th><td>$450.00</td><td>$28.48</td><td>$421.52</td><td>$4,135.92</td></tr>
+<tr><th scope="row">Mar 2029</th><td>$450.00</td><td>$25.85</td><td>$424.15</td><td>$3,711.77</td></tr>
+<tr><th scope="row">Apr 2029</th><td>$450.00</td><td>$23.20</td><td>$426.80</td><td>$3,284.97</td></tr>
+<tr><th scope="row">May 2029</th><td>$450.00</td><td>$20.53</td><td>$429.47</td><td>$2,855.50</td></tr>
+<tr><th scope="row">Jun 2029</th><td>$450.00</td><td>$17.85</td><td>$432.15</td><td>$2,423.35</td></tr>
+<tr><th scope="row">Jul 2029</th><td>$450.00</td><td>$15.15</td><td>$434.85</td><td>$1,988.50</td></tr>
+<tr><th scope="row">Aug 2029</th><td>$450.00</td><td>$12.43</td><td>$437.57</td><td>$1,550.93</td></tr>
+<tr><th scope="row">Sep 2029</th><td>$450.00</td><td>$9.69</td><td>$440.31</td><td>$1,110.62</td></tr>
+<tr><th scope="row">Oct 2029</th><td>$450.00</td><td>$6.94</td><td>$443.06</td><td>$667.56</td></tr>
+<tr><th scope="row">Nov 2029</th><td>$450.00</td><td>$4.17</td><td>$445.83</td><td>$221.73</td></tr>
+<tr><th scope="row">Dec 2029</th><td>$223.12</td><td>$1.39</td><td>$221.73</td><td>$0.00</td></tr>
+</tbody>
+<tfoot><tr><th scope="row">Total</th><td>$16,873.12</td><td>$1,873.12</td><td>$15,000.00</td><td></td></tr></tfoot>
+</table>
+            </div>
+          </details>
+        </div>
+
+        <h2>How loan payoff works</h2>
+        <p>Each monthly payment does two jobs. First it pays the interest that built up over the month: the balance times the annual rate, divided by 12. The rest of the payment goes to principal and brings the balance down. Next month's interest is charged on that lower balance, so a little less of each payment goes to interest and a little more to principal. That's amortization, and it's why the first payments on a loan are mostly interest and the last ones are almost all principal.</p>
+        <p>The loan is paid off when the balance reaches zero. The last payment is usually smaller than the others, because it only has to cover what's left.</p>
+
+        <h2>A worked example</h2>
+        <p>Take the numbers the calculator starts with: $15,000 at 7.5% APR, paying $350 a month.</p>
+        <ol class="steps">
+          <li><b>Month 1.</b> Interest is $15,000 × 7.5% ÷ 12 = $93.75. The other $256.25 of the payment goes to principal, which leaves $14,743.75.</li>
+          <li><b>Month 2.</b> Interest on $14,743.75 is $92.15, so $257.85 goes to principal, which leaves $14,485.90.</li>
+          <li><b>Month 51.</b> After 50 payments of $350, $14.13 is left. With nine cents of interest, the last payment is $14.22.</li>
+        </ol>
+        <p>That's 51 payments, 4 years and 3 months. Over the loan you pay $2,514.22 in interest, $17,514.22 in all.</p>
+
+        <h2>How extra payments save interest</h2>
+        <p>Your regular payment already covers the month's interest, so every dollar of an extra payment goes to principal. A lower balance means less interest next month, which leaves more of your regular payment for principal the month after. The saving builds on itself until the loan is gone.</p>
+        <p>In the example, $100 extra makes the first month's principal $356.25 instead of $256.25. Month 2's interest is then $91.52 instead of $92.15. Sixty-three cents doesn't look like much, but it grows every month: with $100 extra, the loan is paid off in 38 payments instead of 51, 13 months sooner, and you pay $641.10 less in interest.</p>
+        <p>The longer the loan, the more an extra payment is worth. A $250,000 mortgage at 6.5% over 30 years takes $1,580.18 a month in principal and interest, and $318,853.86 in interest over 360 payments. Paying $200 more each month pays it off in 265 payments, nearly 8 years sooner, and saves $97,614.07.</p>
+
+        <h2>Before you pay extra</h2>
+        <ul>
+          <li><b>Make sure it goes to principal.</b> Extra money should lower the balance now, not be held toward next month's payment. Check how your lender handles it, and ask if it isn't clear.</li>
+          <li><b>Look for a prepayment penalty.</b> Your loan agreement says whether paying early costs a fee.</li>
+          <li><b>Pay the highest rate first.</b> If you also carry a credit card balance at 22%, an extra $100 there saves more than it does on a 7.5% loan. The <a href="/tools/credit-card-payoff-calculator/">credit card payoff calculator</a> shows how much.</li>
+          <li><b>Keep some savings.</b> Money sent to a loan is hard to get back. A small emergency fund keeps a surprise bill from going on a card.</li>
+        </ul>
+
+        <h2>About the math</h2>
+        <p>Each month, interest is the balance × the APR ÷ 12, rounded to the nearest cent, and then the payment is applied. It's the same method UrBudget's loan planner uses. The calculator assumes the rate stays the same, nothing new is borrowed and there are no fees.</p>
+        <p>Many lenders charge interest by the day instead, for the exact days between payments, so your statement can differ from these figures by a few dollars. For the same reason, a payment quoted by a lender can leave a few cents for one extra month here; on a real loan the last payment is adjusted instead. If a payment doesn't cover the first month's interest, the calculator tells you the loan never gets paid off, and it stops at 100 years.</p>
+        <p>Everything is worked out in your browser. Nothing you type is sent anywhere.</p>
+
+        <h2>In UrBudget</h2>
+        <p>UrBudget's loan planner does the same with your real loan, next to the rest of your budget.</p>
+        <ul>
+          <li>It works from the loan's account, so the balance is what you still owe after the payments you've recorded.</li>
+          <li>Enter the rate, the payment, any monthly fees or escrow and an extra payment, and it compares the two side by side: payments, payoff date, interest and fees, and the interest the extra saves, with the full amortization schedule.</li>
+          <li>Pick a payoff date and it works out the monthly payment, like Pay it off by here.</li>
+          <li>On a variable-rate loan, add each rate change by month, and projections use the new rate from then on.</li>
+          <li>Record a payment and it's entered as a transfer to the loan, with that month's interest and fees. Pay extra later the same month and it all goes to principal; the month's interest isn't charged twice.</li>
+          <li>It can set the payment category's target to the monthly payment, so the money is set aside every month.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Plan the loan with the rest of your budget</h2>
+          <p>UrBudget is envelope budgeting for Windows and macOS. Free, with no account and no card.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=tool-loan-payoff" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/tools/">More free tools</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related">
+          <li><a href="/tools/credit-card-payoff-calculator/">Credit card payoff calculator</a></li>
+          <li><a href="/tools/car-loan-payoff-calculator/">Car loan payoff calculator</a></li>
+          <li><a href="/tools/debt-payoff-calculator/">Debt payoff calculator: snowball vs avalanche</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

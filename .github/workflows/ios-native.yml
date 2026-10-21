@@ -1,0 +1,56 @@
+# Tests the native iOS app when its code changes: the Rust adapter on Linux, then the app on the
+# iOS Simulator. Engine changes are tested on Linux by android-native.yml and app.yml; the Simulator
+# runs only for ios/ and crates/urbudget-ios/, since a macOS minute costs ten Linux ones.
+# ios-release.yml runs the Simulator tests again before every upload.
+name: Native iOS
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["ios/**", "!ios/**/*.md", "crates/urbudget-ios/**", ".github/workflows/ios-native.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["ios/**", "!ios/**/*.md", "crates/urbudget-ios/**", ".github/workflows/ios-native.yml"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: crates -> target
+      - run: cargo test --locked --manifest-path crates/Cargo.toml -p urbudget-ios
+
+  ios:
+    needs: bridge
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: crates -> target
+      - name: Test on the iOS Simulator
+        run: |
+          device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for r in json.load(sys.stdin)["devices"].values() for d in r if d["name"].startswith("iPhone")))')
+          # Ad-hoc signing ("Sign to Run Locally") gives the simulator app its Keychain, as on a Mac.
+          xcodebuild -project ios/UrBudget.xcodeproj -scheme UrBudget -destination "id=$device" \
+            -derivedDataPath build CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- test
+      - name: Build for devices (unsigned)
+        run: |
+          xcodebuild -project ios/UrBudget.xcodeproj -scheme UrBudget -configuration Release \
+            -destination 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build

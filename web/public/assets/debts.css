@@ -1,0 +1,154 @@
+/* The debt snowball and avalanche calculator (debts.js): the rows of debts, the plan settings,
+   the payoff order and the schedule grouped by month. Built on tools.css. */
+
+/* ---------- Your debts ---------- */
+
+.debts-fieldset,
+.debts-strategy {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.debts-fieldset > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-weight: 650;
+}
+.debts-fieldset > legend + * {
+  clear: both;
+}
+.debts-fieldset > .hint {
+  margin: 0 0 var(--space-4);
+  color: var(--text-3);
+  font-size: var(--step--1);
+  line-height: 1.45;
+}
+
+/* One debt: its number and Remove on one line, then its four fields. */
+.debts-list {
+  container: debts / inline-size;
+}
+.debt-row {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-4) 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+.debt-row + .debt-row {
+  margin-top: var(--space-4);
+}
+.debt-row:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+.debt-row > legend {
+  float: left;
+  margin: 0;
+  padding: 0;
+  font-size: var(--step--1);
+  font-weight: 650;
+  line-height: 38px;
+}
+.debt-remove {
+  float: right;
+}
+.debt-fields {
+  clear: both;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+}
+.debt-fields .debt-name {
+  grid-column: 1 / -1;
+}
+.debt-row .input {
+  padding-inline: 0.65rem;
+}
+@container debts (min-width: 520px) {
+  .debt-fields {
+    grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+  }
+  .debt-fields .debt-name {
+    grid-column: auto;
+  }
+}
+@container debts (max-width: 279.98px) {
+  .debt-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.debts-add {
+  margin-top: var(--space-4);
+}
+
+/* ---------- The plan ---------- */
+
+.debts-settings {
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+.debts-strategy {
+  margin-top: var(--space-4);
+}
+.debts-strategy legend {
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-size: var(--step--1);
+  font-weight: 620;
+}
+.debts-strategy .hint {
+  margin: 0;
+  color: var(--text-3);
+  font-size: var(--step--1);
+  line-height: 1.45;
+}
+.debts-strategy .calc-check {
+  margin-top: var(--space-2);
+}
+
+/* ---------- Results ---------- */
+
+.calc-cards + .calc-cards,
+.guide .calc-cards + .calc-note {
+  margin-top: var(--space-4);
+}
+.guide .debts-heading {
+  margin: var(--space-6) 0 var(--space-2);
+  font-size: var(--step-0);
+}
+.guide .debts-order {
+  margin: var(--space-3) 0 0;
+  padding-left: 1.3rem;
+  font-variant-numeric: tabular-nums;
+}
+.guide .debts-order li {
+  color: var(--text-2);
+  line-height: var(--leading);
+}
+
+/* The schedule: each month's debts grouped under the month. */
+.debts-table tbody th[scope="rowgroup"] {
+  vertical-align: top;
+  color: var(--text);
+}
+.debts-table tbody th[scope="row"] {
+  min-width: 4.5rem;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.debts-table tbody tr:last-child > * {
+  border-bottom-color: var(--border-strong);
+}
+@media (max-width: 559.98px) {
+  .debts-table tbody th[scope="row"] {
+    min-width: 3.5rem;
+    padding-left: 0.3rem;
+  }
+}

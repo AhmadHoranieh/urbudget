@@ -1,0 +1,236 @@
+# UrBudget
+
+The platform-independent Rust modules live in
+[`urbudget-core`](../crates/urbudget-core) and
+[`urbudget-services`](../crates/urbudget-services), consumed by this Tauri
+application and the native [Android](../android/README.md) and [iOS](../ios/README.md) clients.
+Core owns accounting, validation, imports, reports, schedules, loans, merge rules
+and SQLite storage. Services owns encrypted sync, account sessions, Play
+subscription verification, the sealed vault, SimpleFIN/YNAB networking
+and the assistant. Tauri command modules are thin adapters over these services;
+they no longer carry a second copy of the implementation. `npm test` runs the
+complete shared workspace suite as well as the remaining Tauri tests.
+
+The desktop app (Windows and macOS) of a local envelope budget, built with **Tauri 2, Rust, SQLite, React, and TypeScript**. The phone apps are native apps in [`../ios`](../ios/README.md) and [`../android`](../android/README.md) on the same Rust crates ([mobile guide](../docs/MOBILE.md)). Rust owns validation, monetary calculations, reconciliation, imports, and persistence. The UI autosaves through Tauri commands; it never writes SQL directly. Rust keeps the working draft in memory and the window sends only the records an edit changed, so edits, recalculation, and saves do not transfer the whole budget.
+
+## Run
+
+```sh
+npm install
+npm run desktop
+```
+
+Node 22+ and Rust stable are required, together with Tauri's platform prerequisites. The launcher finds a normal `~/.cargo/bin` installation without changing shell profiles.
+
+```sh
+npm run check          # TypeScript build, frontend tests, Rust tests
+npm run tauri -- build # native release application, its update package signed (see Updates)
+```
+
+The macOS application is `src-tauri/target/release/bundle/macos/UrBudget.app`. Until 21 October 2026 this project was also built for phones, with a phone layout of the window; the native apps replaced that, and its old guide is in the [archive](../docs/archive/tauri-phone-apps-2026-10.md).
+
+## One development branch
+
+Develop shared behavior across platforms using feature branches and pull requests targeting `main`, where the native Android and iOS apps also live. The desktop's interface is the React window in this folder; SwiftUI and Compose draw the phone apps' own. Shared engine, persistence, sync and import changes must remain compatible with every app.
+
+Run `npm ci` and `npm run check` in `desktop` for local validation. For a desktop build without installers or signing keys, run `npm run tauri -- build --no-bundle --ci`. The [mobile guide](../docs/MOBILE.md) covers the phone apps' toolchains and checks. Use isolated synthetic budgets for manual QA, including keyboard and dialog flows when the UI changes.
+
+The **App validation** workflow (`.github/workflows/app.yml`) runs on app/build-workflow changes pushed to `main`, on pull requests targeting `main`, and by manual dispatch. Shared frontend tests, typechecking, version checks, and the production web build run once on Linux before the native job starts. UI-only edits need only these shared checks; native source, dependencies, shared configuration, and build-script changes also run the Rust tests and an unsigned debug build on Windows. **Run workflow** adds the same on macOS: a macOS minute costs ten Linux minutes, and every release builds and signs the macOS app anyway. Windows-only files (`tauri.windows.conf.json`, `capabilities/desktop.json`, `msix/`) run only the desktop job. Desktop debug builds reuse the test dependencies; signed, optimized installers are still built by the Release workflow. Documentation, the phone apps (they have their own workflows) and unrelated site/publishing workflows do not rebuild the desktop app.
+
+Pushes compare against the last successful validation on the same branch, so a cancelled or failed native build cannot be skipped by a later UI-only push. Missing history falls back to every check. **Run workflow** always runs every check, macOS included; run it before a desktop release. CI never submits a build to a store. Required-check enforcement depends on repository branch-protection availability; the current private repository plan does not provide it, so a green run is a review/release requirement rather than an enforced merge rule.
+
+Compatibility validation must include existing desktop and phone budgets: open, edit, save, reopen, portable backup/restore, and sync/merge without losing fields unknown to one platform. Store versions can differ while sharing the same data format. A schema or sync-format change needs explicit compatibility/migration coverage; a successful compile alone is insufficient.
+
+The separate **Native Android** workflow runs the shared Rust workspace, Kotlin tests,
+debug/release lint and builds both ARM64 and x86_64 libraries. Changes to either shared
+Rust crate or its lockfile run it and the desktop checks; **Native iOS** runs only for iOS
+code ([mobile guide › Checks on GitHub](../docs/MOBILE.md#checks-on-github)). Native Android uses the same Store
+revision tokens, sync-base transactions and backup retention. Ordinary native saves
+write changed SQLite rows, and its undo history keeps inverse patches. Unknown
+assignment fields are retained in an optional `assignment_extras` table while the
+original three-column assignment table remains compatible with existing databases.
+
+## Supported workflows
+
+- A first launch starts in the currency, number and date format of the system's language and region, and offers three ways in: YNAB's export file (filling the empty budget), starter categories, or a sample budget opened as its own budget. A budget set up from there shows a five-step getting-started checklist (accounts, assigning, spending, a target, covering overspending) that ticks itself off from what's in the budget and can be hidden.
+- Cash, credit-card, and tracking accounts, including closed account history. Accounts have a type (checking, savings, line of credit, investment, property, vehicle, receivable, mortgage, auto/student/personal loan, …); tracking accounts can be left out of net worth.
+- Monthly envelopes, assignments, positive rollover, cash/credit overspending, credit payment reserves, and categorized transfers to tracking accounts.
+- Transactions and split transfers, split memos/payees, independent cleared statuses, flags, reconciliation, running balances, and date/status/flag/category/amount filters.
+- A register you can type into: add and edit rows in place, including transfers (pick "Transfer: <account>" as the payee, editable from either side) and splits; the payee fills in its default or last category; amounts accept arithmetic. Search by stacking filter chips (type `payee:`, `category:`, `account:`, `memo:`, `amount:` or `>100`, `is:cleared`, `is:red`…, or pick a suggestion; chips on the same field widen the search, different fields narrow it). Columns size themselves: Flag and Cleared are icons that show their names when dragged wider, dates and amounts are as wide as what they show, and payee, category and memo share the rest; drag a column's edge to resize it (double-click to reset). Sort by any column, expand splits, Shift/Ctrl/arrow-key selection, and "Repeat" when adding a transaction. Transactions dated ahead read quieter.
+- Bulk approval, cleared status, categorization, payee/memo/flag editing, duplication and deletion; deleting shows Undo; session undo/redo with autosave (last 30 changes).
+- Quick assign previews (underfunded, last month, averages, reduce overfunding, reset assigned/available), money moves and local move history, category/group ordering and grouping (drag with the mouse).
+- Click a category's Activity to see the transactions behind it; cash age in the budget summary; create and edit targets and notes in the inspector.
+- Payees: rename or merge (with a preview) across transactions, schedules and rules, and a default category per payee. Ordered import rules that rename and/or categorize, editable and reorderable.
+- Reports, listed by theme down the side of the page:
+  - Spending: by category (donut and ranked bars, group → category → transactions, and the last full month against your average), by payee (a treemap and a searchable table that opens a payee's transactions), over time (stacked by group with the monthly average), and a calendar heatmap of daily spending with weekday averages and the biggest days.
+  - Income: income vs. expense (side-by-side columns with net income, savings rate, saved-so-far, and a month-by-month table), income breakdown by source, and money in and out of budget accounts before netting.
+  - Wealth: net worth (with the change each month), a balance sheet by account type with ratios (debt to assets, cash on hand in months of spending; overdrawn accounts count as owed, loans in credit as owned), each account's balance over time, a forecast of budget-account balances from today's balance, scheduled and future-dated transactions and an editable everyday-spending allowance, and cash age.
+  - Date presets, multi-select account and category filters, and CSV export with category and income-source rows. Cash age is an explicitly labelled FIFO estimate.
+- Long lists render only the rows in view: the register and the bank-import review stay fast with thousands of rows.
+- CSV/OFX/QFX/QIF bank imports with preview, explicit date order, duplicate detection, and manual transaction matching. When an import (a file, bank sync, or one the assistant prepared) brings in transactions that end up without a category (none, or Uncategorized; payee rules may have filled the rest), its toast or summary offers Categorize with the assistant: the panel opens with exactly those transactions attached by id and a request in the box, and nothing is sent until Send.
+- Optional bank sync through SimpleFIN Bridge (US and Canadian banks, a subscription paid to SimpleFIN): Sync downloads new transactions on request into the same review as a bank file (see Bank sync).
+- Category and month notes; weekly, monthly, yearly, custom repeating, balance/date, refill and set-aside targets, including snoozing and future-month refill behavior.
+- Scheduled transactions are one system with the rest: a transaction dated after today (and not yet cleared, or from a bank file) is a scheduled one, once unless it repeats. It waits in Scheduled, counts toward upcoming category funding rather than account balances, and is entered on its date, uncleared and waiting for approval; a one-time one is then done. Recurring income, expenses, splits and transfers, catch-up posting, pause/resume, skip/enter-now, and approval. Each register (and All transactions) lists its schedules above its transactions, under a heading that folds them away and shows what's due in the next 30 days; Enter and Skip sit on each row, and its calendar opens Edit, Pause/Resume and Delete (double-click edits, right-click opens the menu). The register's Scheduled button lists them all with the same actions and adds new ones. Create one by dating a transaction ahead (Save becomes Schedule) or choosing Repeat; give a scheduled one today's date and it's entered at once. Transactions saved before this with a later date move to Scheduled the next time schedules run; imported and cleared ones stay where they are, dated ahead and shown quieter.
+- Loan amortization, extra-payment comparison, payoff-date planning and local payment recording with monthly interest/fees charged once.
+- Autosave, visible save state, external database change detection, explicit fetch, atomic recovery drafts, SQLite backups, and full local JSON export/import.
+- Import from YNAB's own export files (no token or connection) or from its API, validated local import, and Plan/Register CSV export in YNAB's format.
+- OS-appropriate behavior: the YNAB token can be remembered with the app's other secrets, sealed under a key the system keeps (Keychain on macOS/iOS, DPAPI on Windows, Android Keystore on Android; unsupported systems require pasting each time), shortcuts are shown as ⌘/⌥/⇧ on macOS and Ctrl/Alt/Shift elsewhere, and Windows gets the app's own title bar.
+
+## YNAB migration
+
+Settings & data → Import from YNAB → **Import & save** downloads, validates, backs up, and commits in one operation with visible progress and a completion time. A personal access token is used for the request only by default. The optional Remember checkbox keeps it in the sealed secrets file (see [Secrets](#secrets)); Use the saved token imports without pasting it again. Systems without a supported credential store don't offer the option. Tokens never enter SQLite, recovery files, exports, or logs. Remove saved token deletes it. There is no ongoing network synchronization or write access to YNAB.
+
+### From YNAB's export files
+
+Settings & data → Import → **Import YNAB's export file** reads the .zip YNAB's web app downloads (or the Register and Plan CSV files inside it) and makes a new budget, leaving the open one alone. It needs no token, API access or connection. Amounts are read in the file's own format (currency symbol, grouping and decimal mark; plans whose currency doesn't use cents are refused), the date order is detected or chosen, and the currency comes from the amounts' symbol, falling back to the open budget's. Both sides of every transfer are paired into one transaction, and "Split (1/3)" rows become one split, including split legs that are transfers. Credit accounts are recognized by their Credit Card Payments category; an account none of whose rows has a category is treated as a tracking account (budget accounts always have at least their starting balance in "Inflow: Ready to Assign"). A transfer without its other side or an incomplete split stops the import. After building the budget, every category month in the Plan is recalculated and compared with YNAB's assigned, activity and available amounts; differences are listed, never patched over.
+
+YNAB's files don't carry ids, targets, notes, split-parent memos, scheduled transactions, account types or closed state, so a file import can't be merged with a later one or with the API import; repeat it into a new budget instead.
+
+Repeat imports use YNAB's server-knowledge cursor to download changes only. The source snapshot is updated by original entity ID, including deletions and monthly category changes. An unchanged response skips validation and database replacement. A three-way merge preserves independent local changes; competing edits or a possible duplicate local scheduled occurrence open a review table. Choose Local or YNAB for each conflict before committing. The downloaded candidate stays in memory during review; a database revision change invalidates the preview. A restart requires downloading again. “Replace from YNAB” explicitly selects the source version, with an automatic local backup. A competing SQLite write also stops the commit.
+
+Historical validation now computes all months in a single pass. On the migrated 2,975-entry budget, a release benchmark measured 99 ms for initial parsing/validation/save, 473 ms for repeat validation/merge/backup/save/reload, and 12 ms for an unchanged delta merge. These measurements exclude HTTP and UI transport and vary by machine. Run the benchmark with `cargo run --release --manifest-path src-tauri/Cargo.toml --example benchmark_import -- source.json`; it uses a temporary database and never alters the live budget.
+
+The import preserves original entity IDs, original API fields, account types and closure state, flags, cleared/reconciled state, parent and child split memos, payees, notes, goals, monthly assignments, and the complete original API response. Paired transfers become one local transaction with two independently cleared account sides; the original counterpart and its memo are retained. Zero-value starting balances are valid. No balancing transactions are fabricated.
+
+The migration audit independently recomputes account working/cleared/uncleared balances, monthly category assigned/activity/available amounts, and unassigned money (YNAB's Ready to Assign). **The imported historical totals do not override the calculation engine.** The source export is an immutable audit copy, not a cache of current calculations.
+
+CSV exports have YNAB's column structure. YNAB's own CSV format omits targets, category notes, and split-parent memos; use the UrBudget JSON backup for a full-fidelity restore. CSV split ordinals can differ from YNAB's UI order because the API does not supply that order. Amounts, categories, flags, and memos are preserved.
+
+## Bank sync (SimpleFIN)
+
+Settings & data → Import → **Bank sync** connects SimpleFIN Bridge (https://www.simplefin.org/protocol.html). The user makes a setup token at SimpleFIN Bridge and pastes it; the app claims it once (`POST` to the Base64-decoded claim URL) for an Access URL with Basic credentials. A 403 there means the token was already claimed, and the user is told it may be in someone else's hands. The Access URL is a password: it is kept in the sealed secrets file (see [Secrets](#secrets)), never in SQLite, recovery files, exports or the synced budget. Systems without a credential store don't offer bank sync. Remove connection deletes it and unlinks the open budget's accounts; the bank stays connected at SimpleFIN until it's removed there.
+
+Each SimpleFIN account fills at most one budget account. The link lives in the account's record (`simplefin`: the SimpleFIN account id, its name and bank, the first day to bring in, `lastSync`, and `flipSigns` for a card whose bank sends purchases as deposits). Sync (in the register's toolbar, the account's menu, or Settings) makes one `GET {access}/accounts?version=2&start-date=…&end-date=…` for every account (pending transactions are left out), from a week before the oldest `lastSync` (or the first day, at most a year back) to now. SimpleFIN allows 90 days a request but its server warns above 45, so longer first syncs are split into 45-day requests. SimpleFIN allows about 24 requests a day and can disable a token that keeps going over; the app stops at 20 a day (counted in `simplefin-usage.json` in the data folder) and shows SimpleFIN's own messages (`errlist`, and the older `errors` where quota warnings appear), stripped of markup and control characters. 402 (payment needed) and 403 (revoked) read as plain sentences. Only HTTPS with verified certificates is used, redirects aren't followed, and plain `http://` to this computer is accepted only in tests and debug builds.
+
+The download goes to the same review as a bank file, one account after another: `bank_import::review` gives each transaction the id `bank:sha256(account|fit:simplefin:<SimpleFIN account>:<transaction id>)`, so a transaction that comes again is marked already imported, finds match candidates within ten days, and gets the payee rules. Dates are the calendar day of `transacted_at` (or `posted`) in the computer's time zone; amounts are exact cents with deposits positive, which is the budget's own convention for cash and credit accounts alike (a card purchase is negative). An account in another currency, or one SimpleFIN leaves out, shows why instead of rows. Importing an account's rows records it as synced through the download's day; an account with nothing new is marked synced without a review, and a skipped one is offered again next time. The last download stays in memory, so when the budget changes during a review its rows are checked again without another request.
+
+A linked account has a small sync mark after its name in the sidebar (amber when it hasn't synced in a week); the balances stay in one column. Clicking the mark, or Bank sync details… in the account's menu, opens its sync details: the bank account and bank, the last sync and where the next one starts, the bank's balance from this session's last download beside UrBudget's (with a note when a card's signs disagree), the connection and today's requests, SimpleFIN's messages, and Sync now, Unlink (with Undo), Bank sync settings and Ask the assistant. The assistant's `get_bank_sync` tool reads the same picture (never the Access URL; not offered to MCP clients), and its instructions cover reversed card signs and balance gaps. It can't sync, connect or change links. The sync dialog offers it when a card's new rows all come in as money in, an account fails, or SimpleFIN sends a message.
+
+## Data and recovery
+
+The data folder and the stored credentials keep the identifier `com.localbudget.desktop` from before the app was named UrBudget, so budgets and saved tokens are found where they always were.
+
+Data directory (macOS `~/Library/Application Support/com.localbudget.desktop/`, Windows `%APPDATA%\com.localbudget.desktop\`):
+
+```text
+budgets.json                 # list of budgets and the one last open
+budget.sqlite3               # the first budget, kept in place
+recovery.json                # its unsaved changes, only while they need recovery
+imports/ backups/ exports/   # its API downloads, SQLite snapshots, and exports
+budgets/<id>/                # every other budget: the same files in its own folder
+trash/                       # deleted budgets, moved here rather than erased
+secrets.bin                  # saved tokens and keys, sealed (see Secrets); on Windows also secrets.key
+account.json, sync-state.json  # the signed-in email; per budget, the revisions at the last sync
+```
+
+### Secrets
+
+Tokens and keys kept between launches (the account's session, the sync key, the assistant's ChatGPT sign-in and API keys, a remembered YNAB token, the SimpleFIN Access URL) are in one file in the data folder, `secrets.bin`, sealed with XChaCha20-Poly1305 ([shared vault](../crates/urbudget-services/src/vault.rs)). Reads check for changed ciphertext so another running copy's updates become visible; unchanged contents and the successfully loaded key stay cached. Only its key is kept by the system:
+
+- macOS and iOS: one Keychain item, `com.localbudget.desktop.secrets-key` (labelled UrBudget). The Keychain asks per item and per app signature, so the Developer ID build reads it without asking, and a build signed any other way asks at most once.
+- Windows: `secrets.key` beside it, sealed with DPAPI for the Windows user. Nothing appears in Credential Manager.
+- Android: sealed by `SecretStore.kt` under a key in the Android Keystore ([mobile guide](../docs/MOBILE.md#data-and-secrets)).
+- Debug builds on a computer: `secrets-dev.bin` with a plain `secrets-dev.key`, so a rebuilt app never touches the Keychain or the installed app's secrets. Sign in to them separately.
+
+Earlier versions kept each secret as its own Keychain item or Credential Manager entry. Each moves into the file the first time it's read, and the old entry is deleted; on a Mac, an entry made by a differently signed copy can ask once. An existing encrypted file is preserved and blocks writes whenever its key is missing, unavailable or invalid, or its contents cannot be read or authenticated. Reads retry after a failure, allowing access to recover without restarting. Concurrent app copies serialize migration, credential changes and legacy cleanup with an OS file lock.
+
+The Microsoft Store copy is an MSIX package, and Windows virtualizes its writes under AppData: on Windows 10 1903 and later, a folder it creates directly in `%APPDATA%` or `%LOCALAPPDATA%` is really created in `%LOCALAPPDATA%\Packages\urbudget.UrBudget_s1gzxw095tb8a\LocalCache\Roaming\` (or `…\Local\`), while the app keeps seeing it at the usual path. A folder that already exists in the real location is used in place. So a Store install on a computer that already had the NSIS install reads and writes the same budgets, and both copies can be switched between. A fresh Store install gets the private folder: outside the app (Explorer, the NSIS copy) the `%APPDATA%` path shown in Settings & data doesn't exist, and uninstalling the Store copy deletes the folder with every budget and backup in it. If the NSIS copy is installed afterwards, each copy keeps its own folder. Windows 10 1809, which the manifest still allows, copies every AppData write to the private folder, even into an existing one. Saved secrets are in the data folder, so the two copies share them exactly when they share budgets (DPAPI opens them for either copy). Credential Manager isn't virtualized, so the trial date is always shared. Opting out (`desktop6:FileSystemWriteVirtualization`, or `virtualization:ExcludedDirectories` from build 20348) needs the `unvirtualizedResources` restricted capability, which Microsoft says is meant for certain games and not other apps.
+
+Each budget is a separate database. Switching saves the open budget first, and the save token includes the budget's id, so a stale window can never write into a different budget. "New budget" can start empty, with starter categories, or by starting over from the open budget, which copies accounts (with today's balances as opening balances), categories, targets, rules and schedules without past transactions.
+
+SQLite uses WAL, foreign keys, a busy timeout, and FULL synchronization. A save writes only the rows that differ from the database, in one transaction, after validating the complete draft; imports still replace the complete snapshot. A revision and `PRAGMA data_version` detect competing writes; a conflict stops autosave and preserves the draft. The recovery file holds the unsaved changes relative to the saved revision and is rewritten (atomic replacement and fsync) after each edit until the save succeeds. The original YNAB download (`sourceExport`) stays in the database and in exports but is not sent to the window. Window-close waits for outstanding saves; abrupt termination can leave a draft to recover on restart. Files are local and not database-encrypted.
+
+The database automatically upgrades the initial v1 schema without discarding entity data. Money is signed integer minor units, with no floating-point arithmetic. API milliunits must convert exactly; sub-cent values are rejected rather than rounded. The currency picker uses the ISO currency codes supported by the runtime (AED, EUR, GBP, SAR and USD are the fallback on older runtimes). A budget has one currency; calculations and amounts use two decimal places. New-budget locale detection falls back to USD for currencies without two minor-unit digits. No foreign-exchange conversion is inferred.
+
+## Scheduling, targets, and loans
+
+Schedules post when the app loads, regains focus, or checks each minute while open; the same pass moves transactions entered for a later day into Scheduled as one-time schedules (`schedule_future` in `schedules.rs`), and a one-time schedule is removed once it's entered or skipped. Due occurrences receive deterministic IDs and advance atomically with their transactions, preventing duplicate posting after restart. They remain uncleared and unapproved. Monthly schedules preserve their original day through shorter months. Pausing preserves the next date; resuming catches up missed occurrences. Enter now keeps future dates anchored. A closed app catches up on its next launch; there is no background daemon.
+
+Targets use local assignment history and category carryover. The editor supports weekly, monthly, yearly, custom intervals, a one-time date, balance-by-date, refill versus set-aside, and a snoozed month. Upcoming scheduled outflows contribute to category underfunding without changing account balances before posting.
+
+Loan planning uses a user-configured tracking liability and payment category. The calculator uses monthly compounding, integer cents, a base rate entered to two decimal places, dated rate changes at three-decimal precision, and optional monthly fees/escrow. It compares an extra payment and solves for a payment by a desired date. Recording a payment creates a categorized transfer plus the month's interest/fees only once. Interest entries remain editable in the register to match lender statements. The planner does not send bank payments. Load imported loan terms reads preserved rates, minimum payments and escrow into the planner for review. Saving terms can also set the paired category target. Newly entered register and scheduled transfers to configured loans post interest once per month. Editing or deleting an older payment does not automatically rewrite previously recorded interest; review those entries against the statement.
+
+## Account and sync
+
+The app is free, with nothing locked. An account (Settings › Account & sync) is optional and only needed for sync: an emailed code signs in, and the session token is kept with the app's other secrets (see [Secrets](#secrets)). With the $3/month sync plan, sync keeps whole budgets the same across computers, end-to-end encrypted: the key comes from a sync passphrase (Argon2id, 64 MiB) and each budget is compressed and sealed with XChaCha20-Poly1305 bound to its id; urbudget.app stores only ciphertext and a revision. Sync runs at launch, every five minutes, on focus and a few seconds after each save. Each computer remembers the server revision and its own saved revision at the last sync, and each budget's database keeps the version it last synced as. A change on one side uploads; a change in the cloud is downloaded and merged with this computer's changes against that version (after a backup), record by record and field by field, then the result is uploaded. Money assigned to the same category and month on both sides adds up. Only a field both sides changed differently, or a record one side deleted while the other edited it, waits for a choice in Settings › Account & sync, which lists those records with each side's value. The merged budget and the version it synced as are saved in one transaction, so a merge is never applied twice. The open budget is only changed when it has no unsaved edits. The original YNAB download (`sourceExport`) stays on each computer and is not synced.
+
+Debug builds take `URBUDGET_API` (the server, e.g. `wrangler dev`) for testing; they keep secrets in their own file in the data folder (see [Secrets](#secrets)), so with `LOCAL_BUDGET_DATA_DIR` each scratch folder has its own. The server side is in [`../web`](../web/README.md).
+
+## Releases
+
+Current publication state is in [release status](../docs/RELEASE-STATUS.md). User-facing changes are recorded in [CHANGELOG.md](CHANGELOG.md). Desktop, Android and iOS are released separately, each with its own version and tag ([RELEASING.md](../RELEASING.md)). Before tagging a desktop release, run `node ../scripts/versions.mjs desktop 1.2.3` (it writes the version into `package.json`, `package-lock.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, `src-tauri/tauri.conf.json` and the shared crates), then `npm run check`. Copy that version's changelog entry into the draft release description before publishing; it also appears on the download page and in the app's update notice.
+
+Desktop source is currently **1.0.7**. `npm run check:versions` verifies the desktop package/Cargo/config versions agree and the app keeps its installed identity (`com.localbudget.desktop`). It also runs before every frontend build.
+
+Bump only the app being released; a desktop bump never changes the native apps' versions. The shared Cargo crate version follows the desktop package. Desktop releases are tagged `desktop-v1.2.3`; releases up to 1.0.7 are tagged `v1.0.7` and so on, and those tags stay. The Release, Publish and Microsoft Store workflows act only on desktop tags.
+
+GitHub builds the installers (`.github/workflows/release.yml`): push a tag such as `desktop-v1.0.8` matching the version in `tauri.conf.json` (the workflow checks), or run **Release** from the Actions tab. It makes a draft release with a signed, notarized macOS `.dmg` (Apple Silicon and Intel), the Windows installer, and an `.msix` for the Microsoft Store.
+
+- macOS signing uses repository secrets made by `node scripts/mac-signing.mjs` (Developer ID certificate, Team ID, and an app-specific password for notarization). Its keys stay in the git-ignored `.signing/` folder; keep a copy.
+- `node scripts/pack-msix.mjs` packs a release build with `msix/AppxManifest.xml`, whose identity comes from Partner Center (UrBudget → Product identity). Publishing the release runs `store.yml` to submit this package for Microsoft Store certification; Store users receive the update after approval. Each submission needs a higher version.
+- `npm run release` in `../web` puts the downloaded installers on urbudget.app.
+- The build also signs the update packages with the `TAURI_SIGNING_PRIVATE_KEY` secret (see [The updater signing key](#the-updater-signing-key)). It attaches each package and its `.sig` to the release: on Windows the installer itself, on macOS `UrBudget_universal.app.tar.gz`. Publishing the release offers them to installed copies.
+- The icon is `assets/icon.svg`. `node scripts/icons.mjs` draws the app's icons in `src-tauri/icons` and the Store package's tiles in `msix/Assets` from it; the title bar has its own copy in `src/WindowControls.tsx`, and the website's icons come from it via `npm run images` in `../web`.
+
+## Updates
+
+Standalone copies update themselves with Tauri's updater plugin. A few seconds after launch and then once a day (an hourly timer and focus check catch up after sleep), the app asks `https://urbudget.app/api/v1/releases/update/{{target}}/{{arch}}/{{current_version}}` (`plugins.updater` in `src-tauri/tauri.conf.json`), which answers 204 or describes the newer version ([`../web`](../web/README.md#5-publish-the-app) publishes them). A newer version shows an **Update** chip in the title bar and, in Settings › General, "Update available: version X" with its notes and **Install & restart**. Settings › General also has **Check now**.
+
+Microsoft Store copies use [Windows Store package-update APIs](https://learn.microsoft.com/en-us/windows/apps/package-and-deploy/package-updates-from-store) on the same schedule, with **Check now**, **Install Store update**, and **Open Microsoft Store** in Settings › General. The Store decides availability for this copy; an update notice does not guess the target version. Before requesting download and installation, UrBudget saves, makes the configured on-close backup, and locks budget edits because Windows may close the app during the request. Canceled or failed requests unlock the app without restarting. Store requests start on the UI thread with the window's HWND; availability checks time out after 30 seconds. Unknown package identity fails closed rather than enabling the standalone installer. Phones leave updates to their stores.
+
+Before publishing an update to this integration, validate with a Store-associated packaged build containing these controls and a newer package available to its test account: check availability, cancel installation, retry with an unsaved edit, and confirm the edit survives installation and reopening. Also check the no-update response and Store link. Unit tests and an unpackaged debug build cannot validate Store eligibility, consent dialogs, or package deployment.
+
+UrBudget initiates installation only when that button is pressed; Windows can also update Store copies independently according to the user's Store settings. Standalone packages download while you keep working; then the app finishes the save, makes the configured on-close backup, locks edits, and installs. When the budget can't be saved (a conflict, a recovery waiting for an answer), nothing is installed and a standalone download is kept for the next try. On Windows the NSIS installer runs in passive mode (a progress bar, no questions, current user only) and opens the new version; on macOS the app bundle is replaced and the app restarts (`restart_app`).
+
+The plugin installs nothing whose signature doesn't verify against the public key in `tauri.conf.json`. With `requireSignedVersion`, each signature also names the version it was made for, so an older package can't be offered as a newer one.
+
+### The updater signing key
+
+- **Public half:** `plugins.updater.pubkey` in `src-tauri/tauri.conf.json`, committed and compiled in.
+- **Private half:** `~/.tauri/urbudget-updater.key` (`%USERPROFILE%\.tauri\urbudget-updater.key` on Windows) on the computer that makes releases, made with `npx tauri signer generate --ci -w ~/.tauri/urbudget-updater.key` (no password). It never goes into the repository.
+- **Building:** `npm run tauri -- build` reads that file (`scripts/tauri.mjs`) and signs the update package. GitHub's `release.yml` takes it from the `TAURI_SIGNING_PRIVATE_KEY` repository secret, set once with `gh secret set TAURI_SIGNING_PRIVATE_KEY < ~/.tauri/urbudget-updater.key`. On another computer, put the file in the same place, or set `TAURI_SIGNING_PRIVATE_KEY` to its contents (and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` if you give the key a password); the variable wins over the file. Without either, a release build stops with "A public key has been found, but no private key". To build an installer without an update package, pass `--config` a file containing `{ "bundle": { "createUpdaterArtifacts": false } }`.
+- **Back it up** (a password manager). If it's lost, installed copies can't be updated: everyone has to download the next version by hand, and that version needs a new key pair. If it leaks, make a new pair, put the new public key in `tauri.conf.json`, and sign that one release with the old key so installed copies accept it; later releases use the new key.
+
+### Trying an update locally
+
+The example below uses an isolated, hypothetical 1.0.6 test package, higher than the current 1.0.5 app. It does not change project metadata or a release tag; choose a higher test version if the running app has advanced.
+
+Debug builds ask the server in `URBUDGET_API` instead (the endpoint's `https://urbudget.app` is replaced) and accept plain http. To see an update offered and installed without touching your real copy or data, build the "newer" version under its own name, then point a debug build at a local server:
+
+1. Write `update-test.json` outside the repository: `{ "version": "1.0.6", "identifier": "app.urbudget.updatetest", "productName": "UrBudget Update Test" }`, then run `npm run tauri -- build --config path/to/update-test.json`.
+2. In `../web`, with `APP_URL=http://127.0.0.1:8787` in `.dev.vars`: `npm run release -- --local --version 1.0.6 --windows "../desktop/src-tauri/target/release/bundle/nsis/UrBudget Update Test_1.0.6_x64-setup.exe" --notes "Test update"`, then `npm run dev`.
+3. Here: `URBUDGET_API=http://127.0.0.1:8787 LOCAL_BUDGET_DATA_DIR=../migration-update-test npm run desktop`. The Update chip appears a few seconds after launch; Settings › General › Install & restart saves, installs "UrBudget Update Test" 1.0.6 for the current user and opens it. Uninstall it afterwards in Windows Settings › Apps.
+
+To watch an installed copy replace itself, build step 1 again with version 1.0.5 and `CARGO_PROFILE_RELEASE_DEBUG_ASSERTIONS=true` (so the release build honours `URBUDGET_API`), install it, and start it from a shell with `URBUDGET_API` set.
+
+## Compatibility boundaries
+
+These are the main local budgeting and register workflows, not an assertion of universal YNAB behavioral parity. Import validation rejects financial mismatches instead of silently changing totals. Split transfer legs with ordinary counterpart transactions are supported and checked for reciprocal accounts, dates, and amounts. Daily-interest and offset loans need statement-based adjustments. Bank connections exist only through SimpleFIN Bridge, on request; there are no shared multi-user budgets. The optional assistant can read receipt images and prepare transactions for review; ordinary bank-file import does not perform image recognition; sync merges two devices' changes and asks only about a field both changed differently. Imported YNAB payee-rule definitions are not exposed by its API; local rules can be configured in Payees & rules. Existing source metadata remains in backups even where an editor is not available.
+
+Cash age is a FIFO estimate, not a reproduction of YNAB's Age of Money metric; opening-cash dates and split handling can differ. Quick assign with no selected categories caps underfunded allocations to available funds and prioritizes overspent envelopes before card payment categories. Explicitly selected categories can overassign; the preview shows the resulting unassigned amount. Loan and target behavior has synthetic regression coverage, not exhaustive live YNAB comparison.
+
+Bank CSV files need recognized headers (Date/Transaction Date/Posted Date; Payee/Name/Merchant/Description; Amount or Outflow/Debit and Inflow/Credit; optional Memo/Notes and FITID/Transaction ID). Amounts can include currency signs/codes and decimal commas or periods; ambiguous separators are rejected. Choose the file's date order. Investment QIF files and multi-currency files are unsupported. OFX currency mismatches are rejected. Imported outflows without a rule go to Uncategorized; they never silently reduce unassigned money as negative income. Matching preserves local categorization/memos and clears the appropriate account side.
+
+Saves and edits scale with the size of the change; monthly calculation still reads the whole history (about 4 ms for a synthetic 2,500-transaction, 3-year budget in a release build). The migrated multi-year budget is covered by the benchmark, but hundreds of thousands of rows have not been profiled.
+
+## QA budget and screenshots
+
+For website and store images, use synthetic budgets only (the QA budget below), never a real one. The screenshot procedure and its provenance records are kept with the private marketing files.
+
+`npm run qa` starts the app on a generated test budget (about 2,500 transactions over three years, with a YNAB-style source export) in the git-ignored `../migration-qa/` folder, and opens WebView2's debugging port. Add `-- --release` for an optimized Rust build. `npm run qa:data` regenerates the test budget (Node 22.5+). With the app running, `node scripts/qa/cdp.mjs shot out.png` saves a screenshot (`SCHEME=dark` for dark mode) and `node scripts/qa/cdp.mjs eval "<js>"` runs code in the window, for example to time an interaction (`SIZE=1000x662` lays the window out at that size while the code runs). The QA budget never touches your real data folder.
+
+## Verification
+
+`npm run check` builds the frontend and runs the frontend and Rust test suites. It covers monetary parsing, card funding and overspending, rollover, tracking transfers, refunds, reconciliation, atomic persistence/rollback, row-level saves and change patches, conflict handling, recovery drafts, API and export-file import fidelity, SimpleFIN sync, backup retention, the sealed secrets file (with DPAPI and Credential Manager on Windows), frontend autosave behavior, and saving before an update installs. Private migration evidence belongs outside source control under the ignored `migration-*` directory.
+
+An offline migration/audit utility is available for a saved full API response:
+
+```sh
+cargo run --manifest-path src-tauri/Cargo.toml --example migrate -- source.json output.json [database.sqlite3]
+```
+
+Without a database argument it only prepares and audits the import. With a database argument it first creates a backup, rejects any financial audit mismatch, writes atomically, reloads, and checks full object equality. Keep the application closed during that offline migration.
+
+Behavior references: [YNAB delta requests](https://api.ynab.com/#delta-requests), [scheduled transactions](https://support.ynab.com/en_us/scheduled-transactions-a-guide-BygrAIFA9), [targets](https://support.ynab.com/en_us/getting-started-with-targets-ryAEP08xC), and [loan interest](https://support.ynab.com/en_us/handling-interest-in-loan-accounts-a-guide-r1Y17LAkj).
+
+Earlier migration evidence is preserved in the [desktop 0.4 verification archive](../docs/archive/desktop-0.4-verification.md).

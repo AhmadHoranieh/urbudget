@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Microsoft Money replacement for Windows 11 and Mac</title>
+  <meta name="description" content="Still on Microsoft Money Plus Sunset? A replacement for MS Money's budgeting on Windows 11 and Mac: what UrBudget replaces, what it doesn't, and how to switch.">
+  <link rel="canonical" href="https://urbudget.app/vs/microsoft-money/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="Microsoft Money replacement for Windows 11 and Mac">
+  <meta property="og:description" content="For Money Plus Sunset users: what happened to Money, what UrBudget replaces and what it doesn't, and how to start fresh with your bank's files.">
+  <meta property="og:url" content="https://urbudget.app/vs/microsoft-money/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Microsoft Money replacement for Windows 11 and Mac">
+  <meta name="twitter:description" content="For Money Plus Sunset users: what happened to Money, what UrBudget replaces and what it doesn't, and how to start fresh with your bank's files.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+      { "@type": "ListItem", "position": 2, "name": "Comparisons", "item": "https://urbudget.app/vs/" },
+      { "@type": "ListItem", "position": 3, "name": "UrBudget vs Microsoft Money", "item": "https://urbudget.app/vs/microsoft-money/" }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">UrBudget vs Microsoft Money</h1>
+        <p class="lead">Microsoft stopped selling Money in 2009 and switched off its online services in 2011. If you still use Money Plus Sunset and want a current replacement for the budgeting part, UrBudget does that job on Windows or a Mac, for free. It doesn't replace Money's investment tracking, bill pay or check printing, and it can't open a Money file.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>What happened to Microsoft Money</h2>
+        <p>Money had been on sale since 1991. On June 10, 2009, Microsoft announced that it would stop selling it, and sales ended on June 30, 2009. Microsoft's reason was that people were turning to the tools their banks and brokerages offered, and demand for a full personal finance program had declined.</p>
+        <p>On January 31, 2011, every version of Money lost its online services and Microsoft's assisted support. That ended online stock quotes, online bill payment, statement downloads started from inside Money, and syncing with MSN Money.</p>
+        <p>In 2010 Microsoft released two free replacements, the <b>Money Plus Sunset</b> editions: Money Plus Deluxe Sunset, for people who had Essentials, Deluxe or Premium, and Money Plus Home &amp; Business Sunset. They need no activation, so you can install them again on a new computer, and they open files from older US versions of Money, though not from versions sold in other countries. They have no online services and no assisted support. If your bank offers OFX or QIF statement files, Sunset can import them, and that's the only way to get new transactions in without typing them.</p>
+
+        <h3>Is Microsoft Money still available?</h3>
+        <p>Not from Microsoft. It hasn't been sold since 2009, the free Sunset editions were the last versions, and Microsoft no longer offers those for download either. A copy of Money Plus Sunset you already have needs no activation, so it can keep running, but it gets no updates or support.</p>
+
+        <h3>Can you still download Money Plus Sunset?</h3>
+        <p>Not from Microsoft. Its download page for Money Plus Sunset now says "We're sorry, this download is no longer available," and the Deluxe and Home &amp; Business links on its old Sunset page lead to the same message. Microsoft offered the download, USMoneyDlxSunset.exe from May 2010, until early 2021.</p>
+        <p>Other websites offer copies of the installer. They don't come from Microsoft, and we don't link to them. If you still have the installer, keep it with a backup of your Money file.</p>
+
+        <h3>Money in Excel</h3>
+        <p>Money in Excel was a different product: an Excel template for Microsoft 365 Personal and Family subscribers in the US, launched in June 2020. It connected bank and card accounts to a workbook through Plaid and brought in transactions. Microsoft ended it on June 30, 2023. Workbooks kept the transactions already in them but stopped updating, and Microsoft pointed its users to Tiller.</p>
+
+        <h3>Does Money Plus Sunset run on Windows 11?</h3>
+        <p>Microsoft's own FAQ about the end of Money said it couldn't guarantee compatibility with future versions of Windows, and the program hasn't been updated since the Sunset editions. When Microsoft still offered the Sunset download, its page listed Windows XP, Vista and 7 as the supported systems; Windows 8, 10 and 11 came later. Whether it installs and runs on a newer PC isn't something Microsoft supports or guarantees. If yours works, there's no need to remove it. Keep it, and keep backups of your Money file somewhere other than that computer.</p>
+
+        <h2>What Money did</h2>
+        <p>Money was a full personal finance manager. Depending on the edition, Money Plus had:</p>
+        <ul>
+          <li><b>Accounts and a register</b> for checking, savings, credit cards, loans, investments and assets such as a home or a car, with categories and balancing against your statements.</li>
+          <li><b>A budget</b>, in two styles. The Essential Budget set a monthly amount for each category and compared it with what you spent. The Savings and Spending Budget aimed to hold committed expenses to about 60% of gross income and planned for irregular expenses, savings and debt, retirement and fun money.</li>
+          <li><b>Bills and deposits</b>: a bill list, a Bill Calendar and recurring bills, with a cash flow forecast.</li>
+          <li><b>Investments</b> in the Portfolio Manager: stocks, funds, 401(k) and 403(b) accounts and stock options, with performance and asset allocation.</li>
+          <li><b>Reports and charts</b>, including a monthly report, that you could customize, print and export.</li>
+          <li><b>Check printing</b>, and until 2011, <b>online bill pay</b>.</li>
+          <li><b>Planning tools</b>: the Debt Reduction Planner, the Lifetime Planner, a retirement calculator and tax estimates.</li>
+          <li>In Home &amp; Business, <b>invoices</b>, customer and vendor lists, and payroll through a partner service.</li>
+        </ul>
+        <p>UrBudget does the accounts, the register, the budget, repeating bills and reports, in its own way. It doesn't do the rest.</p>
+
+        <h2>Side by side</h2>
+        <div class="compare-wrap" role="region" aria-label="UrBudget and Microsoft Money Plus Sunset compared" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col"><span class="visually-hidden">Feature</span></th><th scope="col" class="us">UrBudget</th><th scope="col">Money Plus Sunset</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Price</th><td class="us">Free, on all your own computers, with future updates</td><td>Free since 2010. Money hasn't been sold since June 30, 2009</td></tr>
+              <tr><th scope="row">Updates and support</th><td class="us">Updates included; support by email</td><td>No updates since the 2010 Sunset release. Support ended January 31, 2011</td></tr>
+              <tr><th scope="row">Runs on</th><td class="us">Windows 10 and 11 (64-bit), macOS 12 or later</td><td>Windows only. Microsoft couldn't promise it would work on later versions of Windows, and reports on Windows 11 are mixed</td></tr>
+              <tr><th scope="row">Where your data lives</th><td class="us">In a file on your computer. Works offline, with automatic backups</td><td>In a .mny file on your computer. By default, Money makes a backup each time you close it</td></tr>
+              <tr><th scope="row">Between computers</th><td class="us">Optional sync for <span data-price="sync">$3</span> a month, encrypted with your passphrase before it leaves your computer</td><td>None since syncing with MSN Money ended in 2011</td></tr>
+              <tr><th scope="row">Bank downloads</th><td class="us"><a href="/bank-sync/">SimpleFIN</a> for supported US and Canadian banks (separate subscription), or CSV, OFX, QFX and QIF files; review before saving</td><td>None since 2011. Imports OFX or QIF statement files from your bank</td></tr>
+              <tr><th scope="row">Budgeting method</th><td class="us">Envelopes (zero-based): you assign the money you already have to categories, which carry their balances into the next month. Targets for irregular bills and credit-card payment categories</td><td>A monthly plan per category, based on expected income, compared with what you spent. Essential Budget or Savings and Spending Budget</td></tr>
+              <tr><th scope="row">Bills and repeating transactions</th><td class="us">Scheduled transactions for bills, income and transfers. When one is due, it's entered while the app is open and waits for your approval. No bill pay or check printing</td><td>Bill list, Bill Calendar and recurring bills. Prints checks. Online bill pay ended in 2011</td></tr>
+              <tr><th scope="row">Investments</th><td class="us">Investment and retirement accounts as tracking accounts, with a balance you update. No holdings or prices</td><td>Portfolio Manager with holdings, performance and asset allocation. Prices are updated by hand since online quotes ended</td></tr>
+              <tr><th scope="row">Reports</th><td class="us">Twelve, including spending by category and by payee, income vs. expense, net worth, a balance sheet and a forecast from your scheduled transactions. Export to CSV</td><td>Many reports and charts, with a monthly report and a cash flow forecast. Print or export</td></tr>
+              <tr><th scope="row">Loans and planning</th><td class="us">A loan planner: payoff date, interest saved by extra payments and an amortization schedule</td><td>Loan accounts, the Debt Reduction Planner, the Lifetime Planner and tax tools</td></tr>
+              <tr><th scope="row">Getting your data out</th><td class="us">CSV in YNAB's layout, or a full JSON backup</td><td>QIF export for bank and investment accounts, not loans. Budgets and the bill list don't export</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="sources">UrBudget prices cover the app and any device sync shown. Optional bank sync requires a separate SimpleFIN subscription; <a href="/bank-sync/#cost">see cost and availability</a>.</p>
+
+        <h2>Where UrBudget differs from Money</h2>
+        <ul>
+          <li><b>Investments.</b> No holdings, share prices, performance or asset allocation. You can add an investment or retirement account as a tracking account and update its balance now and then, so it counts in your net worth.</li>
+          <li><b>Bill pay and check printing.</b> UrBudget doesn't pay bills or print checks. Pay through your bank's website, and record the payment or let a scheduled transaction enter it.</li>
+          <li><b>Your Money file and its history.</b> UrBudget can't open .mny files, and it doesn't bring over Money's history, budget or bill list.</li>
+          <li><b>Downloads from your bank.</b> UrBudget supports optional <a href="/bank-sync/">SimpleFIN</a> for supported US and Canadian banks, with a separate subscription. Statement file import remains available if that is how you use Money Plus Sunset.</li>
+          <li><b>Planning across all your debts.</b> The loan planner works on one loan at a time, kept as a tracking account. It shows the payoff date, the interest an extra payment saves and an amortization schedule, and records each payment with that month's interest. It assumes monthly compounding, so daily-interest loans and lender fees can come out a little different. There's no plan across all your debts like Money's Debt Reduction Planner.</li>
+          <li><b>Tax tools and long-range planning.</b> Nothing like Money's tax estimates, Lifetime Planner or retirement calculator.</li>
+          <li><b>Business features.</b> No invoices, customer lists or payroll.</li>
+          <li><b>Reminders while it's closed.</b> Scheduled transactions are entered when they're due while UrBudget is open. It doesn't show alerts when it isn't running.</li>
+        </ul>
+
+        <h2>How the budgeting differs</h2>
+        <p>Money's budget was a plan: you started from the income you expected, set an amount for each category, and Money compared your spending with the plan each month. UrBudget budgets the money you already have. Everything in your checking, savings and cash accounts goes into a category until nothing is left unassigned, and each category keeps its balance from month to month. When a category runs short, you move money over from another one.</p>
+        <p>If you used Money's Savings and Spending Budget, setting money aside for irregular expenses will feel familiar. In UrBudget, a bill that doesn't come every month gets a target, such as $600 by March, and the app works out what to set aside each month. Each credit card gets a payment category, so the money for what you charge is set aside when you spend it. <a href="/getting-started/">Getting started</a> walks through a first month.</p>
+
+        <h2>Which one fits you</h2>
+        <div class="choose">
+          <div>
+            <h3>Keep Money, or look at Moneydance or Quicken, if you</h3>
+            <ul>
+              <li>track investments: holdings, prices and performance</li>
+              <li>want to pay bills or print checks from your finance program</li>
+              <li>want your Money history converted, not just kept in Money to look things up</li>
+              <li>want one program for your whole financial picture more than a budget</li>
+            </ul>
+          </div>
+          <div class="us">
+            <h3>UrBudget, if you</h3>
+            <ul>
+              <li>mostly used Money for its register and its budget</li>
+              <li>already download statement files for Money Sunset; UrBudget reads the same OFX and QIF files, plus QFX and CSV</li>
+              <li>want a current program for Windows 10 and 11 or a Mac, with your budget in a file on your computer</li>
+              <li>would rather not pay a yearly fee</li>
+            </ul>
+          </div>
+        </div>
+        <p>If investments are the reason you kept Money, UrBudget isn't the replacement. Two programs that do track them:</p>
+        <ul>
+          <li><b>Moneydance</b> runs on Windows, Mac and Linux and is sold once, with an optional Moneydance+ subscription for bank downloads in the US and Canada. It tracks stocks, bonds, CDs and mutual funds, and has check printing and online bill pay with some banks. Its help center has a guide to moving from Money by exporting each account as a QIF file; loan accounts can't be exported that way. <a href="/vs/moneydance/">UrBudget vs Moneydance</a> compares the two.</li>
+          <li><b>Quicken Classic</b> is billed yearly, runs on Windows and Mac, and keeps your data on your computer. It tracks investments and can pay bills from inside the program, depending on the plan. Quicken says Quicken Classic for Windows, Deluxe and higher, can convert data from Microsoft Money 2008 and 2009.</li>
+        </ul>
+
+        <h2>Moving from Money to UrBudget</h2>
+        <p>UrBudget can't open a .mny file, so the move is a fresh start: today's balances, your categories, and new transactions from your bank. Your history stays in Money, where you can still look it up.</p>
+        <ol class="steps">
+          <li><b>Keep Money and back up your file.</b> In Money, choose File &gt; Back Up and save a copy somewhere other than your computer. If you still have the Sunset installer, keep it with the backup.</li>
+          <li><b>Pick a start date.</b> A date close to today works best, such as the first of this month. For each account, note its balance at the end of the day before. Money's register or your bank statement shows it.</li>
+          <li><b>Add your accounts in UrBudget.</b> Add each checking, savings and cash account and each credit card with that balance; enter what you owe on a card as a negative amount. Investments, retirement accounts, your home, a mortgage or a car loan can be tracking accounts with their current value or balance.</li>
+          <li><b>Set up your categories.</b> Your Money budget is a good model: make a category for each line you budgeted. If you used the Savings and Spending Budget, its groups (committed expenses, irregular expenses, savings and debt, retirement, fun money) work as category groups. Give irregular bills a target.</li>
+          <li><b>Give your money a job.</b> Assign the money in your budget accounts to categories until Unassigned reaches zero, starting with what's due before your next paycheck.</li>
+          <li><b>Import from your bank.</b> Download each account's transactions from your start date as an OFX, QFX or CSV file, and import it with Import file in that account's register, one account at a time. You see every row before it's saved, and rows already imported are marked as duplicates, so overlapping files are safe. <a href="/import/">Bank import guides</a> show where the download is at major US banks.</li>
+          <li><b>Schedule your regular bills.</b> Add your paycheck, rent, utilities and subscriptions as scheduled transactions. They take the place of Money's bill list.</li>
+        </ol>
+
+        <h2>Getting your data out of Money</h2>
+        <p>Microsoft documented two ways to get your transactions out of Money: a QIF file for each account, and reports exported to Excel. Both are done in Money itself, so do them while your copy still runs, and keep the .mny file and its backup either way.</p>
+
+        <h3>A QIF file for each account</h3>
+        <p>Microsoft's steps for Money Plus: choose File &gt; Export, pick Loose QIF, type a file name, choose whether it's a Regular or an Investment account, then pick the account and click Continue. Each file holds one account, so repeat this for every account and name each file after its account.</p>
+        <ul>
+          <li>Money can't export a closed account. Reopen it first.</li>
+          <li>Money can't export a loan account to a QIF file.</li>
+          <li>The bill list, budgets, favorite reports, household inventory and cash flow forecasts don't export.</li>
+          <li>Some details are lost on the way, such as budget amounts and tax flags on categories, and payees' phone numbers and addresses.</li>
+        </ul>
+
+        <h3>Microsoft Money to Excel</h3>
+        <p>Money's reports can be exported. For your whole history, Microsoft suggested three custom transaction reports covering all dates, one for regular accounts, one for investments and one for loans, each exported to Excel. Money Plus's Advanced Reports can also be saved as CSV or XML; the simpler Essential Reports export only plain text. An exported report is a tab-separated text file, which Excel opens with its text import.</p>
+
+        <h3>What UrBudget can bring in</h3>
+        <p>UrBudget imports a QIF file into one account at a time. For a file exported from Money, that means:</p>
+        <ul>
+          <li><b>Which accounts.</b> Bank, credit card and cash accounts only. If the file holds anything else, such as an investment account, a category list or a list of accounts, UrBudget turns the whole file down and saves nothing.</li>
+          <li><b>What comes across.</b> Each transaction's date, payee, memo and amount, into the account you're importing into. You choose the file's date order, and you see every row before anything is saved.</li>
+          <li><b>What doesn't.</b> Categories, splits (a split transaction arrives as one amount), check numbers, and Money's cleared and reconciled marks. A transfer arrives as an ordinary transaction in the account you're importing, not linked to the other account. Money's budget, bill list and reports don't come across at all.</li>
+          <li><b>How much.</b> Up to 10,000 transactions in one file.</li>
+        </ul>
+        <p>Check the preview before you import a QIF file from Money, especially the dates. For a budget, the fresh start above usually works better anyway. Old transactions would arrive without their categories, and an envelope budget only needs today's balances. Keep Money and your .mny file for the history.</p>
+
+        <h2>Questions</h2>
+        <h3>How do I open a Microsoft Money file?</h3>
+        <p>In Money. Money Plus Sunset opens .mny files, including files from older US versions of Money. Quicken says Quicken Classic for Windows, Deluxe and higher, can import data from Money 2008 and 2009. UrBudget can't read .mny files or Money's .mbf backups, so keep Money installed, or at least keep the file, a backup and the installer, so you can look up old transactions.</p>
+        <h3>Does UrBudget download from my bank the way Money used to?</h3>
+        <p>Yes, optionally through <a href="/bank-sync/">SimpleFIN</a> for supported US and Canadian banks, with a separate subscription. Press Sync and review the transactions before saving. File import (OFX, QFX, CSV or QIF) remains available without a connection, with duplicate detection and matching.</p>
+        <h3>Can I try UrBudget without giving up Money?</h3>
+        <p>Yes. UrBudget never touches your Money file. Run both for a month, compare, and decide.</p>
+
+        <div class="guide-cta">
+          <h2>Try it next to Money</h2>
+          <p>Free, with no account and no card. Your Money file stays as it is.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=vs-microsoft-money" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/getting-started/">Getting started</a>
+          </div>
+        </div>
+
+        <p class="sources">Microsoft Money, Excel and Windows are trademarks of Microsoft. Moneydance, Quicken and Tiller are trademarks of their owners. UrBudget isn't affiliated with Microsoft or any of them.</p>
+        <ul class="related" aria-label="More comparisons">
+          <li><a href="/vs/">All comparisons</a></li>
+          <li><a href="/vs/moneydance/">UrBudget vs Moneydance</a></li>
+          <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+          <li><a href="/import/">Bank import guides</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

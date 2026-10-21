@@ -1,0 +1,24 @@
+# Cloudflare static assets: response headers by path.
+# https://developers.cloudflare.com/workers/static-assets/headers/
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), usb=(), browsing-topics=(), payment=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  X-Frame-Options: DENY
+  Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+# Retaken screenshots keep their names (scripts/images.mjs), so images are kept for a day,
+# not forever.
+/img/*
+  Cache-Control: public, max-age=86400
+
+# CSS and JS keep their names between releases and must match the HTML that loads them, so
+# browsers check for a newer copy every time. An unchanged file costs a 304 with no body.
+# (Pages link site.css?v=2 to get past copies saved under the old one-day rule.)
+/assets/*
+  Cache-Control: no-cache
+
+/site.webmanifest
+  Cache-Control: public, max-age=86400

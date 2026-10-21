@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to export PayPal transactions as CSV for a budget</title>
+  <meta name="description" content="Download PayPal activity as CSV, up to 12 months at a time and seven years back, rename one column, and import it into a budget without double counting.">
+  <link rel="canonical" href="https://urbudget.app/import/paypal/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to export PayPal transactions as CSV for a budget">
+  <meta property="og:description" content="Download your PayPal activity as a CSV, change one column name, and import it into a budget without counting bank and card payments twice.">
+  <meta property="og:url" content="https://urbudget.app/import/paypal/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to export PayPal transactions as CSV for a budget">
+  <meta name="twitter:description" content="Download your PayPal activity as a CSV, change one column name, and import it into a budget without counting bank and card payments twice.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Bank import guides", "item": "https://urbudget.app/import/" },
+          { "@type": "ListItem", "position": 3, "name": "PayPal", "item": "https://urbudget.app/import/paypal/" }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to export PayPal transactions for a budget",
+        "mainEntityOfPage": "https://urbudget.app/import/paypal/",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-17",
+        "author": { "@id": "https://urbudget.app/#org" },
+        "publisher": { "@id": "https://urbudget.app/#org" }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to export PayPal transactions for a budget</h1>
+        <p class="lead">PayPal lets you download your activity from its website as a CSV, Quicken, QuickBooks, TAB or PDF file, up to 12 months at a time and up to seven years back. For a budget, download the CSV and rename one column. Here's how, and how to keep a payment from being counted twice.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>Download your PayPal activity</h2>
+        <ol class="steps">
+          <li><b>Log in at paypal.com.</b> Use a browser on your computer. PayPal's help describes downloading on the website and doesn't mention the app.</li>
+          <li><b>Go to History.</b> Click the Download icon, then click Custom.</li>
+          <li><b>Set up the report.</b> Select the report that suits you, then follow the prompts to create it: choose the dates (up to 12 months) and CSV as the format.</li>
+          <li><b>Download it.</b> When the report is ready, click Download.</li>
+        </ol>
+        <p>Small reports download right away. A large one can take up to five business days to prepare; PayPal emails you when it's ready and keeps your last three large files.</p>
+
+        <h3>Business accounts</h3>
+        <p>PayPal's developer guide gives a business account's route as Activity, then All reports. On the Activities tab, choose Activity report, set the transaction type, the dates and the format, and choose Create report. You get a notification when it's ready to download.</p>
+
+        <h3>Monthly statements</h3>
+        <p>PayPal also has monthly statements at paypal.com/reports/accountStatements: click Request next to the month, then Download when it's ready. Keep them for your records. For importing, use the activity report above: you choose its dates, and PayPal documents its columns.</p>
+
+        <h2>Formats and limits</h2>
+        <div class="compare-wrap" role="region" aria-label="PayPal download formats compared" tabindex="0">
+          <table class="compare compare-3">
+            <thead>
+              <tr><th scope="col">Format</th><th scope="col">What it is</th><th scope="col">In UrBudget</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">CSV</th><td>Your activity as a spreadsheet file</td><td>Use this one, after renaming one column (below)</td></tr>
+              <tr><th scope="row">Quicken</th><td>A QIF file, for accounts in US dollars only</td><td>UrBudget reads bank, cash and credit card QIF files. If it turns this one down, use the CSV.</td></tr>
+              <tr><th scope="row">QuickBooks</th><td>An IIF file, for US accounts</td><td>Made for QuickBooks; UrBudget doesn't open it</td></tr>
+              <tr><th scope="row">TAB</th><td>The same activity, separated by tabs</td><td>Use the CSV instead</td></tr>
+              <tr><th scope="row">PDF</th><td>A report to read or print</td><td>For your records; it can't be imported</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <ul>
+          <li><b>How far back.</b> Up to the past seven years.</li>
+          <li><b>How much at once.</b> Up to 12 months in each report. UrBudget imports up to 10,000 rows per file, so if you have more activity than that, download a few months at a time.</li>
+        </ul>
+
+        <h2>Get the CSV ready: rename Net to Amount</h2>
+        <p>PayPal's developer documentation lists the activity report's columns. Among them are Date, Time, TimeZone, Name, Type, Status, Currency, Gross, Fee, Net, Transaction ID, Balance and Note. Here's how UrBudget 1.0.3 reads the ones that matter:</p>
+        <div class="compare-wrap" role="region" aria-label="PayPal CSV columns and how UrBudget reads them" tabindex="0">
+          <table class="compare compare-3">
+            <thead>
+              <tr><th scope="col">PayPal column</th><th scope="col">What PayPal says it holds</th><th scope="col">In UrBudget</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Date</th><td>The date the transaction completed, in your country's format: MM/DD/YYYY for US accounts. The time is in its own column.</td><td>The transaction date. For a US account, set <b>Dates in the file</b> to Month/day/year.</td></tr>
+              <tr><th scope="row">Name</th><td>The other party's name: a business name, or a person's first and last name</td><td>The payee</td></tr>
+              <tr><th scope="row">Transaction ID</th><td>PayPal's unique ID for the transaction</td><td>Used to recognize rows you've already imported, so overlapping downloads are safe</td></tr>
+              <tr><th scope="row">Net</th><td>The amount after fees. PayPal's Balance column is the previous balance plus each row's Net.</td><td>Not read until you rename it Amount</td></tr>
+              <tr><th scope="row">Gross and Fee</th><td>The amount including fees, and the fee</td><td>Not read</td></tr>
+              <tr><th scope="row">Note</th><td>The note the payer wrote</td><td>Not read unless you rename it Memo</td></tr>
+              <tr><th scope="row">Currency</th><td>The currency code of each transaction</td><td>Not read: every amount is taken in your budget's currency</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>So the one change is the amount column. Open the file in a text editor, change the word Net on the first line to Amount (keep any quotation marks around it), and save. In a spreadsheet app, change the Net heading the same way and save the file as CSV. If you want PayPal's notes as memos, change Note to Memo while you're there.</p>
+        <p>Net is the right column for a budget because it's what each row actually added to or took from your PayPal balance; Gross includes PayPal's fees. Since the balance is the previous balance plus Net, money that left your balance has a negative Net, which is how UrBudget reads money out. Leave <b>Purchases are positive</b> unticked.</p>
+        <p>PayPal doesn't publish a sample file, so look at the first line before you edit it: it should be the column names. If there are other lines above them, delete those too.</p>
+
+        <h2>Count each payment once</h2>
+        <p>When you pay with PayPal, the money comes from your PayPal balance or from a bank account or card you've linked. If your preferred payment method can't cover all of a payment, PayPal can use a backup method for the rest, so one payment can come from two places. Whatever came from a bank account or card is also in that account's own file, so a budget that imports both counts it twice.</p>
+        <div class="note">
+          <p>If you don't keep money in PayPal, you may not need to import it at all. Import your bank and card files as usual, categorize their PayPal charges there, and use your PayPal activity to see what each one was for.</p>
+        </div>
+        <p>If you do keep a PayPal balance, keep your PayPal account in UrBudget to what moved through that balance:</p>
+        <ul>
+          <li><b>Paid from your PayPal balance.</b> Only PayPal has it. Import it and give it a category.</li>
+          <li><b>Paid with a bank account or card.</b> Categorize it in that account, where it shows as a charge from PayPal, and choose <b>Skip</b> for it in the PayPal import. If PayPal's file also has a row for the money arriving from that bank or card to cover the payment, skip that row too. On a credit card, categorizing it there also moves the money into the card's payment category, ready for the bill.</li>
+          <li><b>Money you receive.</b> Import it and give it a category: income, or the category a refund or a friend's repayment belongs to.</li>
+          <li><b>Transfers to and from your bank.</b> Money you move from PayPal to your bank, or add to PayPal from it, is a transfer between your own accounts, not spending or income. Edit the row and choose <b>Transfer: Checking</b> (or your bank account's name) as its payee. When you import the bank's file, its side of the transfer is offered as a match, so it isn't added twice.</li>
+        </ul>
+        <p>Then compare your PayPal account in UrBudget with the balance PayPal shows. If they differ, look for a payment paid partly from your balance and partly from a bank or card, and make sure only the part from your balance is in your PayPal account.</p>
+
+        <h2>Import it into UrBudget</h2>
+        <ol class="steps">
+          <li><b>Add your PayPal account.</b> Add PayPal as a budget account (Checking or Cash type), with the balance it had just before the first transaction you'll import. Select it in the sidebar and choose <b>Import file</b> above its transactions.</li>
+          <li><b>Choose the file.</b> Click <b>Choose a file</b>, or drop the CSV you edited onto the box. For a US account, set <b>Dates in the file</b> to Month/day/year.</li>
+          <li><b>Preview and decide.</b> Choose <b>Preview transactions</b>. Every row is listed before anything is saved. Check that payments you sent show a minus sign, and choose <b>Skip</b> for payments made with your bank or a card. Rows you imported before are recognized by their Transaction ID and skipped.</li>
+          <li><b>Import.</b> Choose <b>Import</b>. The transactions arrive unapproved: give each a category, make transfers to your bank into transfers, and approve them.</li>
+        </ol>
+        <p>Add rules in Payees &amp; rules for the sellers you pay often. Rules rename and categorize imported rows, so each download needs less work.</p>
+
+        <h2>If something looks wrong</h2>
+        <ul>
+          <li><b>"CSV needs Amount or Outflow/Inflow columns."</b> The Net column hasn't been renamed Amount, or you chose the original download instead of the file you edited.</li>
+          <li><b>"CSV needs Date, Payee/Description, and Amount (or Outflow/Inflow) headers."</b> The first line isn't the column names. Delete any lines above them.</li>
+          <li><b>"Cannot read date…"</b> Set <b>Dates in the file</b> to Month/day/year for a US account and preview again. UrBudget reads dates written like 10/14/2026, 14/10/2026 or 2026-10-14.</li>
+          <li><b>Amounts in another currency.</b> If you hold or pay in more than one currency, the file can have rows in each, and UrBudget would read them all in your budget's currency. Delete the rows in other currencies before you import.</li>
+          <li><b>The balance still doesn't match PayPal's.</b> Look at the Status and Balance Impact columns in the file. PayPal marks each row's effect on your balance as Debit, Credit or Memo. A Memo row, or a payment that is still pending or was denied, may not have changed your balance; skip it.</li>
+          <li><b>A payment is counted twice.</b> It was paid with your bank or a card and imported into both that account and PayPal. Delete the copy in your PayPal account.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Budget your PayPal spending without linking it</h2>
+          <p>UrBudget is free on Windows and macOS. You import the files you download; nothing signs in to PayPal or your bank.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=import-paypal" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/import/">All bank guides</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related guides">
+          <li><a href="/import/">All bank import guides</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+          <li><a href="/import/chase/">Download Chase transactions</a></li>
+          <li><a href="/import/american-express/">Download American Express transactions</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

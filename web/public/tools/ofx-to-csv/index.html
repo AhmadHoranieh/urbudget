@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OFX and QFX to CSV for Excel: free, in your browser</title>
+  <meta name="description" content="Convert a bank's OFX, QFX or QBO file to CSV for Excel or Google Sheets. Free with no sign-up, and the file is read in your browser, never uploaded.">
+  <link rel="canonical" href="https://urbudget.app/tools/ofx-to-csv/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="OFX and QFX to CSV for Excel: free, in your browser">
+  <meta property="og:description" content="Turn a bank's OFX, QFX or QBO download into a CSV file for Excel, Google Sheets or any app that takes CSV. Read in your browser, never uploaded.">
+  <meta property="og:url" content="https://urbudget.app/tools/ofx-to-csv/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="OFX and QFX to CSV for Excel: free, in your browser">
+  <meta name="twitter:description" content="Turn a bank's OFX, QFX or QBO download into a CSV file for Excel, Google Sheets or any app that takes CSV. Read in your browser, never uploaded.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <link rel="stylesheet" href="/assets/tools.css">
+  <link rel="stylesheet" href="/assets/ofx.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="module" src="/assets/ofx.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Tools", "item": "https://urbudget.app/tools/" },
+          { "@type": "ListItem", "position": 3, "name": "OFX and QFX to CSV converter", "item": "https://urbudget.app/tools/ofx-to-csv/" }
+        ]
+      },
+      {
+        "@type": "WebApplication",
+        "name": "OFX and QFX to CSV converter",
+        "url": "https://urbudget.app/tools/ofx-to-csv/",
+        "description": "Converts a bank's OFX, QFX or QBO statement file to CSV in the browser, without uploading it: date, payee, memo, amount, type, check number and transaction ID for each transaction.",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Any",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "publisher": { "@id": "https://urbudget.app/#org" }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">Convert OFX and QFX files to CSV for Excel</h1>
+        <p class="lead">Turn the OFX, QFX or QBO file your bank gives you into a CSV file that Excel, Google Sheets or any app that takes CSV can open. The file is read in your browser and never uploaded.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <div class="calc">
+          <form class="calc-form" id="ofx-form" aria-label="OFX to CSV converter" novalidate>
+            <div class="ofx-drop" data-drop>
+              <label for="ofx-file">Your OFX, QFX or QBO file</label>
+              <input class="ofx-file" id="ofx-file" type="file" accept=".ofx,.qfx,.qbo,application/x-ofx" aria-describedby="ofx-file-hint" disabled>
+              <p class="hint" id="ofx-file-hint">Choose the file or drop it here. It's read on this device and never uploaded.</p>
+            </div>
+            <div class="calc-fields ofx-options">
+              <div class="field">
+                <label for="ofx-date">Date format</label>
+                <select class="input" id="ofx-date">
+                  <option value="ymd" selected>2026-10-03 (YYYY-MM-DD)</option>
+                  <option value="mdy">10/03/2026 (MM/DD/YYYY)</option>
+                  <option value="dmy">03/10/2026 (DD/MM/YYYY)</option>
+                </select>
+              </div>
+              <fieldset class="ofx-amounts">
+                <legend>Amounts</legend>
+                <label class="calc-check"><input type="radio" name="amounts" value="signed" checked> One Amount column, negative for money out</label>
+                <label class="calc-check"><input type="radio" name="amounts" value="split"> Outflow and Inflow columns</label>
+              </fieldset>
+            </div>
+            <label class="calc-check ofx-bom"><input type="checkbox" id="ofx-bom" checked> Add a byte order mark, so Excel shows accented letters correctly</label>
+          </form>
+          <noscript><p class="calc-note">The converter needs JavaScript, which is turned off in this browser. It runs only inside this page, on your computer. Below is what it does, and what's inside an OFX file.</p></noscript>
+          <h2 class="visually-hidden">Your converted file</h2>
+          <div class="ofx-status" id="ofx-status" role="status" aria-live="polite"></div>
+          <div class="ofx-result" id="ofx-result" hidden>
+            <h3>In this file</h3>
+            <ul class="ofx-accounts" id="ofx-accounts"></ul>
+            <div class="form-row">
+              <button class="btn btn-primary" type="button" data-download disabled>Download CSV</button>
+            </div>
+            <p class="ofx-caption" id="ofx-preview-caption">Preview</p>
+            <div class="calc-table-wrap" role="region" aria-labelledby="ofx-preview-caption" tabindex="0">
+              <table class="calc-table ofx-table" id="ofx-preview"></table>
+            </div>
+          </div>
+        </div>
+
+        <h2>Your file stays on your computer</h2>
+        <p>The converter is a script that runs in this page. When you choose a file, your browser reads it from your disk, the script turns it into CSV in the page, and the browser saves the CSV like any other download. The file isn't sent to UrBudget or anyone else.</p>
+        <p>The converter has no upload step: your browser reads the file and builds the CSV on this device, and nothing from the file is sent anywhere. Once the page has loaded, you can go offline and the converter still works.</p>
+
+        <h2>What the CSV contains</h2>
+        <p>One row for each transaction, in the order the bank listed them, with these columns:</p>
+        <div class="compare-wrap" role="region" aria-label="The CSV's columns and the OFX tags they come from" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col">Column</th><th scope="col">From the OFX tag</th><th scope="col">What it holds</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Date</th><td>DTPOSTED</td><td>The day the transaction posted, as the bank wrote it. The time and time zone are dropped, and the date isn't shifted by the time zone.</td></tr>
+              <tr><th scope="row">Payee</th><td>NAME</td><td>The payee or description. Taken from a PAYEE block, or from EXTDNAME, when the bank uses those instead.</td></tr>
+              <tr><th scope="row">Memo</th><td>MEMO</td><td>Extra detail from the bank. Often empty.</td></tr>
+              <tr><th scope="row">Amount</th><td>TRNAMT</td><td>Negative for money out, positive for money in, which is how OFX signs statement transactions. Written with a period and at least two decimals, such as -8.50.</td></tr>
+              <tr><th scope="row">Type</th><td>TRNTYPE</td><td>The bank's code: DEBIT, CREDIT, POS (card purchase), ATM, CHECK, XFER (transfer), PAYMENT, DIRECTDEP (direct deposit), FEE, INT (interest) and a few more.</td></tr>
+              <tr><th scope="row">Check number</th><td>CHECKNUM</td><td>For checks, when the bank includes it.</td></tr>
+              <tr><th scope="row">Transaction ID</th><td>FITID</td><td>The bank's ID for the transaction. Apps use it to spot a transaction they've already imported.</td></tr>
+              <tr><th scope="row">Account</th><td>ACCTID</td><td>The account number, added only when the file holds more than one account.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>With <b>Outflow and Inflow columns</b> chosen, Amount becomes two columns of positive numbers: money out in Outflow, money in in Inflow.</p>
+        <p>Pending transactions are left out. OFX 2.2 lists them separately, as STMTTRNP, because they can still change; they appear in a later download once they post. Balances, the bank's details and the statement period aren't in the CSV either.</p>
+        <p>If a transaction's date or amount can't be read, the converter leaves that row out and lists it, with its place in the file and its transaction ID, so you can look it up on the bank's website. An amount written as 1,000 is one of those: OFX allows a decimal comma, so it could mean one thousand or one, and the converter doesn't guess. Amounts like 1,000.00 or 1.000,00 are read, because with both marks there's no doubt.</p>
+
+        <h2>What is an OFX file? (And QFX and QBO)</h2>
+        <p><b>OFX</b> (Open Financial Exchange) is an open specification for exchanging financial data between banks and software. A bank's OFX download holds an account's transactions in a form that budgeting and accounting programs can read. Version 2.2 of the specification is dated November 2017. Inside, an OFX file is text: each transaction is a STMTTRN block with its date, amount, ID and name. Here is one, as a version 1 file writes it:</p>
+        <pre class="ofx-sample"><code>&lt;STMTTRN&gt;
+&lt;TRNTYPE&gt;POS
+&lt;DTPOSTED&gt;20261003120000[-5:EST]
+&lt;TRNAMT&gt;-42.17
+&lt;FITID&gt;202610030001
+&lt;NAME&gt;CORNER GROCERY
+&lt;MEMO&gt;DEBIT CARD PURCHASE
+&lt;/STMTTRN&gt;</code></pre>
+        <p>The date is year, month and day, here followed by a time and a time zone: October 3, 2026, at noon Eastern time. The amount has a minus sign for money out. Version 1 files start with header lines such as OFXHEADER:100 and often leave tags like these unclosed. Version 2 files are XML, start with <code>&lt;?xml</code> and <code>&lt;?OFX</code>, and close every tag.</p>
+        <ul>
+          <li><b>QFX</b> is Quicken's version: the same OFX, with a few extra Quicken tags such as INTU.BID, which identifies the bank to Quicken. Banks often label it Quicken or Quicken Web Connect.</li>
+          <li><b>QBO</b> is the same format again, made for QuickBooks (QuickBooks Web Connect).</li>
+        </ul>
+        <p>The converter reads all three the same way, in version 1 or 2, and ignores the tags it doesn't need. It reads the character set the file's header names, usually Windows-1252 or UTF-8, so accented names come through as they should. It reads bank and credit card statements; investment account statements aren't converted.</p>
+
+        <h2>Why convert to CSV</h2>
+        <p>A spreadsheet doesn't read OFX, but it opens CSV: plain text with one row per line and commas between the columns. People convert their bank's file to:</p>
+        <ul>
+          <li>sort, filter and total their spending in Excel, Google Sheets or Numbers;</li>
+          <li>give an accountant or tax software the transactions in the form it asks for;</li>
+          <li>bring transactions into an app or website that imports only CSV;</li>
+          <li>keep a readable copy of statements the bank will stop showing online.</li>
+        </ul>
+
+        <h2>Opening the CSV in a spreadsheet</h2>
+        <ul>
+          <li><b>Excel.</b> Double-click the file or open it with File &gt; Open. Keep <b>Add a byte order mark</b> on: without it, Excel can show accented letters as two odd characters, like Ã© instead of é.</li>
+          <li><b>Long numbers in Excel.</b> Excel treats a transaction ID or account number made of digits as a number, which drops leading zeros and turns any digits after the 15th into zeros. To keep them exact, bring the file in with Data &gt; From Text/CSV instead of double-clicking, and set those columns to Text.</li>
+          <li><b>Google Sheets.</b> Use File &gt; Import &gt; Upload and pick the CSV.</li>
+          <li><b>Dates.</b> 2026-10-03 can't be mistaken for another order. Choose 10/03/2026 or 03/10/2026 if your spreadsheet or app expects the month or the day first.</li>
+        </ul>
+
+        <h2>Getting the file from your bank</h2>
+        <p>Most banks offer a download next to an account's transactions on their website, often called <b>Download</b>, <b>Export</b> or <b>Download account activity</b>. Choose OFX, QFX or Quicken (QBO is the QuickBooks choice), and the dates you want. The <a href="/import/">bank import guides</a> show where it is, step by step, at banks and cards such as <a href="/import/chase/">Chase</a>, <a href="/import/citi/">Citi</a>, <a href="/import/wells-fargo/">Wells Fargo</a> and <a href="/import/apple-card/">Apple Card</a>, all of which offer a QFX or OFX file.</p>
+        <p>If your bank also offers CSV, you may not need to convert anything. An OFX file is the same at every bank, though, and it carries each transaction's ID, while every bank lays out its CSV its own way.</p>
+
+        <h2>If something goes wrong</h2>
+        <ul>
+          <li><b>"This doesn't look like an OFX file."</b> Open the file in a text editor such as Notepad or TextEdit. An OFX file starts with OFXHEADER:100, or with <code>&lt;?xml</code> followed by <code>&lt;?OFX</code>. If you see a web page instead, sign in to your bank and download the file again.</li>
+          <li><b>No transactions.</b> The dates you picked had none, or only pending ones. Download a longer date range.</li>
+          <li><b>Some transactions left out.</b> The page lists each one and why. Check those few on your bank's website and add them by hand.</li>
+          <li><b>Odd characters in names.</b> In Excel, keep the byte order mark on. If the preview shows them too, the bank's file names the wrong character set; the converter already reads a file labeled Windows-1252 as UTF-8 when its bytes are clearly UTF-8.</li>
+        </ul>
+
+        <h2>In UrBudget</h2>
+        <p>UrBudget imports OFX and QFX files directly, so you don't need this converter for UrBudget: choose <b>Import file</b> above an account's transactions and pick the file. Every row is shown before anything is saved, and rows you've already imported are marked as duplicates.</p>
+        <p>The CSV this converter writes imports into UrBudget too, for example after you've edited it in a spreadsheet. UrBudget reads its Date, Payee, Memo and Amount columns (or Outflow and Inflow), and you choose the same date order you picked here. A few things to know:</p>
+        <ul>
+          <li>UrBudget imports into one account at a time, so split a CSV that has an Account column first.</li>
+          <li>If your spreadsheet saves dates with a time attached, change them back to plain dates; a date like 2026-10-03T12:00:00 isn't read.</li>
+          <li>QBO isn't one of the formats UrBudget imports (CSV, OFX, QFX and QIF), so convert a QBO file here and import the CSV.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Budget from your bank's files</h2>
+          <p>UrBudget is envelope budgeting for Windows and macOS. It imports OFX, QFX, QIF and CSV files, and never asks for your bank login. Free, with no account and no card.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=tool-ofx-to-csv" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/import/">Bank import guides</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related">
+          <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+          <li><a href="/import/citi/">How to download Citi transactions</a></li>
+          <li><a href="/import/apple-card/">How to export Apple Card transactions</a></li>
+          <li><a href="/tools/envelope-budget-template/">Envelope budget template</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

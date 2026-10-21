@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /account/
+Disallow: /api/
+# Installer downloads redirect to the newest release file; they aren't pages.
+Disallow: /download/windows
+Disallow: /download/macos
+Disallow: /download/store
+Disallow: /releases/
+
+Sitemap: https://urbudget.app/sitemap.xml

@@ -1,0 +1,29 @@
+.DS_Store
+/YNAB Export*/
+/*.zip
+/reconciliation-*/
+
+/migration-*/
+
+# Local financial data and credentials
+*.db
+*.db-shm
+*.db-wal
+*.sqlite*
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+recovery.json
+
+# Stray installs at the repository root
+/node_modules/
+
+# Local QA evidence and disposable captures; retention policy: docs/ARTIFACTS.md.
+/reports/
+# Per-machine agent launches and nested checkouts are not application source.
+/.claude/
+# Retained local source media and dated submission captures (current exports are tracked).
+/marketing/video/
+/marketing/screenshots/1.0.4/

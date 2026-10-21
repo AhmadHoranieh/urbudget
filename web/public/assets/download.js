@@ -1,0 +1,162 @@
+// /download/: puts the download for this computer first, fills in the newest release from
+// GET /api/v1/releases/latest (version, file names, sizes, checksums and what's new), and explains
+// ?unavailable=windows|macos (where the Worker sends people when that installer isn't published
+// yet). Every link works without any of this.
+
+import { api } from "./api.js";
+import { formatBytes, formatDate, params } from "./site.js?v=2";
+import { noteSections } from "./release-notes.js";
+
+const $ = (id) => document.getElementById(id);
+const NAMES = { windows: "Windows", macos: "macOS" };
+const HINTS = {
+  windows: ["Installs and updates through the Store.", "Installer and Mac app"],
+  macos: ["For Apple silicon and Intel, macOS 12 or later.", "Windows downloads"],
+};
+
+function detectOS() {
+  const ua = navigator.userAgent || "";
+  const platform = navigator.userAgentData?.platform || navigator.platform || "";
+  if (/iPhone|iPad|iPod|Android/i.test(ua)) return "mobile";
+  // iPadOS reports itself as a Mac; a touch screen gives it away.
+  if (/Mac/i.test(platform) && navigator.maxTouchPoints > 1) return "mobile";
+  if (/Win/i.test(platform) || /Windows NT/i.test(ua)) return "windows";
+  if (/Mac/i.test(platform) || /Mac OS X|Macintosh/i.test(ua)) return "macos";
+  if (/Linux|CrOS|X11/i.test(platform + ua)) return "linux";
+  return "unknown";
+}
+
+/** Shows only this computer's button in the hero, and puts its downloads and steps first. */
+function recommend(os) {
+  for (const button of document.querySelectorAll("#dl-actions [data-os]")) {
+    const mine = button.dataset.os === os;
+    button.hidden = !mine;
+    button.classList.toggle("btn-primary", mine);
+    button.classList.toggle("dl-btn-quiet", !mine);
+  }
+  const [text, other] = HINTS[os];
+  const hint = $("dl-hint");
+  const link = hint.querySelector("a");
+  link.textContent = other;
+  hint.textContent = `${text} `;
+  hint.append(link);
+  // The one download for this computer (the Store on Windows) is marked, and its button is the
+  // main one.
+  for (const button of document.querySelectorAll(".dl-item [data-pick]")) {
+    const mine = button.dataset.pick === os;
+    button.classList.toggle("btn-primary", mine);
+    button.closest(".dl-item").classList.toggle("is-here", mine);
+  }
+  // Moved, not just restyled, so the order is the same for keyboards and screen readers.
+  const list = $("dl-list");
+  const steps = $("dl-steps");
+  for (const el of [...list.querySelectorAll(`.dl-item[data-os="${os}"]`)].reverse()) list.prepend(el);
+  for (const el of [...steps.querySelectorAll(`.dl-steps[data-os="${os}"]`)].reverse()) steps.prepend(el);
+}
+
+function osNote(os) {
+  const note = $("os-note");
+  if (os === "mobile") {
+    note.textContent =
+      "UrBudget is a desktop app for Windows and macOS; there's no phone or tablet version. Open this page on your computer to download it.";
+  } else if (os === "linux") {
+    note.textContent = "UrBudget runs on Windows and macOS. There isn't a Linux version.";
+  } else {
+    return;
+  }
+  note.hidden = false;
+}
+
+function unavailable() {
+  const platform = params.get("unavailable");
+  if (!NAMES[platform]) return null;
+  $("unavailable-text").textContent =
+    `The ${NAMES[platform]} version isn't published yet. Please check back soon. If you have questions, write to support@urbudget.app.`;
+  $("unavailable-notice").hidden = false;
+  return platform;
+}
+
+const el = (tag, text) => {
+  const node = document.createElement(tag);
+  if (text) node.textContent = text;
+  return node;
+};
+
+/**
+ * Plain-text blocks and Markdown sections each become a card. Headings and "- " items
+ * are recognized; all content stays text rather than HTML.
+ */
+function showNotes(latest, date) {
+  const text = String(latest.notes ?? "").trim();
+  if (!text) return;
+  const box = $("notes-body");
+  box.replaceChildren();
+  for (const lines of noteSections(text)) {
+    const card = el("div");
+    card.className = "dl-note";
+    let list = null;
+    for (const line of lines) {
+      const item = line.match(/^[-*•]\s+(.*)$/);
+      if (item) {
+        list ??= card.appendChild(el("ul"));
+        list.append(el("li", item[1]));
+      } else {
+        list = null;
+        card.append(el(card.childElementCount ? "p" : "h3", line));
+      }
+    }
+    box.append(card);
+  }
+  $("notes-title").textContent = `What's new in ${latest.version}`;
+  $("notes-date").textContent = date ? `Released ${date}. Updates are free.` : "Updates are free.";
+  $("whats-new").hidden = false;
+  const link = el("a", "What's new");
+  link.href = "#whats-new";
+  $("dl-release").append(" · ", link);
+}
+
+async function release() {
+  try {
+    const latest = await api("/releases/latest");
+    const date = formatDate(latest.date);
+    // "October 20", with the year only when it isn't this one.
+    const day = date.replace(`, ${new Date().getFullYear()}`, "");
+    $("dl-release").textContent = `Version ${latest.version}${day ? `, updated ${day}` : ""}`;
+    $("release-line").textContent = `Direct installers are version ${latest.version}. Microsoft Store updates follow Store certification and may arrive later.`;
+    const sums = [];
+    for (const key of Object.keys(NAMES)) {
+      const p = latest.platforms?.[key];
+      const meta = $(`meta-${key}`);
+      if (!p) {
+        meta.textContent = "Not published yet";
+        continue;
+      }
+      if (p.file) meta.textContent = p.file;
+      const size = formatBytes(p.size);
+      if (size) Object.assign($(`size-${key}`), { textContent: size, hidden: false });
+      if (p.file) for (const name of document.querySelectorAll(`[data-file="${key}"]`)) name.textContent = p.file;
+      if (p.sha256) sums.push([p.file || NAMES[key], p.sha256]);
+    }
+    if (sums.length) {
+      $("checksums").replaceChildren(
+        ...sums.map(([file, sum]) => {
+          const row = el("div");
+          const dd = el("dd");
+          dd.append(el("code", sum));
+          row.append(el("dt", file), dd);
+          return row;
+        }),
+      );
+    }
+    showNotes(latest, date);
+  } catch {
+    // Static text distinguishes direct releases from Store certification.
+  }
+}
+
+const os = detectOS();
+const missing = unavailable();
+if (NAMES[os]) recommend(os);
+else if (missing) recommend(missing);
+osNote(os);
+void release();

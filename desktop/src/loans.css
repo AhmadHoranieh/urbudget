@@ -1,0 +1,222 @@
+/* Loans: their details in the account form (LoanDetails.tsx), the strip over a loan's register
+   and its payment category in the inspector (LoanHeader.tsx), and the payoff planner
+   (LoanPlanner.tsx). */
+
+/* ---------- Loan details in the account form ---------- */
+.loan-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 4px 0 12px;
+  padding: 12px 14px 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.loan-fields legend {
+  padding: 0 4px;
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+}
+/* Rate, payment and fees on one line where they fit. */
+.loan-fields .form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  margin-bottom: 0;
+}
+.loan-fields > .help {
+  margin: 0 0 8px;
+}
+.rate-changes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rate-changes[open] {
+  padding-bottom: 4px;
+}
+.rate-changes .help {
+  margin: 0;
+}
+.rate-change-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 8px 12px;
+}
+.rate-change-add label {
+  flex: 1 1 140px;
+}
+
+/* ---------- Over a loan's register ---------- */
+/* The loan's figures, its buttons at the right, and a line on how interest is charged. */
+.loan-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.loan-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin: 0;
+}
+.loan-facts > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.loan-facts dt {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.loan-facts dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.loan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.loan-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.loan-note .link-button {
+  height: auto;
+  padding: 0;
+  font-size: 12px;
+}
+/* A debt with no details yet: what they give, and the button that adds them. */
+.loan-prompt {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  color: var(--muted);
+}
+.loan-prompt p {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  font-size: 12px;
+}
+.loan-prompt strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+/* ---------- A loan's payment category, in the inspector ---------- */
+.loan-category {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.loan-category h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.loan-category .detail-list {
+  margin: 0;
+}
+.loan-category > .link-button {
+  align-self: flex-start;
+  padding: 0;
+}
+
+/* ---------- The payoff planner ---------- */
+.loan-planner .loan-facts {
+  margin-bottom: 14px;
+}
+.loan-planner .loan-try {
+  margin-bottom: 8px;
+}
+.loan-needed {
+  margin: 0 0 10px;
+  color: var(--text-2);
+}
+.loan-planner > .form-error {
+  margin: 0 0 10px;
+}
+/* What the changes save, as three figures over the comparison. */
+.loan-savings {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  background: var(--accent-soft);
+}
+.loan-savings > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.loan-savings span {
+  color: var(--text-2);
+  font-size: 12px;
+}
+.loan-savings strong {
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
+}
+.loan-compare {
+  width: 100%;
+  margin-bottom: 12px;
+}
+/* Row labels read as the first column, not as headings. */
+.loan-compare tbody th {
+  padding: 8px 10px;
+  background: none;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.loan-compare tbody tr:last-child th {
+  border-bottom: none;
+}
+.loan-chart {
+  margin-bottom: 8px;
+}
+.loan-schedule {
+  margin-bottom: 8px;
+}
+.loan-schedule-scroll {
+  max-height: 320px;
+  overflow: auto;
+}
+.loan-schedule .data-table {
+  width: 100%;
+  font-size: 12.5px;
+}
+

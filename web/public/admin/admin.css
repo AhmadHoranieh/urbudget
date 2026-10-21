@@ -1,0 +1,589 @@
+/* The admin page. Builds on site.css (tokens, buttons, inputs, badges, panels); this adds the
+   header, stat tiles, the funnel, tables, charts and the account dialog. */
+
+.admin {
+  /* Chart series: categorical slots 1 and 2, validated against --surface in both modes. */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --grid: var(--border);
+}
+@media (prefers-color-scheme: dark) {
+  .admin {
+    --series-1: #3987e5;
+    --series-2: #d95926;
+  }
+}
+
+.admin .h3 {
+  font-family: var(--font-sans);
+  font-variation-settings: normal;
+  font-size: var(--step-1);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- Header ---------- */
+
+.admin-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+.admin-header-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  min-height: 60px;
+  padding-block: var(--space-2);
+}
+.admin-header .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text);
+  font-weight: 700;
+  text-decoration: none;
+}
+.admin-header .brand .muted {
+  font-weight: 500;
+}
+.admin-who {
+  margin-left: auto;
+  overflow-wrap: anywhere;
+}
+
+.admin-main {
+  padding-block: var(--space-5) var(--space-8);
+}
+.admin-main .tabs-list {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: none;
+}
+.admin-main .tab {
+  white-space: nowrap;
+}
+.tab-panel > * + * {
+  margin-top: var(--space-5);
+}
+/* While a tab loads again, it keeps what it showed, dimmed. */
+.tab-panel.is-loading {
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+#load-error {
+  margin-bottom: var(--space-5);
+}
+
+/* ---------- Stat tiles ---------- */
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
+  gap: var(--space-3);
+}
+.tile {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.tile-label {
+  color: var(--text-2);
+  font-size: var(--step--1);
+}
+.tile-value {
+  color: var(--text);
+  font-size: 1.75rem;
+  font-weight: 650;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.tile-sub {
+  color: var(--text-3);
+  font-size: var(--step--2);
+}
+/* The last 30 days against the 30 before. */
+.tile-trend {
+  color: var(--text-3);
+  font-size: var(--step--2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.tile-trend.is-up {
+  color: var(--success);
+}
+.tile-trend.is-down {
+  color: var(--warn);
+}
+
+/* ---------- Funnel ---------- */
+
+.funnel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+.funnel li {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  counter-increment: step;
+}
+.funnel-value {
+  color: var(--text);
+  font-size: var(--step-2);
+  font-weight: 650;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.funnel-label {
+  color: var(--text-2);
+  font-size: var(--step--1);
+}
+.funnel-label::before {
+  content: counter(step) ". ";
+  color: var(--text-3);
+}
+.funnel-share {
+  color: var(--text-3);
+  font-size: var(--step--2);
+}
+
+.attention {
+  display: grid;
+  gap: var(--space-2);
+}
+.attention:empty {
+  display: none;
+}
+.attention .notice {
+  align-items: center;
+}
+
+/* ---------- Charts ---------- */
+
+.chart-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+@media (min-width: 1000px) {
+  .chart-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .chart-grid > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+.chart-card {
+  position: relative;
+  min-width: 0;
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.chart-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+.chart-title {
+  color: var(--text);
+  font-size: var(--step-0);
+  font-weight: 650;
+}
+.chart-sub {
+  color: var(--text-3);
+  font-size: var(--step--2);
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-2);
+  font-size: var(--step--2);
+}
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.legend b {
+  color: var(--text);
+  font-weight: 650;
+}
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.chart-svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.chart-svg:focus-visible {
+  outline-offset: 4px;
+}
+.chart-svg .grid {
+  stroke: var(--grid);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+.chart-svg .tick {
+  fill: var(--text-3);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.chart-svg .hover-band {
+  fill: var(--text);
+  opacity: 0;
+}
+.chart-svg .hover-band.is-on {
+  opacity: 0.06;
+}
+.chart-empty {
+  padding: var(--space-6) 0;
+  color: var(--text-3);
+  font-size: var(--step--1);
+  text-align: center;
+}
+.chart-tooltip {
+  position: absolute;
+  z-index: 2;
+  min-width: 140px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+  color: var(--text-2);
+  font-size: var(--step--2);
+  pointer-events: none;
+}
+.chart-tooltip .tip-date {
+  margin-bottom: 2px;
+  color: var(--text-3);
+}
+.chart-tooltip .tip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.chart-tooltip .tip-row b {
+  min-width: 2.5ch;
+  color: var(--text);
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+.chart-tooltip .tip-key {
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+}
+.chart-table {
+  margin-top: var(--space-2);
+  font-size: var(--step--2);
+}
+.chart-table summary {
+  width: fit-content;
+  color: var(--text-3);
+  cursor: pointer;
+}
+.chart-table .table-wrap {
+  max-height: 260px;
+  margin-top: var(--space-2);
+  overflow: auto;
+}
+
+/* ---------- Toolbars and forms ---------- */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.toolbar-form {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 1 1 520px;
+  gap: var(--space-2);
+}
+.toolbar-form input[type="search"] {
+  flex: 1 1 240px;
+}
+.toolbar-form .select {
+  flex: 0 1 230px;
+}
+.input-sm {
+  min-height: 38px;
+  padding: 0.4rem 0.75rem;
+  font-size: var(--step--1);
+}
+.select {
+  width: auto;
+  cursor: pointer;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+.segmented button {
+  min-height: 32px;
+  padding: 0.25rem 0.85rem;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--step--1);
+  font-weight: 560;
+  cursor: pointer;
+}
+.segmented button[aria-checked="true"] {
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+}
+
+/* ---------- Tables ---------- */
+
+.table-wrap {
+  /* Positioned, so a visually hidden header label scrolls with the table instead of widening the page. */
+  position: relative;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--step--1);
+}
+.data-table th,
+.data-table td {
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.data-table th {
+  color: var(--text-3);
+  font-size: var(--step--2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.data-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.data-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.data-table .mono {
+  white-space: nowrap;
+}
+.data-table .detail {
+  max-width: 48ch;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.data-table .empty td {
+  padding-block: var(--space-5);
+  color: var(--text-3);
+  text-align: center;
+}
+#account-table tbody tr {
+  cursor: pointer;
+}
+#account-table tbody tr:hover td {
+  background: var(--bg-soft);
+}
+.row-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--brand-text);
+  font: inherit;
+  font-family: var(--font-mono);
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.row-button:hover {
+  text-decoration: underline;
+}
+/* An email address rather than a key. */
+.row-button-text {
+  font-family: inherit;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+#weeks-table td:last-child {
+  padding-block: 0.3rem;
+}
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.pager {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.two-col {
+  display: grid;
+  gap: var(--space-5);
+}
+.two-col > .panel + .panel {
+  margin-top: 0;
+}
+@media (min-width: 1000px) {
+  .two-col {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.panel .muted.small {
+  margin: var(--space-1) 0 var(--space-4);
+}
+
+.settings-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step--1);
+}
+.settings-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.settings-list code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+#activity-limits {
+  margin-bottom: var(--space-4);
+}
+
+.github-release + .github-release {
+  margin-top: var(--space-4);
+}
+.github-release h3 {
+  margin-bottom: var(--space-2);
+  font-size: var(--step--1);
+}
+
+/* ---------- Account dialog ---------- */
+
+.admin-dialog {
+  width: min(640px, calc(100vw - 2 * var(--gutter)));
+  max-height: calc(100vh - 2 * var(--space-5));
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+}
+.admin-dialog::backdrop {
+  background: rgb(10 8 20 / 0.45);
+}
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.dialog-close {
+  min-height: 36px;
+  padding: 0.35rem;
+}
+.dialog-close svg {
+  width: 20px;
+  height: 20px;
+}
+.facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  font-size: var(--step--1);
+}
+.facts dt {
+  color: var(--text-3);
+}
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.dialog-facts {
+  margin-top: var(--space-4);
+}
+.admin-dialog p.muted.small {
+  margin: var(--space-1) 0 var(--space-2);
+  font-size: var(--step--2);
+}
+.admin-dialog .data-table {
+  font-size: var(--step--2);
+}
+.admin-dialog .data-table th,
+.admin-dialog .data-table td {
+  padding: 0.4rem 0.5rem;
+}
+.history-title {
+  margin-top: var(--space-5);
+  color: var(--text-3);
+  font-weight: 600;
+}
+.history {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--step--1);
+}
+.history li {
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.history .muted {
+  font-size: var(--step--2);
+}
+.assistant-report { padding: 1rem 0; border-bottom: 1px solid var(--border); }
+.assistant-report summary { cursor: pointer; overflow-wrap: anywhere; }
+.assistant-report pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; overflow: auto; font: inherit; }
+.assistant-reports + p { margin-top: 1rem; }

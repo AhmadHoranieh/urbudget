@@ -1,0 +1,208 @@
+/* Account and sync: the Settings tab and the title-bar chips. */
+.sync-chip,
+.update-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.sync-chip:hover,
+.update-chip:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.sync-chip.trouble {
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+.app-header .sync-chip {
+  border-color: var(--border);
+  background: var(--surface-2);
+}
+.app-header .sync-chip.trouble {
+  border-color: transparent;
+}
+/* A newer version is waiting: Settings › General installs it. */
+.update-chip,
+.update-chip:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* The sync plan, offered until the account subscribes. */
+.plan-offer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 4px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.plan-offer > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.plan-offer small {
+  color: var(--muted);
+}
+.plan-price {
+  font-size: 15px;
+}
+.sign-in,
+.passphrase {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 560px;
+}
+.sign-in label,
+.passphrase label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.inline-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inline-field input {
+  flex: 1;
+  min-width: 0;
+}
+.code-input {
+  max-width: 140px;
+  letter-spacing: 0.2em;
+}
+.sync-actions,
+.setting-row > .sync-actions {
+  display: inline-flex;
+  flex-direction: row;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.sync-panel .panel-title {
+  margin-bottom: 4px;
+}
+.sync-state.conflict,
+.sync-state.error,
+.sync-state.update_app {
+  color: var(--negative);
+}
+.sync-state.cloud_only,
+.sync-state.local_only,
+.sync-state.waiting {
+  color: var(--warning);
+}
+.sync-budget em {
+  font-style: normal;
+  font-weight: 400;
+}
+.plan-line {
+  margin: 0 0 6px;
+}
+.sync-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 10px 0 0;
+}
+.sync-footer .link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.sync-panel .notice,
+.panel .notice {
+  margin: 6px 0;
+}
+
+/* What a merge decided on its own, under a synced budget's state. */
+.sync-note {
+  color: var(--muted);
+}
+
+/* Changes both devices made differently (SyncConflicts.tsx): one card per record, a side to pick. */
+.sync-conflicts-lead {
+  margin: 0 0 10px;
+}
+.sync-conflicts-all {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+}
+.sync-conflicts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: min(60vh, 520px);
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+.sync-conflict {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.sync-conflict-record {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.sync-conflict-field {
+  margin: 4px 0 8px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.sync-conflict-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.sync-conflict-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 2px 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+}
+.sync-conflict-option input {
+  grid-row: span 2;
+  margin: 2px 0 0;
+}
+.sync-conflict-option.chosen {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.sync-conflict-side {
+  color: var(--text-2);
+  font-size: 12px;
+}
+.sync-conflict-value {
+  overflow-wrap: anywhere;
+}

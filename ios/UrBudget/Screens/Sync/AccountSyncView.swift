@@ -1,0 +1,409 @@
+import SwiftUI
+
+/// Account & sync, as Android's CloudScreen: sign in with an emailed code, and end-to-end
+/// encrypted sync of budgets between this iPhone, desktop and Android.
+struct AccountSyncView: View {
+    @Environment(BudgetStore.self) private var store
+    @Environment(SyncCoordinator.self) private var sync
+    @AppStorage(SyncCoordinator.automaticKey) private var automatic = true
+
+    @State private var overview: JSON?
+    @State private var busy = false
+    @State private var error: String?
+    @State private var notice: String?
+    @State private var email = ""
+    @State private var code = ""
+    @State private var sent = false
+    @State private var passphrase: PassphraseRequest?
+    @State private var conflict: IdentifiedJSON?
+    @State private var removing: JSON?
+    @State private var confirmSignOut = false
+    @State private var deletingAccount = false
+    @FocusState private var typingCode: Bool
+
+    private var status: JSON { sync.status ?? [:] }
+    private var signedIn: String { status.text("email") }
+
+    var body: some View {
+        Form {
+            Section {
+                Text("Your budgets stay on this device. Sync is optional, and budgets are encrypted before they leave it.")
+                    .font(.subheadline).foregroundStyle(Color.secondary)
+                    .listRowBackground(Color.clear)
+            }
+            if let notice { Notice(text: notice, tone: "info").listRowInsets(EdgeInsets()).listRowBackground(Color.clear) }
+            if let error { FormErrorView(message: error) }
+            accountSection
+            if !signedIn.isEmpty {
+                syncSection
+                budgetsSection
+                Section {
+                    Button("Reset forgotten sync passphrase") { passphrase = PassphraseRequest(kind: .reset) }
+                    Button("Delete account and cloud data", role: .destructive) { deletingAccount = true }
+                }
+                .disabled(busy)
+            }
+            Section {
+                Button("Privacy & your choices") { run { _ = try await store.service("account_open", ["next": "/privacy/app/"]) } }
+                    .disabled(busy)
+            }
+        }
+        .navigationTitle("Account & sync")
+        .overlay(alignment: .top) { if busy { ProgressView().padding(8) } }
+        .task {
+            // Status follows sign-ins and sync attempts while the screen is open.
+            while !Task.isCancelled {
+                await sync.refreshStatus()
+                try? await Task.sleep(for: .seconds(5))
+            }
+        }
+        .task(id: signedIn) {
+            guard !signedIn.isEmpty else { overview = nil; return }
+            // Optional subscription details: a slow request mustn't hold up the local controls.
+            overview = try? await store.service("account_overview")
+        }
+        .sheet(item: $passphrase) { request in
+            // A wrong passphrase stays in the sheet; the first sync after it shows here.
+            PassphraseSheet(request: request) { phrase in
+                _ = try await store.service(request.kind == .reset ? "sync_reset" : "sync_setup", ["passphrase": .string(phrase)])
+                run { try await sync.syncNow() }
+            }
+        }
+        .sheet(item: $conflict) { entry in
+            SyncConflictSheet(entry: entry.value) { keep, choices in
+                _ = try await store.service("sync_resolve", ["id": .string(entry.value.text("id")), "keep": .string(keep), "choices": choices])
+                store.reload()
+                await sync.refreshStatus()
+            }
+        }
+        .sheet(isPresented: $deletingAccount) { DeleteAccountSheet(email: signedIn) { confirm in
+            _ = try await store.service("account_delete", ["confirm": .string(confirm)])
+            await sync.refreshStatus()
+        } }
+        .confirmationDialog("Sign out of UrBudget?", isPresented: $confirmSignOut, titleVisibility: .visible) {
+            Button("Sign out", role: .destructive) { run { _ = try await store.service("account_sign_out") } }
+        } message: {
+            Text("Sync stops on this iPhone and it forgets the sync key. Your budgets here stay as they are.")
+        }
+        .confirmationDialog("Remove the cloud copy of \(removing?.text("name") ?? "this budget")?",
+                            isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }), titleVisibility: .visible) {
+            Button("Remove cloud copy", role: .destructive) {
+                guard let id = removing?.text("id") else { return }
+                run {
+                    _ = try await store.service("sync_remove", ["id": .string(id)])
+                    try await sync.syncNow()
+                }
+            }
+        } message: {
+            Text("This stops syncing it and deletes its cloud copy. Copies on your devices stay.")
+        }
+    }
+
+    // MARK: Sections
+
+    @ViewBuilder private var accountSection: some View {
+        Section("Account") {
+            if signedIn.isEmpty {
+                Text("Sign in with your email to sync your budgets. No password needed.")
+                    .font(.subheadline).foregroundStyle(Color.secondary)
+                TextField("Email address", text: $email)
+                    .textContentType(.emailAddress)
+                    .emailKeyboard()
+                    .autocorrectionDisabled()
+                    .onChange(of: email) { sent = false; code = "" }
+                if sent {
+                    TextField("Code from the email", text: $code)
+                        .textContentType(.oneTimeCode)
+                        .numberKeyboard()
+                        .focused($typingCode)
+                    Button("Sign in") {
+                        run {
+                            _ = try await store.service("account_verify", ["email": .string(email.trimmingCharacters(in: .whitespaces)),
+                                                                           "code": .string(code.trimmingCharacters(in: .whitespaces))])
+                            code = ""
+                            await sync.syncAutomatically()
+                        }
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(busy || code.trimmingCharacters(in: .whitespaces).isEmpty)
+                    Button("Send a new code", action: sendCode).disabled(busy || !email.contains("@"))
+                } else {
+                    Button("Send sign-in code", action: sendCode).fontWeight(.semibold).disabled(busy || !email.contains("@"))
+                }
+            } else {
+                Label {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(signedIn)
+                        Text(status.text("credentialStore").isEmpty ? "Session stored securely on this device" : "Session stored in \(status.text("credentialStore"))")
+                            .font(.footnote).foregroundStyle(Color.secondary)
+                    }
+                } icon: {
+                    Image(systemName: "person.crop.circle.fill").foregroundStyle(Color.urAccent).font(.title2)
+                }
+                Button("Sign out on this device", role: .destructive) { confirmSignOut = true }
+                    .disabled(busy)
+            }
+        }
+    }
+
+    private func sendCode() {
+        run {
+            _ = try await store.service("account_start", ["email": .string(email.trimmingCharacters(in: .whitespaces))])
+            sent = true
+            notice = "Check your email for a sign-in code. It may land in your Junk folder."
+            typingCode = true
+        }
+    }
+
+    @ViewBuilder private var syncSection: some View {
+        let report = sync.lastReport
+        Section {
+            if let plan = overview?["sync"], plan.isObject {
+                Label(plan["active"].bool ? "Sync subscription active" : "Sync needs an active subscription",
+                      systemImage: plan["active"].bool ? "checkmark.icloud.fill" : "exclamationmark.icloud")
+                    .foregroundStyle(plan["active"].bool ? Color.urPositive : Color.urWarning)
+            }
+            Toggle(isOn: $automatic) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Sync automatically")
+                    Text("After changes and every minute while the app is open").font(.footnote).foregroundStyle(Color.secondary)
+                }
+            }
+            if sync.unlocked {
+                Button {
+                    run { try await sync.syncNow() }
+                } label: {
+                    HStack {
+                        Label("Sync now", systemImage: "arrow.triangle.2.circlepath")
+                        if sync.syncing { Spacer(); ProgressView() }
+                    }
+                }
+                .disabled(busy || sync.syncing)
+                Button { run { _ = try await store.service("sync_lock") } } label: { Label("Lock sync on this device", systemImage: "lock") }
+                    .disabled(busy)
+            } else {
+                Button {
+                    run {
+                        let exists = try await store.service("sync_has_key").bool
+                        passphrase = PassphraseRequest(kind: exists ? .unlock : .setup)
+                    }
+                } label: { Label("Set up or unlock sync", systemImage: "key") }
+                .disabled(busy)
+            }
+        } header: {
+            Text("Encrypted sync")
+        } footer: {
+            if let report, !(report.text("message").isEmpty && report.text("at").isEmpty) {
+                Text([report.text("message"), report.text("at").isEmpty ? "" : "Last attempt: \(lastAttempt(report.text("at")))"]
+                    .filter { !$0.isEmpty }.joined(separator: " · "))
+            } else {
+                Text("Only your sync passphrase opens your budgets. UrBudget can't read or recover them.")
+            }
+        }
+    }
+
+    @ViewBuilder private var budgetsSection: some View {
+        let budgets = sync.lastReport?.rows("budgets") ?? []
+        if !budgets.isEmpty {
+            Section("Budgets") {
+                ForEach(budgets, id: \.idText) { entry in
+                    let state = entry.text("state")
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text(entry.text("name")).fontWeight(.semibold)
+                            Spacer()
+                            Text(syncStateLabel(state))
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(state == "conflict" ? Color.urWarning : state == "error" ? Color.urNegative : .secondary)
+                                .padding(.horizontal, 8).padding(.vertical, 3)
+                                .background((state == "conflict" ? Color.urWarning : Color.secondary).opacity(0.14), in: Capsule())
+                        }
+                        if !entry.text("message").isEmpty { Text(entry.text("message")).font(.subheadline).foregroundStyle(Color.secondary) }
+                        ForEach(entry["notes"].array.map(\.string), id: \.self) { Text($0).font(.footnote).foregroundStyle(Color.secondary) }
+                        HStack(spacing: 10) {
+                            switch state {
+                            case "cloud_only":
+                                Button("Download and open") {
+                                    run {
+                                        let id = try await store.service("sync_download", ["id": .string(entry.text("id"))]).string
+                                        store.openBudget(id: id)
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                            case "local_only":
+                                Button("Start syncing") {
+                                    run {
+                                        _ = try await store.service("sync_track", ["ids": JSON([entry.text("id")])])
+                                        try await sync.syncNow()
+                                    }
+                                }
+                                .buttonStyle(.bordered)
+                            case "conflict":
+                                Button("Review differences") { conflict = IdentifiedJSON(value: entry) }
+                                    .buttonStyle(.borderedProminent).tint(.urWarning)
+                            default:
+                                EmptyView()
+                            }
+                            Spacer()
+                            if state != "local_only" {
+                                Button("Remove cloud copy", role: .destructive) { removing = entry }.buttonStyle(.borderless).font(.subheadline)
+                            }
+                        }
+                        .disabled(busy)
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    private func syncStateLabel(_ state: String) -> String {
+        switch state {
+        case "cloud_only": return "In the cloud"
+        case "local_only": return "This device only"
+        case "conflict": return "Needs review"
+        case "synced": return "Synced"
+        case "uploaded": return "Uploaded"
+        case "downloaded": return "Downloaded"
+        case "merged": return "Merged"
+        case "waiting": return "Waiting"
+        case "update_app": return "Update the app"
+        case "error": return "Error"
+        case "": return "Unknown"
+        default: return state.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+
+    private func lastAttempt(_ at: String) -> String {
+        let parser = ISO8601DateFormatter()
+        parser.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let date = parser.date(from: at) ?? ISO8601DateFormatter().date(from: at)
+        return date.map { $0.formatted(date: .abbreviated, time: .shortened) } ?? at
+    }
+
+    /// Runs one account or sync action: one at a time, with its error shown on the screen.
+    private func run(_ action: @escaping @MainActor () async throws -> Void) {
+        guard !busy else { return }
+        busy = true
+        error = nil
+        notice = nil
+        Task {
+            defer { busy = false }
+            do { try await action() } catch { self.error = BudgetStore.readable(error) }
+            await sync.refreshStatus()
+        }
+    }
+}
+
+private struct PassphraseRequest: Identifiable {
+    enum Kind { case setup, unlock, reset }
+    let id = UUID()
+    var kind: Kind
+}
+
+/// Creating, entering or resetting the sync passphrase.
+private struct PassphraseSheet: View {
+    var request: PassphraseRequest
+    var submit: (String) async throws -> Void
+    @State private var phrase = ""
+    @State private var repeated = ""
+
+    var body: some View {
+        let needsRepeat = request.kind != .unlock
+        let valid = phrase.count >= 8 && (!needsRepeat || phrase == repeated)
+        FormSheet(title: request.kind == .reset ? "Reset passphrase" : request.kind == .setup ? "Create passphrase" : "Unlock sync",
+                  confirm: request.kind == .reset ? "Reset" : "Continue", enabled: valid, destructive: request.kind == .reset) {
+            try await submit(phrase)
+        } content: {
+            Section {
+                SecureField("Sync passphrase", text: $phrase).textContentType(request.kind == .unlock ? .password : .newPassword)
+                if needsRepeat { SecureField("Repeat passphrase", text: $repeated).textContentType(.newPassword) }
+            } footer: {
+                Text(request.kind == .reset
+                     ? "This deletes cloud copies encrypted with the old passphrase. Budgets on your devices stay, and this device uploads its copies again."
+                     : request.kind == .setup
+                        ? "At least 8 characters. Keep it somewhere safe: UrBudget can't recover it for you."
+                        : "The passphrase you chose when you set up sync on another device.")
+            }
+            if needsRepeat && !repeated.isEmpty && phrase != repeated { FormErrorView(message: "The passphrases don't match.") }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+/// Choosing what to keep when both devices changed the same thing.
+private struct SyncConflictSheet: View {
+    var entry: JSON
+    var resolve: (String, JSON) async throws -> Void
+    @State private var choices: [String: String] = [:]
+    @State private var whole = ""
+
+    var body: some View {
+        let conflicts = entry.rows("conflicts")
+        let ready = conflicts.isEmpty ? !whole.isEmpty : conflicts.allSatisfy { choices[$0.text("key")] != nil }
+        FormSheet(title: "Resolve \(entry.text("name"))", confirm: "Apply", enabled: ready) {
+            var picked: JSON = [:]
+            for (key, value) in choices { picked[key] = .string(value) }
+            try await resolve(conflicts.isEmpty ? whole : "merge", picked)
+        } content: {
+            Section {
+                Text("Review both versions. Nothing changes until you apply your choices.").foregroundStyle(Color.secondary)
+            }
+            if conflicts.isEmpty {
+                Picker("Keep", selection: $whole) {
+                    Text("This device replaces the cloud copy").tag("local")
+                    Text("The cloud copy replaces this device").tag("cloud")
+                }
+                .pickerStyle(.inline)
+            }
+            ForEach(conflicts, id: \.self.conflictKey) { difference in
+                Section {
+                    LabeledContent("This device", value: describe(difference["local"]))
+                    LabeledContent("Cloud", value: describe(difference["remote"]))
+                    Picker("Keep", selection: Binding(get: { choices[difference.text("key")] ?? "" },
+                                                      set: { choices[difference.text("key")] = $0 })) {
+                        Text("This device").tag("local")
+                        Text("Cloud").tag("cloud")
+                    }
+                    .pickerStyle(.segmented)
+                } header: {
+                    Text([difference.text("label"), difference.text("field")].filter { !$0.isEmpty }.joined(separator: " · "))
+                }
+            }
+        }
+    }
+
+    private func describe(_ value: JSON) -> String {
+        switch value {
+        case .null: return "Deleted"
+        case .string(let text): return text.isEmpty ? "Empty" : text
+        case .int, .double, .bool: return value.string
+        default: return value.serialized()
+        }
+    }
+}
+
+private extension JSON {
+    var conflictKey: String { text("key") }
+}
+
+/// Deleting the account needs its email typed, as on Android.
+private struct DeleteAccountSheet: View {
+    var email: String
+    var delete: (String) async throws -> Void
+    @State private var confirmation = ""
+
+    var body: some View {
+        FormSheet(title: "Delete account", confirm: "Delete",
+                  enabled: confirmation.trimmingCharacters(in: .whitespaces).caseInsensitiveCompare(email) == .orderedSame, destructive: true) {
+            try await delete(confirmation)
+        } content: {
+            Section {
+                TextField("Type \(email) to confirm", text: $confirmation).emailKeyboard().autocorrectionDisabled()
+            } footer: {
+                Text("This deletes your account and cloud budgets and stops subscription renewals. Budgets on your devices stay. Purchase records may be kept as the privacy policy describes.")
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}

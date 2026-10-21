@@ -1,0 +1,1457 @@
+/* Budget page. Imported by BudgetPage.tsx. */
+/* ---------- Budget ---------- */
+/* The budget column scrolls as one, so its scrollbar runs the column's full height beside the
+   inspector. The summary and view tabs stay pinned at its top (like YNAB), and the table's
+   header and total stick while the rows scroll between them. */
+.budget-layout {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  height: 100%;
+  min-height: 0;
+}
+/* The page's own width decides the layout, not the window's: the assistant panel and the
+   sidebar both take room from it. */
+.page-scroll.fill:has(> .budget-layout) {
+  container: budget-page / inline-size;
+}
+.budget-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  /* With the scrollbar, the gap on the right equals the margin on the left. */
+  padding: 0 calc(var(--gutter) - var(--scrollbar-size)) var(--gutter) var(--gutter);
+  overflow: auto;
+  scrollbar-gutter: stable;
+  container-type: inline-size;
+}
+/* WebKit before Safari 18.2 (macOS 15.1's) has no scrollbar-gutter: there the bar's track stays
+   instead, empty until there's something to scroll, so the margins still match. */
+@supports not (scrollbar-gutter: stable) {
+  .budget-main {
+    overflow-y: scroll;
+  }
+}
+/* When the budget column is narrow (a small window or a wide sidebar), the view tabs get their
+   own row instead of being squeezed. */
+@container (max-width: 780px) {
+  .budget-toolbar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .budget-toolbar .tabs {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+}
+.budget-main > * {
+  flex: none;
+}
+/* Painted with the page's background, so rows scrolling up pass under it unseen. */
+.budget-pinned {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--gutter);
+  background: var(--bg);
+}
+.budget-pinned > .notice {
+  margin: 0 0 10px;
+}
+/* Spending that needs a category (uncategorized.ts): the attention colour the register's labels
+   use, as a faint wash with a hairline of it, the count, what it costs, and the way to them. */
+.needs-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 10px 10px 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--attention) 45%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--attention) 9%, var(--surface));
+}
+.needs-banner > svg {
+  flex: none;
+  color: var(--attention-ink);
+}
+.needs-banner > p {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  min-width: 0;
+  margin: 0;
+}
+.needs-banner strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.needs-banner span {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.needs-banner-review {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  height: 28px;
+  padding: 0 8px 0 12px;
+  border: none;
+  border-radius: 14px;
+  background: var(--attention);
+  color: var(--on-attention);
+  font-weight: 600;
+  cursor: pointer;
+}
+.needs-banner-review:hover {
+  background: color-mix(in srgb, var(--attention) 86%, var(--text));
+}
+.needs-banner-review:focus-visible {
+  outline: 2px solid var(--attention-ink);
+  outline-offset: 2px;
+}
+.summary-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  margin-bottom: 14px;
+}
+.rta {
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 200px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--zero-soft);
+  transition:
+    box-shadow 0.12s var(--ease),
+    transform 0.06s var(--ease);
+}
+.rta:active {
+  transform: translateY(1px);
+}
+.rta > span {
+  color: var(--text-2);
+}
+.rta strong {
+  font-size: 20px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.rta.positive {
+  border-color: color-mix(in srgb, var(--positive) 22%, transparent);
+  background: var(--positive-soft);
+}
+.rta.positive strong {
+  color: var(--positive);
+}
+.rta.negative {
+  border-color: color-mix(in srgb, var(--negative) 22%, transparent);
+  background: var(--negative-soft);
+}
+.rta.negative strong {
+  color: var(--negative);
+}
+/* The month's figures, separated by hairlines. */
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  margin: 0;
+}
+.stats div + div {
+  padding-left: 20px;
+  border-left: 1px solid var(--border);
+}
+.stats div {
+  display: flex;
+  flex-direction: column;
+}
+.stats dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.rta .rta-hint {
+  color: var(--text-2);
+  font-size: 11.5px;
+}
+.month-note {
+  width: 100%;
+}
+/* One grid for the header, groups, categories and Total: a gutter for the grip and the selection
+   box, the name (with its target meter and status on the same line), the three money columns, and
+   the row's menu. Every amount ends 14px from its column's right edge, fields and pills included,
+   so no column lines are needed. */
+.budget-table {
+  /* The register shares --row, so the budget's rows get their own height. */
+  --budget-row: 36px;
+  --budget-line: color-mix(in srgb, var(--border) 70%, transparent);
+  --budget-gutter: 36px;
+  --budget-columns: var(--budget-gutter) minmax(260px, 1fr) max(124px, var(--assigned-width, 0px)) max(112px, var(--activity-width, 0px)) max(128px, var(--available-width, 0px)) 36px;
+  /* Never narrower than its columns: if the page is too narrow even so, the whole table scrolls
+     sideways instead of its last column spilling past the border. */
+  min-width: min-content;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  /* The sticky header and total draw the top and bottom edges, so they stay put while the rows
+     scroll under them. */
+  border-top: none;
+  border-bottom: none;
+  border-radius: var(--radius-lg);
+}
+/* A budget column too narrow for those columns (a small window, the assistant open, or just above
+   the width where the inspector starts to float) gets slimmer ones. */
+@container (max-width: 700px) {
+  .budget-table {
+    --budget-gutter: 28px;
+    --budget-columns: var(--budget-gutter) minmax(180px, 1fr) max(108px, var(--assigned-width, 0px)) max(100px, var(--activity-width, 0px)) max(112px, var(--available-width, 0px)) 28px;
+  }
+}
+.budget-head,
+.budget-row,
+.group-row,
+.budget-total {
+  display: grid;
+  grid-template-columns: var(--budget-columns);
+  align-items: center;
+  padding: 0;
+}
+.budget-head > *,
+.budget-row > *,
+.group-row > *,
+.budget-total > * {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  min-width: 0;
+  padding: 0 14px;
+}
+.budget-head > .num,
+.budget-row > .num,
+.group-row > .num,
+.budget-total > .num {
+  justify-content: flex-end;
+}
+/* The header and total overlap the table's sides, so their rounded corners are the table's. */
+.budget-head {
+  position: sticky;
+  /* Just under the pinned summary and toolbar (usePinned measures them). */
+  top: var(--pinned, 0px);
+  z-index: 2;
+  height: 32px;
+  margin: 0 -1px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-color: var(--border-strong);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  /* --pinned is a whole number of pixels, so a stuck header can sit a fraction below the pinned
+     area; this keeps the rows from showing through the hairline between them. */
+  box-shadow: 0 -2px 0 var(--bg);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.budget-head .row-status {
+  font-size: 11px;
+}
+.group-row {
+  height: 34px;
+  border-top: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+}
+/* The header's own line is enough above the first group. */
+.budget-head + .group-row,
+.budget-head + .budget-group > .group-row {
+  border-top: none;
+}
+/* A tint over the band, so a hovered group stays a band. */
+.group-row:hover {
+  background-image: linear-gradient(var(--hover), var(--hover));
+}
+/* Group totals are a step quieter than the amounts in the rows beneath them. */
+.group-row .num {
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.budget-row {
+  height: var(--budget-row);
+  border-top: 1px solid var(--budget-line);
+}
+.budget-row:hover {
+  background: var(--hover);
+}
+.budget-row.selected {
+  background: var(--accent-soft);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+/* A zero is there to be read past: muted, which still reads at 4.5:1 on every row. Assigned
+   keeps its full colour while it's being edited. */
+.budget-table .num.zero,
+.budget-row:not(:hover) .assigned-cell.zero .amount-input:not(:focus) {
+  color: var(--muted);
+}
+/* The target meter fills the name column's spare width, the same length on every row. Short is
+   amber, funded a quiet green, overspent red. */
+.target-bar {
+  display: block;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+}
+.target-bar.none {
+  background: none;
+}
+.target-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--warning);
+}
+.target-bar.funded i {
+  background: color-mix(in srgb, var(--positive) 50%, transparent);
+}
+.target-bar.over i {
+  background: var(--negative);
+}
+/* The field sits 7px inside its cell, so its digits end 14px from the edge like every amount. */
+.budget-table .assigned-cell {
+  padding: 0 7px;
+}
+.amount-input {
+  width: 100%;
+  height: 26px;
+  padding: 0 6px;
+  border-color: transparent;
+  background: transparent;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.budget-row:hover .amount-input {
+  border-color: var(--border-strong);
+  background: var(--bg);
+}
+.amount-input:focus {
+  background: var(--surface);
+}
+.budget-row .amount-input:focus {
+  background: var(--bg);
+}
+.amount-input.invalid {
+  border-color: var(--negative);
+}
+.available {
+  display: inline-block;
+  min-width: 70px;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-align: right;
+}
+.available.positive {
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+.available.zero {
+  background: var(--zero-soft);
+  color: var(--muted);
+}
+.available.negative {
+  background: var(--negative-soft);
+  color: var(--negative);
+}
+.available.credit {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+/* In the table, a pill's padding hangs past the column's edge, so its digits line up with the
+   group totals and the Total. Only overspending is a solid fill, as the one thing to fix now; a
+   short target is a light tint, and nothing left is plain text. */
+.budget-row .available {
+  height: 22px;
+  min-width: 0;
+  margin-right: -8px;
+  padding: 0 8px;
+}
+.budget-row .available.zero {
+  background: none;
+  color: var(--muted);
+  font-weight: 500;
+}
+.budget-row .available.underfunded {
+  background: color-mix(in srgb, var(--warning) 11%, transparent);
+}
+.budget-row .available.negative {
+  background: var(--negative);
+  color: var(--bg);
+  font-weight: 650;
+}
+/* The total sticks at the scroll area's bottom padding, a margin above the window's edge. */
+.budget-total {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  height: 38px;
+  margin: 0 -1px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-top-color: var(--border-strong);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  font-weight: 650;
+}
+.budget-total > .category-cell {
+  padding: 0 14px 0 4px;
+  font-weight: 600;
+}
+/* That margin is covered in the page's background (table edges too), so rows scrolling down
+   pass under it unseen and can't be clicked there. The cover starts on the bottom border, which
+   it draws again between the corners: a sticky total can land between pixels, and a cover that
+   only met its edge would leave a hairline of rows showing. */
+.budget-total::after {
+  position: absolute;
+  top: 100%;
+  /* Overlapping the corners' cover by a pixel, so no seam shows between them. */
+  right: calc(var(--radius-lg) - 1px);
+  left: calc(var(--radius-lg) - 1px);
+  height: var(--gutter);
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  content: "";
+}
+/* Rows scrolling under the stuck header or total would show past their rounded corners, so the
+   page's background is painted outside the curves (and, under the total, down the margin's
+   sides). */
+.budget-head::before,
+.budget-total::before {
+  position: absolute;
+  right: -1px;
+  left: -1px;
+  pointer-events: none;
+  content: "";
+}
+.budget-head::before {
+  top: -1px;
+  height: var(--radius-lg);
+  background:
+    radial-gradient(circle at 100% 100%, transparent var(--radius-lg), var(--bg) calc(var(--radius-lg) + 1px)) left /
+      var(--radius-lg) 100% no-repeat,
+    radial-gradient(circle at 0 100%, transparent var(--radius-lg), var(--bg) calc(var(--radius-lg) + 1px)) right /
+      var(--radius-lg) 100% no-repeat;
+}
+.budget-total::before {
+  top: calc(100% + 1px - var(--radius-lg));
+  height: calc(var(--radius-lg) + var(--gutter));
+  background:
+    radial-gradient(circle at 100% 0, transparent var(--radius-lg), var(--bg) calc(var(--radius-lg) + 1px)) left top /
+      var(--radius-lg) var(--radius-lg) no-repeat,
+    radial-gradient(circle at 0 0, transparent var(--radius-lg), var(--bg) calc(var(--radius-lg) + 1px)) right top /
+      var(--radius-lg) var(--radius-lg) no-repeat,
+    linear-gradient(var(--bg), var(--bg)) left bottom / calc(var(--radius-lg) + 1px) var(--gutter) no-repeat,
+    linear-gradient(var(--bg), var(--bg)) right bottom / calc(var(--radius-lg) + 1px) var(--gutter) no-repeat;
+}
+.inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 16px;
+  overflow: auto;
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+}
+.inspector-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.inspector-head p {
+  margin: 2px 0 0;
+  color: var(--muted);
+}
+.inspector-amount {
+  font-size: 22px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+/* A credit card's payment category: pay the card from here (CardPayment.tsx). */
+.inspector .pay-card {
+  align-self: flex-start;
+}
+.inspector-amount.positive {
+  color: var(--positive);
+}
+.inspector-amount.negative {
+  color: var(--negative);
+}
+.inspector .detail-list {
+  margin: 0;
+}
+.inspector .notice {
+  margin: 0;
+}
+.category-note {
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text-2);
+  white-space: pre-wrap;
+}
+/* Too narrow for the table and the inspector side by side (a small window, or the assistant
+   open): the inspector opens over the page's right edge when categories are selected. */
+@container budget-page (max-width: 1004px) {
+  .budget-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inspector {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    display: none;
+    width: 320px;
+    height: auto;
+    align-self: stretch;
+    box-shadow: var(--shadow-lg);
+  }
+  .inspector.open {
+    display: flex;
+  }
+}
+
+.rta:hover {
+  box-shadow: var(--shadow-md);
+}
+.budget-toolbar {
+  display: grid;
+  /* The tabs shrink (and scroll) before the note and buttons do. */
+  grid-template-columns: minmax(0, max-content) minmax(140px, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.toolbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Gutter: the grip and a selection box (categories) or the chevron (groups). */
+.budget-table .row-gutter {
+  padding: 0 0 0 4px;
+}
+.row-gutter[draggable="true"],
+.category-cell[draggable="true"],
+.group-cell[draggable="true"] {
+  -webkit-user-drag: element;
+}
+.drag-handle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 10px;
+  height: 24px;
+  color: var(--muted);
+  opacity: 0;
+}
+.drag-handle.can-drag {
+  cursor: grab;
+}
+.budget-row:hover .drag-handle.can-drag,
+.group-row:hover .drag-handle.can-drag {
+  opacity: 0.7;
+}
+/* The box shows on hover, on selected rows, and while the row has the keyboard. */
+.budget-table .row-select {
+  width: 14px;
+  height: 14px;
+  margin-left: 4px;
+  opacity: 0;
+  transition:
+    opacity 0.12s var(--ease),
+    background-color 0.1s,
+    border-color 0.1s;
+}
+.budget-table .row-select::before {
+  width: 8px;
+  height: 8px;
+}
+.budget-table .row-select:indeterminate::before {
+  height: 2px;
+}
+.budget-row:hover .row-select,
+.budget-row.selected .row-select,
+.budget-row:has(.category-name:focus-visible) .row-select,
+.budget-head:hover .row-select:not(:disabled),
+.row-select:is(:checked, :indeterminate, :focus-visible) {
+  opacity: 1;
+}
+.group-chevron {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 3px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+/* Name cell: the name, the target meter and the status, on one line. The name's slot is the
+   same width on every row, so the meters all start and end at the same x. */
+.category-cell,
+.group-cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+}
+.budget-table .category-cell {
+  padding: 0;
+  container-type: inline-size;
+}
+.category-name {
+  display: grid;
+  flex: 1;
+  /* The status grows to fit a deadline ("1,093.00 more needed by the 31st") as the name does, and
+     the meter takes the rest. Neither depends on the row's text, so meters line up. */
+  grid-template-columns: minmax(96px, 200px) minmax(48px, 1fr) minmax(112px, 200px);
+  column-gap: 14px;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+  padding: 0 14px 0 4px;
+  border: none;
+  background: transparent;
+  text-align: left;
+}
+.category-name .name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* What's left to do sits beside the Assigned amount it's about, right-aligned: the amount in
+   colour, the word quiet. */
+.row-status {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.row-status b {
+  color: var(--warning);
+  font-weight: 600;
+}
+.row-status.over b {
+  color: var(--negative);
+}
+.row-status.later b {
+  color: var(--text);
+}
+.snoozed {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--zero-soft);
+  color: var(--muted);
+  font-size: 11px;
+}
+.category-name .snoozed {
+  justify-self: end;
+}
+/* A narrow name column: the meter goes under the name, and the status stays on the name's line.
+   (A 1440px window with the inspector beside the table keeps one line: 418px.) */
+@container (max-width: 400px) {
+  /* The name takes what it needs, up to 55%, and the status the rest: a long one cuts off, and its
+     tooltip says it all. */
+  .category-name {
+    grid-template-columns: fit-content(55%) minmax(0, 1fr);
+    align-content: center;
+    gap: 4px 8px;
+    padding-right: 12px;
+  }
+  .category-name > .name {
+    grid-area: 1 / 1;
+    min-width: min(5em, 100%);
+  }
+  .category-name > :is(.row-status, .snoozed) {
+    grid-area: 1 / 2;
+  }
+  .category-name > .target-bar {
+    grid-area: 2 / 1 / 3 / 3;
+    height: 3px;
+  }
+  .category-name > .target-bar.none,
+  .budget-head .category-name > :not(.name) {
+    display: none;
+  }
+}
+/* Too narrow for the status at all: the pill's colour, its tooltip and the inspector still say
+   what's needed. */
+@container (max-width: 200px) {
+  .category-name > .row-status {
+    display: none;
+  }
+}
+
+/* Group rows: a section header with the count as a chip, and "+" after it on hover. */
+.budget-table .group-cell {
+  gap: 4px;
+  padding: 0 14px 0 4px;
+}
+.group-name {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-weight: 650;
+  text-align: left;
+}
+.group-name span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.group-count {
+  flex: none;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--zero-soft);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 16px;
+}
+/* Renaming: the field's text starts where the name did. */
+:is(.category-cell, .group-cell) > .name-input {
+  flex: 1;
+  height: 26px;
+  margin: 0 14px 0 -5px;
+}
+.budget-table .group-cell > .name-input {
+  margin-right: 0;
+}
+
+/* Row tools: the group's "+", and each row's menu in the last column. They show on hover, or
+   when they have the keyboard. */
+.budget-table .row-actions {
+  justify-content: center;
+  padding: 0;
+}
+.budget-table :is(.row-actions, .group-cell) .icon-button {
+  width: 24px;
+  height: 24px;
+  color: var(--muted);
+  opacity: 0;
+  transition:
+    opacity 0.12s var(--ease),
+    background-color 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.budget-table :is(.row-actions, .group-cell) .icon-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--text);
+}
+.budget-table :is(.row-actions, .group-cell) .icon-button:active:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+}
+.budget-table :is(.budget-row, .group-row):hover :is(.row-actions, .group-cell) .icon-button,
+.budget-table :is(.row-actions, .group-cell) .icon-button:focus-visible {
+  opacity: 1;
+}
+.budget-row.adding,
+.group-row.adding {
+  background: var(--accent-soft);
+}
+.group-empty {
+  padding: 6px 12px 6px calc(var(--budget-gutter) + 4px);
+  border-top: 1px solid var(--budget-line);
+}
+
+/* A narrow table: slimmer gutters, and no grip (the name still drags). */
+@container (max-width: 700px) {
+  .budget-table .row-gutter {
+    padding-left: 7px;
+  }
+  .budget-table .drag-handle {
+    display: none;
+  }
+  .budget-table .row-select {
+    margin-left: 0;
+  }
+  .group-chevron {
+    margin-left: -1px;
+  }
+}
+
+/* Available pill: a button that opens "move money" */
+button.available {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+button.available {
+  transition: box-shadow 0.12s var(--ease);
+}
+/* The ring also shows that a zero, plain text in the table, can be clicked. */
+button.available:hover {
+  box-shadow: inset 0 0 0 1px currentColor;
+}
+.available.underfunded {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+/* Drag and drop */
+.budget-row.dragging,
+.group-row.dragging {
+  opacity: 0.45;
+}
+.budget-row,
+.group-row {
+  position: relative;
+}
+.drop-before::before,
+.drop-after::after {
+  position: absolute;
+  right: 8px;
+  left: 8px;
+  z-index: 3;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+  content: "";
+}
+/* In the budget, the line starts where the names do. */
+:is(.budget-row, .group-row).drop-before::before,
+:is(.budget-row, .group-row).drop-after::after {
+  left: var(--budget-gutter);
+}
+.drop-before::before {
+  top: -1px;
+}
+.drop-after::after {
+  bottom: -1px;
+}
+.group-row.drop-into {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* Inspector: summary, quick assign, recent changes */
+.quick-assign h3,
+.month-cost h3,
+.recent-moves h3,
+.target-editor h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.inspector-head h2 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+/* The month as one sum: carried over + assigned + activity = available. */
+.month-flow {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.month-flow > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.month-flow dt {
+  min-width: 0;
+  color: var(--text-2);
+}
+.month-flow dd {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 12ch;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+/* Signs sit in their own column, so the amounts read as one addition. */
+.month-flow .op {
+  margin-right: auto;
+  padding-right: 6px;
+  color: var(--muted);
+}
+.month-flow .total {
+  align-items: center;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-strong);
+}
+.month-flow .total dt {
+  color: var(--text);
+  font-weight: 600;
+}
+.month-flow .total dd {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.target-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -4px 0 0;
+  padding: 7px 10px;
+  border-radius: var(--radius);
+  background: var(--positive-soft);
+  color: var(--positive);
+  font-size: 12.5px;
+}
+.target-status.short {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+/* A balance with no date still to build: not a warning, nor done. */
+.target-status.later {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.target-status svg {
+  flex: none;
+}
+.target-status strong {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+/* The month's targets beside the income expected each month. The income field shows its border
+   so it reads as something to fill in, and its label reads like the other terms. */
+.month-cost .detail-list {
+  margin-bottom: 8px;
+}
+.month-cost .detail-list > div {
+  align-items: center;
+}
+.month-cost .detail-list dd {
+  flex: 0 1 14ch;
+}
+.month-cost label {
+  color: inherit;
+  font: inherit;
+}
+.month-cost .amount-input {
+  border-color: var(--border);
+}
+.month-cost .amount-input:hover {
+  border-color: var(--border-strong);
+}
+.month-cost .target-status,
+.month-cost .help {
+  margin: 0;
+}
+.quick-hint {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.quick-group {
+  display: grid;
+  gap: 1px;
+}
+.quick-group + .quick-group {
+  margin-top: 8px;
+}
+.quick-group h4 {
+  margin: 0 0 2px;
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+.quick-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 14px;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 30px;
+  padding: 0 4px 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  transition:
+    background-color 0.12s var(--ease),
+    border-color 0.12s var(--ease);
+}
+.quick-row:hover:not(:disabled) {
+  border-color: var(--border);
+  background: var(--hover);
+}
+.quick-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.quick-amount {
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+/* Assigning more is the notable direction; giving money back to Unassigned stays quiet. */
+.quick-amount.up {
+  color: var(--positive);
+}
+.quick-chevron {
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.12s var(--ease);
+}
+.quick-row:hover:not(:disabled) .quick-chevron,
+.quick-row:focus-visible .quick-chevron {
+  opacity: 1;
+}
+/* Nothing to change: dimmed text rather than a faded button. */
+.quick-row:disabled {
+  color: var(--muted);
+  opacity: 1;
+}
+.quick-row:disabled .quick-amount {
+  color: var(--muted);
+  font-size: 12px;
+}
+.recent-moves ul {
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+.recent-moves li {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.recent-moves li:last-child {
+  border-bottom: none;
+}
+.recent-moves time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.recent-moves small {
+  display: block;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+
+/* Quick assign confirmation: what the option does, with the budget's own numbers. */
+.modal:has(> .qa-dialog) {
+  width: min(640px, 100%);
+}
+.qa-dialog {
+  display: grid;
+  gap: 12px;
+}
+.qa-lead {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.qa-scope {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.qa-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+}
+.qa-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.qa-stats > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+}
+.qa-stats span,
+.qa-th,
+.qa-example > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.qa-stats strong {
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qa-stats small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.qa-example {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--accent-soft);
+  line-height: 1.5;
+}
+.qa-example > span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--accent);
+}
+.qa-table {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.qa-tr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px 84px 116px;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+}
+.qa-th {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.qa-th > span:not(:first-child) {
+  text-align: right;
+}
+.qa-body {
+  max-height: 232px;
+  overflow: auto;
+}
+.qa-body .qa-tr + .qa-tr {
+  border-top: 1px solid var(--border);
+}
+.qa-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.qa-same {
+  margin: -4px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.qa-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.qa-warning svg {
+  flex: none;
+  margin-top: 2px;
+}
+.qa-actions {
+  align-items: center;
+  margin-top: 2px;
+}
+.qa-actions small {
+  margin-right: auto;
+}
+
+/* Move money popover */
+.money-popover {
+  width: 320px;
+  padding: 12px;
+}
+.money-popover form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.popover-title {
+  font-size: 13px;
+}
+.segmented.small {
+  align-self: flex-start;
+  margin: 0;
+}
+.money-popover .modal-actions {
+  margin-top: 0;
+}
+
+/* ---------- Activity drill-down ---------- */
+.activity-button {
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.activity-button:hover {
+  background: var(--hover);
+  color: var(--accent);
+  text-decoration: underline;
+}
+.activity-popover {
+  display: flex;
+  flex-direction: column;
+  width: min(440px, calc(100vw - 32px));
+  padding: 0;
+}
+.activity-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.activity-list {
+  max-height: 300px;
+  overflow: auto;
+}
+/* Lines are a fixed 44px (TransactionLines renders only those in view). */
+.activity-line {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr) 96px;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+}
+.activity-line:hover {
+  background: var(--hover);
+}
+.with-category .activity-line {
+  grid-template-columns: 92px minmax(0, 1.5fr) minmax(0, 1fr) 112px;
+  gap: 12px;
+}
+.activity-category {
+  color: var(--text-2);
+}
+.activity-line > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-line small {
+  display: block;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.activity-empty {
+  margin: 0;
+  padding: 16px 14px;
+}
+.activity-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--surface-2);
+}
+
+/* ---------- Targets and notes in the inspector ---------- */
+.target-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.target-editor h3 {
+  margin: 0;
+}
+.target-editor .form-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+.target-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.target-actions .danger {
+  order: 1;
+  flex-basis: 100%;
+  text-align: left;
+}
+.category-notes textarea {
+  resize: vertical;
+}
+
+/* ---------- Moves ---------- */
+/* The Assigned field offers the month's moves through a history button at its left end: always
+   shown (in the accent) when money moved between this and another category, otherwise on hover. */
+.assigned-cell {
+  position: relative;
+}
+.assigned-cell.has-moves .amount-input {
+  padding-left: 26px;
+}
+.moves-button {
+  position: absolute;
+  top: 50%;
+  /* 2px inside the field, which starts at the cell's 7px padding. */
+  left: 9px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition:
+    opacity 0.12s var(--ease),
+    background-color 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.assigned-cell.moved .moves-button {
+  color: var(--accent);
+}
+.assigned-cell.moved .moves-button,
+.budget-row:hover .moves-button,
+.moves-button:focus-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.moves-button:hover {
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+  color: var(--text);
+}
+/* Typing in the field needs all of it. */
+.assigned-cell:has(.amount-input:focus) .moves-button {
+  opacity: 0;
+  pointer-events: none;
+}
+/* A category's moves, in the inspector and the moves popover: when, what, and the change. */
+.move-list {
+  margin: 0 0 4px;
+  padding: 0;
+  list-style: none;
+}
+.move-list li {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+.move-list li:last-child {
+  border-bottom: none;
+}
+.move-list time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.move-list small {
+  display: block;
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.move-amount {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.move-list .earlier,
+.move-list .earlier .move-amount {
+  color: var(--muted);
+}
+.moves-popover .move-list {
+  max-height: 300px;
+  margin: 0;
+  padding: 2px 14px;
+  overflow: auto;
+}

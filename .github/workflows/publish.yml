@@ -1,0 +1,66 @@
+# Puts a release's installers on urbudget.app when its draft is published on GitHub
+# (Releases → the draft → Edit → Publish release). The release's description becomes
+# "What's new" on the download page; leave it empty to show none. Only desktop releases (tags such
+# as desktop-v1.0.8, or the earlier v1.0.7) have installers here; Android and iOS go to their stores.
+# Needs the CLOUDFLARE_API_TOKEN secret (Workers R2 Storage: Edit) and the CLOUDFLARE_ACCOUNT_ID
+# variable, both stored by `node web/scripts/cloudflare-token.mjs`.
+name: Publish
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published desktop release to put on urbudget.app, such as desktop-v1.0.8
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-manifest
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: startsWith(github.event.release.tag_name || inputs.tag, 'desktop-v') || startsWith(github.event.release.tag_name || inputs.tag, 'v')
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      # With each installer, the update package installed copies fetch (on Windows the installer
+      # itself; on macOS the .app.tar.gz) and its signature.
+      - name: Download the installers
+        run: >-
+          gh release download "$TAG" --dir installers
+          --pattern '*.dmg' --pattern '*-setup.exe' --pattern '*.app.tar.gz' --pattern '*.sig'
+
+      - name: Publish to urbudget.app
+        working-directory: web
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          args=()
+          exe=$(ls ../installers/*-setup.exe 2>/dev/null | head -1)
+          dmg=$(ls ../installers/*.dmg 2>/dev/null | head -1)
+          [ -n "$exe" ] && args+=(--windows "$exe")
+          [ -n "$dmg" ] && args+=(--macos "$dmg")
+          notes=$(gh release view "$TAG" --json body --jq .body)
+          node scripts/publish-release.mjs "${args[@]}" --notes "$notes"

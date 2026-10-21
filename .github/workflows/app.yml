@@ -1,0 +1,115 @@
+# Validates the desktop app: shared UI checks run once; native desktop changes also build it.
+# Pushes and pull requests build on Windows only, since a macOS minute costs ten Linux ones;
+# Run workflow adds macOS, and every release builds macOS anyway (release.yml).
+# The phone apps in android/ and ios/ have their own workflows (android-native.yml, ios-native.yml).
+name: App validation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - "crates/**"
+      - "!crates/urbudget-ios/**"
+      - "!desktop/**/*.md"
+      - ".github/workflows/app.yml"
+      - ".github/workflows/release.yml"
+      - ".github/scripts/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - "crates/**"
+      - "!crates/urbudget-ios/**"
+      - "!desktop/**/*.md"
+      - ".github/workflows/app.yml"
+      - ".github/workflows/release.yml"
+      - ".github/scripts/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: Select checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      frontend: ${{ steps.checks.outputs.frontend }}
+      desktop: ${{ steps.checks.outputs.desktop }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Include cancelled/failed pushes since the last successful validation.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node --test .github/scripts/app-checks.test.mjs
+      - id: checks
+        run: node .github/scripts/app-checks.mjs
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  frontend:
+    name: Shared UI
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm run test:ui -- --maxWorkers 2
+
+  desktop:
+    name: Desktop (${{ matrix.os }})
+    needs: [changes, frontend]
+    if: needs.changes.outputs.desktop == 'true'
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ github.event_name == 'workflow_dispatch' && fromJSON('["windows-latest", "macos-latest"]') || fromJSON('["windows-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri -> target
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: npm ci
+      - name: Test the native budget engine and storage
+        run: npm test
+      # Tauri runs the TypeScript/Vite build before compiling the native app.
+      # Debug reuses cargo test's dependencies instead of compiling a second release
+      # profile. Optimized, signed installers are still built by release.yml.
+      - name: Build the desktop application
+        run: npm run tauri -- build --debug --no-bundle --ci
+

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- UrBudget: "Ur" in one stroke, the U a pocket with a stack of coins saved in it. -->
+  <rect x="40" y="40" width="944" height="944" rx="212" fill="#6d4ae8"/>
+  <g transform="translate(-33 0)">
+    <path d="M300 330V620a110 110 0 0 0 110 110h120a110 110 0 0 0 110-110V430c0-80 55-130 150-128" fill="none" stroke="#fff" stroke-width="110" stroke-linecap="round" stroke-linejoin="round"/>
+    <g fill="#fbbf24">
+      <rect x="382" y="595" width="172" height="60" rx="30"/>
+      <rect x="396" y="501" width="172" height="60" rx="30"/>
+      <rect x="374" y="407" width="172" height="60" rx="30"/>
+    </g>
+  </g>
+</svg>

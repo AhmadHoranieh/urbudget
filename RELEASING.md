@@ -1,0 +1,79 @@
+# Releasing
+
+One repository holds three apps, and each is released on its own: its own version, its own tag
+and its own release workflow. The website (`web/`) has no tag: a push to `main` that changes it
+deploys it ([deploy.yml](.github/workflows/deploy.yml), see the [website guide](web/README.md)).
+
+| App | Version is in | Tag | Workflow | Where it goes |
+| --- | --- | --- | --- | --- |
+| Desktop (Windows, macOS) | `desktop/` (package, lockfile, Tauri and Cargo files) and the shared crates | `desktop-v1.2.3` | [release.yml](.github/workflows/release.yml) makes a draft GitHub release with the installers | Publishing the draft puts them on urbudget.app ([publish.yml](.github/workflows/publish.yml)) and sends the Store package to the Microsoft Store ([store.yml](.github/workflows/store.yml)) |
+| Android | `android/app/build.gradle.kts` | `android-v1.2.3` | [android-release.yml](.github/workflows/android-release.yml) builds the signed App Bundle | Upload it from the run's artifacts in Play Console |
+| iOS | `ios/project.yml` and the Xcode project | `ios-v1.2.3` | [ios-release.yml](.github/workflows/ios-release.yml) uploads the build to App Store Connect | TestFlight, then submit it for review in App Store Connect |
+
+## Making a release
+
+```sh
+node scripts/versions.mjs                 # each app's version
+node scripts/versions.mjs android 1.0.8   # set the version of the app you're releasing
+git commit -am "Android 1.0.8"
+git tag android-v1.0.8
+git push origin main android-v1.0.8
+```
+
+The script writes the version into every file that app keeps it in and refuses a lower version.
+Each release workflow first checks that its tag names the version in the source, and the
+Android and iOS ones that the commit is on `main`. A release workflow can also run from the
+Actions tab on `main` with the version already in the source.
+
+- **Bump only the app you're releasing.** Releasing Android doesn't change desktop's version, and
+  the other way around. Versions differ between apps from here on; the data format they share
+  doesn't depend on them.
+- **The shared crates follow desktop.** `crates/` is built into every app but released with
+  none of them on its own; its version moves with desktop's (the script does both), and it's the
+  version the engine reports to urbudget.app.
+- **Desktop:** write the release's notes from [CHANGELOG.md](desktop/CHANGELOG.md) into the draft
+  before publishing; they show on the download page and in the app's update notice. Desktop
+  releases up to 1.0.7 are tagged `v1.0.7` and so on; those tags stay as they are.
+  [desktop/README.md › Releases](desktop/README.md#releases) covers signing and the updater.
+- **Android:** the version code comes from the version, in the scheme the Tauri Android app used
+  (1.2.3 is 1002003). To upload the same version again, run **Android release** from the Actions
+  tab with a higher version code. Upload `mapping.txt` with the bundle so crash reports are readable.
+- **iOS:** the build number is the workflow's run number, so each upload has a new one.
+
+The native apps in `android/` and `ios/` replaced the Tauri phone builds `desktop/` used to have,
+with the same app IDs (`app.urbudget`). Neither Tauri phone app was published, and their
+configuration was removed from `desktop/` on 21 October 2026.
+
+## One-time setup for the phone apps
+
+Neither phone workflow has run yet: watch the first run of each.
+
+**Android** needs the upload key, in the repository's `google-play` environment (Settings →
+Environments; GitHub makes it on the first run). It's the key made for Play App Signing
+([mobile guide › Google Play](docs/MOBILE.md#google-play)), kept in `desktop/.signing` on
+the computer that made it; the native app signs with it as the Tauri one did:
+
+```sh
+base64 -i upload.jks | gh secret set ANDROID_UPLOAD_KEYSTORE_BASE64 --env google-play
+gh secret set ANDROID_UPLOAD_KEY_ALIAS --env google-play
+gh secret set ANDROID_UPLOAD_STORE_PASSWORD --env google-play
+gh secret set ANDROID_UPLOAD_KEY_PASSWORD --env google-play
+```
+
+**iOS** needs the app in App Store Connect and an API key for uploading:
+
+1. If the bundle ID `app.urbudget` isn't in [Identifiers](https://developer.apple.com/account/resources/identifiers/list)
+   yet, add it (App IDs → App). Then make the app in App Store Connect (Apps → + → New App)
+   with that bundle ID.
+2. In App Store Connect → Users and Access → Integrations → App Store Connect API, make a team
+   key with **Admin** access, so Xcode can make the distribution certificate and profile. Download
+   its `.p8` file (it can be downloaded once) and note the key ID and the issuer ID.
+3. Store them in the `app-store` environment:
+
+```sh
+gh secret set APP_STORE_CONNECT_KEY_ID --env app-store
+gh secret set APP_STORE_CONNECT_ISSUER_ID --env app-store
+gh secret set APP_STORE_CONNECT_KEY --env app-store < AuthKey_XXXXXXXXXX.p8
+```
+
+Current published versions are in [release status](docs/RELEASE-STATUS.md).

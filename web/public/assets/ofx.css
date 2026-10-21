@@ -1,0 +1,217 @@
+/* The OFX to CSV converter (/tools/ofx-to-csv/, ofx.js). Builds on tools.css's .calc panel and
+   .calc-table, compare.css's guide styles and site.css's tokens. */
+
+/* ---------- Choosing the file ---------- */
+
+.ofx-drop {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease;
+}
+.ofx-drop.is-over {
+  border-color: var(--brand);
+  background: var(--brand-softer);
+}
+.ofx-drop label {
+  font-weight: 650;
+}
+.guide .ofx-drop .hint {
+  margin: 0;
+  color: var(--text-3);
+  font-size: var(--step--1);
+  line-height: 1.45;
+}
+.ofx-file {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--step--1);
+}
+.ofx-file::file-selector-button {
+  min-height: 44px;
+  margin-right: var(--space-3);
+  padding: 0.6rem 1.15rem;
+  border: 1px solid var(--brand);
+  border-radius: var(--radius);
+  background: var(--brand);
+  color: var(--on-brand);
+  font: inherit;
+  font-weight: 620;
+  cursor: pointer;
+}
+.ofx-file:hover::file-selector-button {
+  background: var(--brand-hover);
+  border-color: var(--brand-hover);
+}
+.ofx-file:disabled::file-selector-button {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---------- Options ---------- */
+
+.ofx-options {
+  margin-top: var(--space-5);
+}
+.ofx-amounts {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+.ofx-amounts legend {
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-weight: 620;
+  font-size: var(--step--1);
+}
+.ofx-amounts .calc-check {
+  margin-top: var(--space-2);
+  align-items: flex-start;
+  color: var(--text-2);
+  line-height: 1.45;
+}
+.ofx-amounts .calc-check input,
+.ofx-bom input {
+  flex: none;
+  margin-top: 0.15rem;
+}
+.ofx-bom {
+  align-items: flex-start;
+  margin-top: var(--space-4);
+  color: var(--text-2);
+  line-height: 1.45;
+}
+
+/* ---------- Status and results ---------- */
+
+.ofx-status {
+  margin-top: var(--space-5);
+  overflow-wrap: anywhere;
+}
+.ofx-status:empty {
+  display: none;
+}
+.guide .ofx-status p {
+  margin: 0;
+}
+.guide .ofx-status .ofx-done {
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--success);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  background: var(--success-bg);
+  color: var(--text);
+}
+.ofx-warning {
+  margin-top: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--warn-line);
+  border-radius: var(--radius);
+  background: var(--warn-bg);
+}
+.guide .ofx-warning p,
+.guide .ofx-warning li {
+  color: var(--text);
+}
+.guide .ofx-warning ul {
+  margin: var(--space-2) 0 0;
+}
+.guide .ofx-warning li + li {
+  margin-top: var(--space-1);
+}
+
+.ofx-result {
+  margin-top: var(--space-5);
+}
+.guide .ofx-result h3 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--step-0);
+}
+.guide .ofx-accounts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.guide .ofx-accounts li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.guide .ofx-accounts li + li {
+  margin-top: 0;
+}
+.guide .ofx-accounts span {
+  color: var(--text-3);
+  font-size: var(--step--1);
+}
+.ofx-result .form-row {
+  margin-top: var(--space-4);
+}
+.guide .ofx-caption {
+  margin: var(--space-5) 0 0;
+  color: var(--text-2);
+  font-size: var(--step--1);
+  font-weight: 620;
+}
+.ofx-caption + .calc-table-wrap {
+  margin-top: var(--space-2);
+}
+
+/* The preview lists text, so it reads left to right; amounts stay on the right. */
+.calc-table.ofx-table th,
+.calc-table.ofx-table td {
+  text-align: left;
+}
+.calc-table.ofx-table .is-num {
+  text-align: right;
+}
+.calc-table.ofx-table td.is-wrap {
+  min-width: 9rem;
+  max-width: 16rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 559.98px) {
+  .calc-table.ofx-table th:last-child,
+  .calc-table.ofx-table td:last-child {
+    padding-right: 0.75rem;
+  }
+  .calc-table.ofx-table td:first-child {
+    padding-left: 0.75rem;
+  }
+}
+
+/* ---------- A sample of the format in the text ---------- */
+
+.ofx-sample {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-4);
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+.ofx-sample code {
+  padding: 0;
+  border: 0;
+  background: none;
+  white-space: pre;
+}
+.guide .ofx-sample + p {
+  margin-top: var(--space-3);
+}

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to export Apple Card transactions from Wallet or the web</title>
+  <meta name="description" content="Export Apple Card transactions from Wallet on iPhone or iPad, or from card.apple.com, for a statement month or any dates, and import them into a budget.">
+  <link rel="canonical" href="https://urbudget.app/import/apple-card/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to export Apple Card transactions from Wallet or the web">
+  <meta property="og:description" content="Export Apple Card transactions from Wallet or card.apple.com, for a statement month or dates you choose, and import them into a budget without linking the card.">
+  <meta property="og:url" content="https://urbudget.app/import/apple-card/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to export Apple Card transactions from Wallet or the web">
+  <meta name="twitter:description" content="Export Apple Card transactions from Wallet or card.apple.com, for a statement month or dates you choose, and import them into a budget without linking the card.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Bank import guides", "item": "https://urbudget.app/import/" },
+          { "@type": "ListItem", "position": 3, "name": "Apple Card", "item": "https://urbudget.app/import/apple-card/" }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to export Apple Card transactions",
+        "mainEntityOfPage": "https://urbudget.app/import/apple-card/",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-17",
+        "author": { "@id": "https://urbudget.app/#org" },
+        "publisher": { "@id": "https://urbudget.app/#org" }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to export Apple Card transactions</h1>
+        <p class="lead">You can export Apple Card transactions from the Wallet app on an iPhone or iPad, or from card.apple.com in a browser, for one monthly statement or for dates you choose. Apple's guide doesn't list the file formats, so here's how to pick one that imports, and how to bring the file, or a statement, into UrBudget.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>Where to export from</h2>
+        <p>Apple's guide covers the Wallet app on iPhone and iPad, and card.apple.com on the web. Both export transactions for dates you choose, and in Wallet you can also export one statement's transactions. If you budget on a computer, card.apple.com is the simplest, because the file downloads straight to that computer.</p>
+
+        <h3>card.apple.com</h3>
+        <ol class="steps">
+          <li><b>Sign in.</b> Go to card.apple.com in your browser and sign in with your Apple Account.</li>
+          <li><b>Open Statements.</b> Click Statements in the sidebar, then Export Transactions.</li>
+          <li><b>Pick the dates and the format.</b> Choose a start date and an end date, choose a file format, and click Export. The file goes to your browser's downloads folder.</li>
+        </ol>
+        <p>To cover one statement month, set the dates to that month. The download button next to each statement under Statements gives you the statement itself as a PDF.</p>
+
+        <h3>iPhone or iPad</h3>
+        <ol class="steps">
+          <li><b>Open Card Balance.</b> On an iPhone, open the Wallet app, tap Apple Card, then Card Balance. On an iPad, go to Settings, then Wallet &amp; Apple Pay, then Apple Card.</li>
+          <li><b>Export.</b> For dates you choose: under Statements, tap Export Transactions, choose the start and end dates and the file format, and confirm. For one month: tap that month's statement, then Export Transactions, and choose a format.</li>
+          <li><b>Move it to your computer.</b> Save it to iCloud Drive in the Files app, AirDrop it to a Mac, or email it to yourself.</li>
+        </ol>
+        <p>The Download PDF Statement button on a statement gives you the statement itself. On a Mac, use card.apple.com.</p>
+
+        <h2>Formats and how far back</h2>
+        <ul>
+          <li><b>Formats.</b> Apple's guide, published May 18, 2026, says to choose a file format but doesn't list the choices, so look at the menu. UrBudget's file import reads CSV, OFX, QFX and QIF files. If the menu has OFX or QFX, that's the simplest to import.</li>
+          <li><b>How far back.</b> Apple doesn't state a limit for the date-range export. A statement covers its own month.</li>
+        </ul>
+
+        <h2>If you export OFX or QFX</h2>
+        <p>OFX and QFX files import as they are. Purchases come through as money out and payments as money in, and each transaction carries Apple's own ID, so a date range that overlaps your last export doesn't add anything twice.</p>
+
+        <h2>If you export a CSV</h2>
+        <p>An Apple Card CSV has the columns Transaction Date, Clearing Date, Description, Merchant, Category, Type, Amount (USD) and Purchased By, and lists purchases as positive numbers and payments as negative ones. UrBudget 1.0.3 and later reads the Amount (USD) column in a budget that uses US dollars. Before you preview, tick <b>Purchases are positive</b> so purchases come in as money out. Set the date order to month/day/year, and check in the preview that a purchase shows a minus sign.</p>
+        <p>On an older version of UrBudget, update first, or let the assistant convert the CSV (below); it can flip the signs.</p>
+
+        <h2>Import it into UrBudget</h2>
+        <ol class="steps">
+          <li><b>Open the card in UrBudget.</b> If you haven't set it up yet, add Apple Card as a credit card account. Select it in the sidebar and choose <b>Import file</b>.</li>
+          <li><b>Add the file.</b> Choose the exported file, or drop it onto the box. UrBudget picks the format from the file name. OFX and QFX dates need no date order; for a CSV, set <i>Dates in the file</i>.</li>
+          <li><b>Preview it.</b> Choose <b>Preview transactions</b>. Every row is listed before anything is saved. Rows from an earlier export are marked as already imported and skipped. A row with the same amount as a transaction you typed in within 10 days is offered as a match, so the purchase isn't counted twice.</li>
+          <li><b>Import.</b> Choose <b>Import</b>. The new transactions arrive unapproved; give each a category and approve it. Spending on the card moves money into the card's payment category, ready for the bill.</li>
+        </ol>
+
+        <h2>Or let the assistant read it</h2>
+        <p>UrBudget's optional assistant can turn a statement PDF, a CSV or a spreadsheet into transactions for the same review. That helps when the format you exported doesn't fit the file import, or when all you have is the PDF statement.</p>
+        <ol class="steps">
+          <li><b>Open the assistant.</b> Click <b>Assistant</b>, or press Ctrl+J (⌘J on a Mac). The first time, it asks you to sign in with ChatGPT or add an API key in Settings.</li>
+          <li><b>Attach the file.</b> Click the paperclip (<i>Attach a file</i>) or drop the file onto the assistant, and say where it goes, for example "Import this into my Apple Card account."</li>
+          <li><b>Choose Review import</b> on the card it prepares. The card shows the dates, outflow and inflow, and whether they match the statement's totals when it shows them. The rows open in the same import preview, with duplicates and matches marked, and nothing is added until you choose Import.</li>
+        </ol>
+        <p>The assistant runs on your ChatGPT plan or your own OpenAI or Anthropic API key. Your message, the file and the budget details it looks up go to that company: a PDF is sent whole, and from a CSV or spreadsheet only the rows it reads. It never needs your Apple Account password, so don't paste passwords or codes into it.</p>
+
+        <h2>If something looks wrong</h2>
+        <ul>
+          <li><b>"The file's amounts are in USD, but this budget uses…"</b> Apple Card is billed in US dollars, so import it into a budget that uses US dollars.</li>
+          <li><b>Purchases show as money in.</b> The CSV was previewed without <b>Purchases are positive</b>. Cancel, tick it and preview again, export OFX or QFX if the menu offers it, or let the assistant convert the CSV.</li>
+          <li><b>The card payment appears twice.</b> If you recorded the payment from checking as a transfer to Apple Card, the payment row in the card's file is offered as a match to that transfer. Choose the match instead of adding a new transaction.</li>
+          <li><b>The same merchants every month.</b> Add a rule in Payees &amp; rules. Rules rename and categorize imported rows, so each month's import needs less work.</li>
+          <li><b>The file is stuck on your phone.</b> Export from card.apple.com on the computer instead, and skip the transfer step.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Budget your Apple Card without linking it</h2>
+          <p>UrBudget is free on Windows and macOS. You import the files you export; nothing signs in to Apple or your bank.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=import-apple-card" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/import/">All bank guides</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related guides">
+          <li><a href="/import/">All bank import guides</a></li>
+          <li><a href="/import/american-express/">American Express</a></li>
+          <li><a href="/import/citi/">Citi</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

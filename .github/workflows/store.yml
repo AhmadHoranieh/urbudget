@@ -1,0 +1,56 @@
+# Sends a release's Store package (the .msix release.yml builds) to the Microsoft Store when its
+# draft is published on GitHub, the same moment publish.yml puts the installers on urbudget.app.
+# Partner Center certifies it, usually within a few days, and Store copies update themselves.
+# For a release that's already out: Actions → Microsoft Store → Run workflow, with its tag.
+# Only desktop releases (desktop-v1.0.8, or the earlier v1.0.7) have a Store package.
+#
+# Needs four secrets from the "UrBudget releases" Microsoft Entra application (Partner Center →
+# Account settings → User management → Microsoft Entra applications, Manager role):
+# MSSTORE_TENANT_ID, MSSTORE_CLIENT_ID, MSSTORE_SELLER_ID and MSSTORE_CLIENT_SECRET, a key made on
+# that page. Keys expire: when this can't sign in, add a new key there and replace the secret.
+name: Microsoft Store
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published desktop release to send to the Microsoft Store, such as desktop-v1.0.8
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  store:
+    if: startsWith(github.event.release.tag_name || inputs.tag, 'desktop-v') || startsWith(github.event.release.tag_name || inputs.tag, 'v')
+    runs-on: windows-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      # UrBudget's Store ID in Partner Center.
+      PRODUCT_ID: 9PMQMBZJG06R
+    steps:
+      - name: Download the Store package
+        shell: bash
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir store --pattern '*.msix'
+
+      - uses: microsoft/microsoft-store-apppublisher@v1.4
+
+      - name: Sign in to Partner Center
+        shell: pwsh
+        env:
+          TENANT_ID: ${{ secrets.MSSTORE_TENANT_ID }}
+          SELLER_ID: ${{ secrets.MSSTORE_SELLER_ID }}
+          CLIENT_ID: ${{ secrets.MSSTORE_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.MSSTORE_CLIENT_SECRET }}
+        run: msstore reconfigure --tenantId $env:TENANT_ID --sellerId $env:SELLER_ID --clientId $env:CLIENT_ID --clientSecret $env:CLIENT_SECRET
+
+      # A new submission made from the published one, with this package, sent for certification.
+      - name: Submit to the Microsoft Store
+        shell: pwsh
+        run: |
+          $msix = Get-ChildItem store -Filter *.msix | Select-Object -First 1
+          if (-not $msix) { throw "No .msix on release $env:TAG." }
+          msstore publish $msix.FullName -id $env:PRODUCT_ID -v

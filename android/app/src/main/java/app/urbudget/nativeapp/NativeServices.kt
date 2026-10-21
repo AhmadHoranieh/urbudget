@@ -1,0 +1,79 @@
+package app.urbudget.nativeapp
+
+import android.content.Context
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicBoolean
+
+/** IO-only calls to the same account, sync, bank and assistant implementations used by desktop. */
+object NativeServices {
+    @Volatile private var ready = false
+    private val eventSource = MutableSharedFlow<JSONObject>(extraBufferCapacity = 256)
+    val events = eventSource.asSharedFlow()
+    private val savedSource = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val reads = SharedServiceReads(CoroutineScope(SupervisorJob() + Dispatchers.IO))
+    private val readEpoch = AtomicLong()
+    private val automaticSyncRunning = AtomicBoolean(false)
+    val saved = savedSource.asSharedFlow()
+    fun notifySaved() { savedSource.tryEmit(Unit) }
+
+    @Synchronized fun initialize(context: Context) {
+        if (ready) return
+        // In-place upgrade from the released Tauri Android app keeps its library and sealed vault.
+        val directory = if (File(context.filesDir, "budgets.json").exists() || File(context.filesDir, "budget.sqlite3").exists()) context.filesDir else File(context.filesDir, "native")
+        decode(NativeBridge.initialize(context.applicationContext, directory.absolutePath))
+        ready = true
+    }
+
+    fun call(method: String, params: JSONObject = JSONObject()): Any? {
+        check(ready) { "Budget services are still starting. Try again." }
+        val changesReadContext = method in setOf("account_verify", "account_sign_out", "account_delete", "simplefin_connect", "simplefin_disconnect", "billing_verify")
+        if (changesReadContext) readEpoch.incrementAndGet()
+        try {
+            val result = decode(NativeBridge.service(JSONObject().put("version", 1).put("method", method).put("params", params).toString()))
+            if (method in setOf("save_budget", "native_apply_patch", "assistant_apply_commit", "assistant_undo_commit", "simplefin_import", "accept_ynab_import", "resolve_ynab", "undo_budget", "redo_budget", "restore_backup_file", "restore_budget", "apply_due_schedules")) notifySaved()
+            return result
+        } finally {
+            // Reads started while a credential transition was in progress must not be joined
+            // by a new screen after the transition has finished (including partial failures).
+            if (changesReadContext) readEpoch.incrementAndGet()
+        }
+    }
+
+    /** Results are read-only shared snapshots. Only idempotent reads/downloads may be joined. */
+    suspend fun read(method: String, params: JSONObject = JSONObject(), scopeKey: String = ""): Any? {
+        require(NativeServicePolicy.coalesce(method)) { "This operation must run as an ordered command." }
+        val encoded = withContext(Dispatchers.Default) { params.toString() }
+        return reads.request("$method\u0000${readEpoch.get()}\u0000$scopeKey\u0000$encoded") { call(method, JSONObject(encoded)) }
+    }
+
+    /** Periodic, resume and save notifications share one automatic attempt across Activities. */
+    fun syncAutomatically(): JSONObject? {
+        if (!automaticSyncRunning.compareAndSet(false, true)) return null
+        try {
+            val status = call("cloud_status") as JSONObject
+            if (status.isNull("email") || status.optJSONObject("sync")?.optBoolean("unlocked") != true) return null
+            return call("sync_now") as JSONObject
+        } finally { automaticSyncRunning.set(false) }
+    }
+
+    suspend fun pollEvents() {
+        if (!ready) return
+        val events = call("host_events") as? JSONArray ?: return
+        for (index in 0 until events.length()) events.optJSONObject(index)?.let { eventSource.emit(it) }
+    }
+
+    private fun decode(json: String): Any? {
+        val response = JSONObject(json)
+        check(response.optBoolean("ok")) { response.optString("error", "The service could not complete this request.") }
+        return response.opt("value").takeUnless { it == JSONObject.NULL }
+    }
+}

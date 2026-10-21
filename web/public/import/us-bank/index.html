@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to download U.S. Bank transactions (CSV or QFX)</title>
+  <meta name="description" content="Download up to 18 months of U.S. Bank transactions as CSV, Quicken (QFX) or QuickBooks (QBO) from online banking, which file to pick, and how to import it.">
+  <link rel="canonical" href="https://urbudget.app/import/us-bank/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to download U.S. Bank transactions (CSV or QFX)">
+  <meta property="og:description" content="Where the download is in U.S. Bank online banking, how far back it goes, which of its three file formats to pick, and how to import the file into a budget.">
+  <meta property="og:url" content="https://urbudget.app/import/us-bank/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to download U.S. Bank transactions (CSV or QFX)">
+  <meta name="twitter:description" content="Where the download is in U.S. Bank online banking, how far back it goes, which of its three file formats to pick, and how to import the file into a budget.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Bank import guides", "item": "https://urbudget.app/import/" },
+          { "@type": "ListItem", "position": 3, "name": "U.S. Bank", "item": "https://urbudget.app/import/us-bank/" }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to download U.S. Bank transactions",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-19",
+        "author": { "@id": "https://urbudget.app/#org" },
+        "publisher": { "@id": "https://urbudget.app/#org" },
+        "mainEntityOfPage": "https://urbudget.app/import/us-bank/"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to download U.S. Bank transactions</h1>
+        <p class="lead">U.S. Bank online banking lets you download up to 18 months of transactions as a spreadsheet (CSV), Quicken (QFX) or QuickBooks (QBO) file. The mobile app doesn't, and older activity is on your statements. Here's where the download is, which file to pick for a budget, and how to bring a file or a statement into UrBudget.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>What U.S. Bank lets you download</h2>
+        <ul>
+          <li><strong>Three formats.</strong> Spreadsheet (.csv), Quicken (.qfx) and QuickBooks (.qbo).</li>
+          <li><strong>Up to 18 months back.</strong> For anything older, U.S. Bank sends you to your statements.</li>
+          <li><strong>In online banking only.</strong> U.S. Bank says transaction downloads aren't available in the U.S. Bank Mobile App, so use online banking in a web browser.</li>
+          <li><strong>General online banking help.</strong> The download article doesn't list account types. U.S. Bank's Quicken page says its checking, savings and credit card accounts work with Quicken, the program the QFX file is made for. Neither page promises the download for every specialized account.</li>
+          <li><strong>Transactions, not Money tracker.</strong> The spending summaries in U.S. Bank's Money tracker can't be downloaded. Download the transactions themselves.</li>
+        </ul>
+
+        <h2>Download your transactions from U.S. Bank</h2>
+        <ol class="steps">
+          <li><b>Log in to online banking.</b> Go to usbank.com in a web browser. The mobile app has no download.</li>
+          <li><b>Select the account.</b> Choose the account you want transactions from.</li>
+          <li><b>Click the download icon.</b> It's in the upper-right corner of the Transactions tile, above the list. U.S. Bank's Quicken page calls it Download Transactions.</li>
+          <li><b>Choose the dates and the format.</b> Set a date range, up to 18 months back, and pick Quicken (QFX) as the file format.</li>
+          <li><b>Click Download.</b> Your browser saves the file. U.S. Bank also offers Open file, which shows the file in the format you chose; you don't need it for importing.</li>
+        </ol>
+        <p>Repeat this for each account. If you budget weekly, start the date range a few days before your last download: the overlap is recognized when you import, so nothing is added twice.</p>
+
+        <h2>Which format to pick for your budget</h2>
+        <p>Pick <strong>Quicken (QFX)</strong>. It's a standard OFX file underneath, and two things make it the safest of the three:</p>
+        <ul>
+          <li>Money out is always a negative amount and money in a positive one, so purchases, card payments and deposits land on the right side.</li>
+          <li>Each transaction carries U.S. Bank's own ID. When next week's file overlaps this one, UrBudget knows which rows it already has and skips them.</li>
+        </ul>
+        <p>The <strong>QuickBooks (QBO)</strong> file is made for QuickBooks, and UrBudget doesn't open .qbo files. The <strong>spreadsheet (CSV)</strong> can work too: UrBudget needs a header row with a Date column, a payee column (Name or Description works) and an Amount column with money out as negative numbers. U.S. Bank's help pages don't list the CSV's columns, so if you use it, look closely at the preview before you import.</p>
+
+        <h2>Import it into UrBudget</h2>
+        <ol class="steps">
+          <li><b>Open the account.</b> In UrBudget, select the account the file came from, such as your U.S. Bank checking, and choose <b>Import file</b> above its transactions.</li>
+          <li><b>Choose the file.</b> Click <i>Choose a file</i>, or drag the .qfx file onto the box. UrBudget picks the format from the file's extension.</li>
+          <li><b>Check the date order.</b> A QFX file's dates are in a fixed format, so there's nothing to set. For a CSV, set <i>Dates in the file</i> to Month/day/year if the dates look like 10/31/2026.</li>
+          <li><b>Review the rows.</b> Choose <i>Preview transactions</i>. Every row is listed before anything is saved. Rows you imported before are marked as already imported and skipped. A row with the same amount as a transaction you typed in within 10 days is paired with it; you can change that to add it as new.</li>
+          <li><b>Import.</b> Choose <i>Import</i>. The transactions appear in the register, waiting for your approval and a category.</li>
+        </ol>
+
+        <h2>Older than 18 months: use your statements</h2>
+        <p>For activity older than 18 months, U.S. Bank's article points you to your account statements. A statement is a document, not a transaction file, so the file import can't read it. UrBudget's optional assistant can.</p>
+        <ol class="steps">
+          <li><b>Open the assistant.</b> Click <b>Assistant</b>, or press Ctrl+J (⌘J on a Mac). The first time, it asks you to sign in with ChatGPT or add an API key in Settings.</li>
+          <li><b>Attach the statement.</b> Click the paperclip (<i>Attach a file</i>) or drop the PDF onto the assistant, and say where it goes, for example "Import this statement into U.S. Bank Checking."</li>
+          <li><b>Read the card.</b> The assistant replies with a card, such as <i>42 transactions ready to review</i>, showing the dates, outflow and inflow. When the statement shows totals, the card says whether they match, and it reminds you to check the amounts it read.</li>
+          <li><b>Choose Review import.</b> The rows open in the same import preview as a file, with duplicates and matches marked. Nothing is added until you choose Import.</li>
+        </ol>
+        <p>The assistant runs on your ChatGPT plan or your own OpenAI or Anthropic API key. Your message, the statement and the budget details it looks up go to that company. It never needs your bank login, so don't paste passwords or security codes into it. For the last 18 months, the QFX download is simpler and stays on your computer.</p>
+
+        <h2>If something looks wrong</h2>
+        <ul>
+          <li><strong>Nothing older than 18 months.</strong> That's U.S. Bank's limit for downloads; older activity is on your statements. A new budget doesn't need it: start from today's balance and import from here on. If you do want older months, have the assistant read the statements, as above.</li>
+          <li><strong>A statement month overlaps a download.</strong> Rows already imported from the QFX file are offered as matches, because a statement's descriptions can differ from the file's. Choose the match instead of adding the row again.</li>
+          <li><strong>Purchases show up as money coming in.</strong> The file's amounts aren't signed the way UrBudget expects, which can happen with a spreadsheet file. Cancel, download the Quicken (QFX) file instead, and import that.</li>
+          <li><strong>UrBudget can't read a date.</strong> In a CSV, the date order starts at Year-month-day. Set <i>Dates in the file</i> to Month/day/year and preview again.</li>
+          <li><strong>Every row says already imported.</strong> Those dates are in UrBudget from an earlier file. Nothing is added twice; download a range that starts after your last import if you want a shorter list.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Budget with your U.S. Bank file</h2>
+          <p>UrBudget is free on Windows and macOS. No account, card or bank connection required.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=import-us-bank" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/getting-started/">How envelope budgeting works</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related guides">
+          <li><a href="/import/">All bank import guides</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+          <li><a href="/import/wells-fargo/">Download Wells Fargo transactions</a></li>
+          <li><a href="/import/pnc/">Export PNC transactions</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

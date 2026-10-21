@@ -1,0 +1,40 @@
+[package]
+name = "urbudget-services"
+version = "1.0.7"
+description = "Host-neutral local storage, cloud, bank and assistant services shared by desktop and native Android"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+
+[dependencies]
+urbudget-core = { path = "../urbudget-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+csv = "1"
+rusqlite = { version = "0.38", features = ["bundled", "backup"] }
+chrono = { version = "0.4", features = ["serde"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+calamine = { version = "0.36.1", features = ["dates"] }
+rust_xlsxwriter = "0.99.1"
+base64 = "0.22"
+getrandom = "0.3"
+tokio = { version = "1", features = ["rt-multi-thread", "time", "sync", "net"] }
+zip = { version = "9", default-features = false, features = ["deflate-flate2-zlib-rs"] }
+chacha20poly1305 = "0.11.0"
+argon2 = "0.6.0"
+flate2 = "1"
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+security-framework = "3"
+
+[target.'cfg(target_os = "android")'.dependencies]
+jni = "0.21"
+ndk-context = "0.1"
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security_Credentials", "Win32_Security_Cryptography", "Win32_Storage_Packaging_Appx", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
+
+[dev-dependencies]
+urbudget-core = { path = "../urbudget-core", features = ["test-support"] }
+tempfile = "3"

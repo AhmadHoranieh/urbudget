@@ -1,0 +1,60 @@
+# Deploys the website and API (web/) to Cloudflare when a push to main changes them: tests,
+# database migrations, then `wrangler deploy`, then an IndexNow ping for the changed pages. It runs nothing else; app builds (release.yml) and
+# installer publishing (publish.yml) have their own triggers. Worker secrets stay as they are.
+# Needs CLOUDFLARE_API_TOKEN with Workers Scripts, D1 and Workers Routes (urbudget.app) edit access.
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "!web/*.md"
+      - "!web/scripts/**"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The whole history, so the IndexNow step can see which pages this push changed.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm run check
+
+      - name: Apply database migrations
+        run: npx wrangler d1 migrations apply urbudget --remote
+
+      - name: Deploy
+        run: npx wrangler deploy
+
+      # Bing and the other IndexNow search engines crawl the pages this push changed again soon.
+      # A failed ping shows as a warning; the site is already deployed.
+      - name: Tell search engines what changed
+        continue-on-error: true
+        run: node scripts/indexnow.mjs "${{ github.event.before }}" "${{ github.sha }}"

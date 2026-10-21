@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to export PNC transactions (QFX for Quicken)</title>
+  <meta name="description" content="PNC Online Banking exports transactions as Quicken (QFX) or QuickBooks (QBO) files. Which to pick, how far back cards go, and how to import it into a budget.">
+  <link rel="canonical" href="https://urbudget.app/import/pnc/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to export PNC transactions (QFX for Quicken)">
+  <meta property="og:description" content="What PNC Online Banking exports, how far back it goes for checking and credit cards, which file to keep for a budget, and how to import it.">
+  <meta property="og:url" content="https://urbudget.app/import/pnc/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to export PNC transactions (QFX for Quicken)">
+  <meta name="twitter:description" content="What PNC Online Banking exports, how far back it goes for checking and credit cards, which file to keep for a budget, and how to import it.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Bank import guides", "item": "https://urbudget.app/import/" },
+          { "@type": "ListItem", "position": 3, "name": "PNC", "item": "https://urbudget.app/import/pnc/" }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to export PNC transactions",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-17",
+        "author": { "@id": "https://urbudget.app/#org" },
+        "publisher": { "@id": "https://urbudget.app/#org" },
+        "mainEntityOfPage": "https://urbudget.app/import/pnc/"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to export PNC transactions</h1>
+        <p class="lead">PNC Online Banking exports your transactions as a Quicken (.QFX) or QuickBooks (.QBO) file. The Quicken file is the one to keep for a budget. Here's what PNC offers, how far back it goes, and how to bring the file into UrBudget.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>What PNC lets you export</h2>
+        <ul>
+          <li><strong>Quicken (.QFX) or QuickBooks (.QBO).</strong> PNC says you can export transactions from PNC Online Banking in either format.</li>
+          <li><strong>More choices for credit cards.</strong> PNC's credit card help lists Quicken, QuickBooks, Microsoft Money and Microsoft Excel as places you can export card activity to.</li>
+          <li><strong>13 months of card history.</strong> Online Banking shows up to 13 months of posted credit card transactions. PNC's help pages don't give an export limit for checking and savings.</li>
+          <li><strong>No CSV mentioned for personal accounts.</strong> For personal checking and savings, PNC's help names only the Quicken and QuickBooks formats.</li>
+          <li><strong>Statements go back further, as PDFs.</strong> Up to 7 years for checking and savings, and 4 years for credit cards. They're useful for checking a balance, but a PDF isn't a file a budget can import.</li>
+        </ul>
+
+        <h2>Export your transactions from PNC</h2>
+        <p>PNC's help pages confirm the export and its formats but don't name every button, so the labels on your screen may differ a little from these steps.</p>
+        <ol class="steps">
+          <li><b>Sign on to PNC Online Banking.</b> Use a browser on a computer, not the PNC Mobile app.</li>
+          <li><b>Open the account.</b> Select <i>Accounts</i>, then the checking, savings or credit card account you want.</li>
+          <li><b>Go to its transactions and set the dates.</b> Pick the period since your last export. For a credit card, posted transactions go back up to 13 months.</li>
+          <li><b>Export as Quicken (.QFX).</b> Choose the export option, pick the Quicken format and save the file.</li>
+        </ol>
+
+        <h2>Which file to keep</h2>
+        <p>Keep the <strong>Quicken (.QFX)</strong> file. It's an OFX file underneath, which helps in two ways:</p>
+        <ul>
+          <li>Amounts are signed the standard way, money out negative and money in positive, so a purchase is money out whether it was on your checking account or your PNC card.</li>
+          <li>Each transaction carries PNC's own ID, so a file that overlaps your last one doesn't create duplicates.</li>
+        </ul>
+        <p>Skip <strong>QuickBooks (.QBO)</strong>: it's made for QuickBooks, and UrBudget doesn't open .qbo files. If a credit card's <strong>Microsoft Money</strong> choice gives you an .ofx file, that works as well as QFX. An <strong>Excel</strong> download only works if it's a .csv file with a header row UrBudget recognizes (Date, a description, and Amount with money out negative); UrBudget can't open .xls or .xlsx workbooks.</p>
+
+        <h2>Import it into UrBudget</h2>
+        <ol class="steps">
+          <li><b>Pick the matching account.</b> In UrBudget, select the account the file belongs to, for example your PNC checking or your PNC card, and choose <b>Import file</b> above its transactions.</li>
+          <li><b>Add the file.</b> Click <i>Choose a file</i>, or drag the .qfx onto the box. The format is picked up from the file name.</li>
+          <li><b>Preview.</b> Choose <i>Preview transactions</i>. A QFX file needs no date order. Only for a CSV would you set <i>Dates in the file</i>, to Month/day/year for US dates.</li>
+          <li><b>Check the matches.</b> Rows from an earlier import are marked as already imported and skipped. A row with the same amount as one you typed in within 10 days is offered as a match: keep the match, or add the row as a new transaction.</li>
+          <li><b>Import.</b> Choose <i>Import</i>. The transactions arrive in the register for your approval.</li>
+        </ol>
+
+        <h2>If something looks wrong</h2>
+        <ul>
+          <li><strong>Your card file stops after 13 months.</strong> That's as far back as PNC keeps posted credit card transactions online. Older months are in your PDF statements. Starting your budget from today's balance means you don't need them.</li>
+          <li><strong>You moved to PNC from FirstBank and older transactions are missing.</strong> PNC says July 31, 2026 was the last day to sign in to FirstBank Online Banking and download older transactions. Your FirstBank statements are in PNC Online Banking, and PNC recommends adding anything missing by hand from them.</li>
+          <li><strong>You need a statement to check a balance.</strong> In Online Banking, select <i>Accounts</i>, the account, <i>Account Quick View</i>, <i>Statements and Documents</i>, then <i>View PDF</i>. In the PNC Mobile app it's under <i>More</i>, then <i>Statements and Documents</i>.</li>
+          <li><strong>Purchases show up as money coming in.</strong> That happens with spreadsheet files that list charges as positive amounts. Cancel and import the Quicken file instead.</li>
+          <li><strong>Every row says already imported.</strong> Those transactions came in with an earlier file, so nothing new is added.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Budget with your PNC file</h2>
+          <p>Free on Windows and macOS. Your PNC login stays with you.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=import-pnc" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/import/">All bank guides</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related guides">
+          <li><a href="/import/">All bank import guides</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+          <li><a href="/import/us-bank/">Download U.S. Bank transactions</a></li>
+          <li><a href="/import/wells-fargo/">Download Wells Fargo transactions</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

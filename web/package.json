@@ -1,0 +1,30 @@
+{
+  "name": "urbudget-web",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply urbudget --local",
+    "db:migrate:remote": "wrangler d1 migrations apply urbudget --remote",
+    "check": "tsc --noEmit && vitest run",
+    "test": "vitest run",
+    "images": "node scripts/images.mjs",
+    "sitemap": "node scripts/sitemap.mjs",
+    "release": "node scripts/publish-release.mjs",
+    "polar:setup": "node scripts/polar-setup.mjs",
+    "go-live": "node scripts/polar-setup.mjs --production"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261001.0",
+    "sharp": "^0.35.0",
+    "typescript": "~5.9.0",
+    "vitest": "^5.0.4",
+    "wrangler": "^4.150.0"
+  },
+  "dependencies": {
+    "hono": "^4.13.0"
+  }
+}

@@ -1,0 +1,1078 @@
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  LoaderCircle,
+  MessageSquareText,
+  Redo2,
+  RefreshCw,
+  Settings2,
+  TriangleAlert,
+  Undo2,
+} from "lucide-react";
+import { useBudget, type SyncState } from "./useBudget";
+import { api } from "./bridge";
+import { apply as applyPatch, type Patch } from "./patch";
+import { AssistantBoundary, AssistantPanel, useAssistantWidth, type Request as AssistantRequest } from "./assistant/Assistant";
+import { assistant, type Card, type Proposal } from "./assistant/api";
+import { LoanActionsContext, hasLoan, loanTerms, type LoanActions } from "./Planning";
+import { LoanPlanner } from "./LoanPlanner";
+import { LoanPaymentForm } from "./LoanPayment";
+import { ATTACH_LIMIT, BankImport, categorizeText, importHelpText, type Uncategorized } from "./BankImport";
+import { BankSync, BankSyncDetails, syncHelpText } from "./BankSync";
+import { Payees } from "./PayeesPage";
+import { Reports } from "./Reports";
+import { BudgetPage } from "./BudgetPage";
+import { SettingsPage, type Tab as SettingsTab } from "./SettingsPage";
+import { useCloud } from "./cloud";
+import { SyncChip } from "./CloudBadges";
+import { useUpdates } from "./updates";
+import { UpdateChip } from "./UpdateNotice";
+import { TransactionsPage, saveTransaction, scheduledMessage } from "./Register";
+import { Sidebar, useSidebarLayout, type Page } from "./Sidebar";
+import { ManageBudgetsDialog, NewBudgetDialog } from "./BudgetDialogs";
+import { SampleBanner, Welcome, isBlank, isUntouched, openSample } from "./Welcome";
+import { localeDefaults } from "./locale";
+import { AccountForm, CategoryForm, Modal, ReconcileForm, TransactionForm } from "./forms";
+import { configureFormat, errorText, formatDate, money, monthName, shiftMonth } from "./format";
+import { groupNames } from "./categories";
+import { HeaderSlotElement, Menu, MonthPicker, useToast } from "./ui";
+import { useTheme } from "./theme";
+import { useLearnPayee } from "./useLearnPayee";
+import { useSteady } from "./useSteady";
+import { useCategoryCreator } from "./NewCategory";
+import { CardPaymentForm } from "./CardPayment";
+import { getPref, resetLayout } from "./prefs";
+import { TitleBar, customTitleBar } from "./WindowControls";
+import { keyLabel } from "./platform";
+import { id, today, type Account, type Budget, type Category, type Transaction } from "./types";
+import type { RegisterFilter } from "./Register";
+import "./shell.css";
+
+type Dialog =
+  | { type: "account"; account?: Account; focusLoan?: boolean }
+  | { type: "loanPayment"; account: Account }
+  | { type: "planner"; account: Account }
+  | { type: "category"; category?: Category }
+  | { type: "transaction"; transaction?: Transaction; isNew?: boolean; repeat?: string }
+  | { type: "import"; account: Account; file?: File; proposal?: { threadId: string; id: string } }
+  | { type: "reconcile"; account: Account }
+  | { type: "payment"; account: Account }
+  | { type: "bankSync"; account?: Account }
+  | { type: "bankSyncDetails"; account: Account }
+  | { type: "newBudget" }
+  | { type: "manageBudgets" }
+  | {
+      type: "confirm";
+      title: string;
+      text: string;
+      action: () => void | Promise<void>;
+      label: string;
+    }
+  | null;
+const syncLabels: Record<SyncState, string> = {
+  loading: "Opening…",
+  saved: "Saved",
+  pending: "Unsaved",
+  saving: "Saving…",
+  conflict: "Changed elsewhere",
+  error: "Couldn't save",
+};
+const titles: Record<Page, string> = {
+  budget: "Budget",
+  transactions: "Transactions",
+  // The old Loan planner page, which now opens a loan's register (App).
+  loans: "Loan details",
+  reports: "Reports",
+  payees: "Payees & rules",
+  settings: "Settings & data",
+};
+const kindLabel = (a: Account) =>
+  a.kind === "credit" ? "Credit card" : a.kind === "tracking" ? "Tracking account" : "Cash account";
+
+/** Recovery must remain reachable when a month or draft cannot be calculated. */
+function CalculationRecovery({ month, currentMonth, changeMonth, model, exportDraft, openBudget, closeEditor }: {
+  month: string; currentMonth: string; changeMonth: (month: string) => void;
+  model: ReturnType<typeof useBudget>; exportDraft: () => Promise<void>;
+  openBudget: (id: string) => Promise<void>; closeEditor: () => void;
+}) {
+  const [reload, setReload] = useState(false);
+  const [budgets, setBudgets] = useState(false);
+  const busy = !!model.operation || !!model.recovery;
+  const navigate = (next: string) => { closeEditor(); changeMonth(next); };
+  const fetch = async () => { closeEditor(); await model.fetchDatabase(); setReload(false); };
+  return (
+    <section className="calculation-recovery" aria-label="Calculation recovery">
+      <div className="modal-actions">
+        <button className="secondary" aria-label="Previous month" onClick={() => navigate(shiftMonth(month, -1))}><ChevronLeft size={15} /></button>
+        <MonthPicker value={month} onChange={navigate} text={monthName(month, "short")} label="Choose budget month" />
+        <button className="secondary" aria-label="Next month" onClick={() => navigate(shiftMonth(month, 1))}><ChevronRight size={15} /></button>
+        <button className="secondary" onClick={() => navigate(currentMonth)} disabled={month === currentMonth}>Current month</button>
+      </div>
+      <div className="modal-actions">
+        <button className="secondary" disabled={!model.canUndo || busy || model.sync === "conflict"} onClick={() => { closeEditor(); model.undo(); }}>Undo</button>
+        <button className="secondary" disabled={!model.canRedo || busy || model.sync === "conflict"} onClick={() => { closeEditor(); model.redo(); }}>Redo</button>
+        <button className="secondary" onClick={() => void exportDraft()}>Export draft</button>
+        <button className="secondary" disabled={busy} onClick={() => model.dirty() ? setReload(true) : void fetch()}>Reload saved budget</button>
+        <button className="secondary" disabled={busy} onClick={() => setBudgets(true)}>Open another budget</button>
+      </div>
+      {reload && <Modal title="Reload from disk?" close={() => setReload(false)}>
+        <p>This replaces your unsaved changes with the saved budget. Export them first if you want to keep both.</p>
+        <div className="modal-actions">
+          <button className="secondary" onClick={() => setReload(false)}>Cancel</button>
+          <button className="primary" onClick={() => void fetch()}>Discard changes &amp; reload</button>
+        </div>
+      </Modal>}
+      {budgets && <ManageBudgetsDialog close={() => setBudgets(false)} open={openBudget} />}
+    </section>
+  );
+}
+
+/** A dialog the user cannot dismiss: it waits for an operation or a decision. */
+function Blocking({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="modal-shade">
+      <div className="modal" role="dialog" aria-modal="true" aria-label={title}>
+        <div className="modal-heading">
+          <h2>{title}</h2>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function SyncStatus({
+  sync,
+  onSave,
+  onReload,
+  onSettings,
+}: {
+  sync: SyncState;
+  onSave: () => void;
+  onReload: () => void;
+  onSettings: () => void;
+}) {
+  const button = useRef<HTMLButtonElement>(null);
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        ref={button}
+        className={`sync-status ${sync}`}
+        aria-expanded={open}
+        title="Saving status"
+        onClick={() => setOpen(!open)}
+      >
+        {sync === "saving" ? <LoaderCircle size={13} className="spin" /> : <span className="dot" />}
+        <span className="header-label">{syncLabels[sync]}</span>
+      </button>
+      <Menu
+        open={open}
+        onClose={() => setOpen(false)}
+        anchor={button}
+        placement="bottom-end"
+        label="Saving"
+        items={[
+          { label: "Save now", icon: <Check size={14} />, hint: keyLabel("Ctrl+S"), disabled: sync === "conflict", onSelect: onSave },
+          { label: "Reload from disk", icon: <RefreshCw size={14} />, onSelect: onReload },
+          "separator",
+          { label: "Settings & data", icon: <Settings2 size={14} />, onSelect: onSettings },
+        ]}
+      />
+    </>
+  );
+}
+
+export default function App() {
+  const [month, setMonth] = useState(today().slice(0, 7));
+  const [dialog, setDialog] = useState<Dialog>(null);
+  const [planningEditor, setPlanningEditor] = useState(false);
+  const toast = useToast();
+  const model = useBudget(
+    month,
+    planningEditor ||
+      (!!dialog && !["confirm", "newBudget", "manageBudgets", "planner"].includes(dialog.type)),
+  );
+  const { budget, summary: currentSummary, edit, sync, metadata, budgetId } = model;
+  const summary = currentSummary ?? model.displaySummary;
+  // What the window shows of a save in progress: nothing for a quick one (most take ~50 ms), so
+  // adding a transaction doesn't flash a dialog, a spinner and greyed-out buttons.
+  const operation = useSteady(model.operation, (o) => !!o);
+  // Longer than the 400 ms autosave delay, so an ordinary edit doesn't blink "Unsaved".
+  const shownSync = useSteady(sync, (s) => s === "saving" || s === "pending", 700);
+  // Every edit recalculates the month, usually in a few ms, so "Updating totals" shows only when
+  // that's slow. The page goes inert straight away either way, so nothing acts on stale totals.
+  const calculating = useSteady(!currentSummary, (c) => c);
+  const learn = useLearnPayee(model.transform, model.undo);
+  // "Create category" in the transaction dialog's category field.
+  const newCategory = useCategoryCreator(budget, edit);
+  const cloud = useCloud({
+    dirty: model.dirty,
+    sync,
+    operation: model.operation,
+    token: metadata?.token ?? "",
+    fetchDatabase: model.fetchDatabase,
+  });
+  const updates = useUpdates();
+  const startPage = (): Page => (getPref("startPage") === "transactions" ? "transactions" : "budget");
+  const [page, setPage] = useState<Page>(startPage);
+  const [accountId, setAccountId] = useState("all");
+  const [registerFilter, setRegisterFilter] = useState<RegisterFilter | undefined>();
+  const layout = useSidebarLayout();
+  // A computer's page header: a slot after the title for a page's own controls (HeaderSlot).
+  const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
+  const [theme, setTheme] = useTheme();
+  const fail = (e: unknown, prefix = "") => toast({ message: prefix + errorText(e), tone: "error" });
+  const [assistantOpen, setAssistantOpen] = useState(() => {
+    try {
+      return localStorage.getItem("lb:assistant:open") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const [assistantRequest, setAssistantRequest] = useState<AssistantRequest | null>(null);
+  const [highlight, setHighlight] = useState<Card["highlight"] | null>(null);
+  const [settingsTab, setSettingsTab] = useState<{ tab: SettingsTab; key: number } | null>(null);
+  const openSettings = (tab: SettingsTab) => {
+    setSettingsTab({ tab, key: Date.now() });
+    setPage("settings");
+  };
+  const assistantWidth = useAssistantWidth();
+  // The budget right after the assistant's last applied change, so its Undo only shows while it is the latest edit.
+  const lastApplied = useRef<{ id: string; budget: Budget } | null>(null);
+  const showAssistant = (open: boolean) => {
+    setAssistantOpen(open);
+    try {
+      localStorage.setItem("lb:assistant:open", open ? "1" : "0");
+    } catch {
+      /* not remembered */
+    }
+    if (!open) setHighlight(null);
+  };
+  /** Opens the assistant, optionally with a question, a selection or files ready to send. */
+  const ask = (request: Omit<AssistantRequest, "key"> = {}) => {
+    showAssistant(true);
+    setAssistantRequest({ ...request, key: Date.now() });
+  };
+  useEffect(() => {
+    const key = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setAssistantOpen((open) => {
+          try {
+            localStorage.setItem("lb:assistant:open", open ? "0" : "1");
+          } catch {
+            /* not remembered */
+          }
+          if (open) setHighlight(null);
+          return !open;
+        });
+      }
+    };
+    // A file dropped anywhere else in the window goes to the assistant.
+    const over = (e: DragEvent) => {
+      if (e.dataTransfer?.types.includes("Files")) e.preventDefault();
+    };
+    const drop = (e: DragEvent) => {
+      if (e.defaultPrevented || !e.dataTransfer?.files.length) return;
+      e.preventDefault();
+      ask({ files: [...e.dataTransfer.files] });
+    };
+    window.addEventListener("keydown", key);
+    window.addEventListener("dragover", over);
+    window.addEventListener("drop", drop);
+    return () => {
+      window.removeEventListener("keydown", key);
+      window.removeEventListener("dragover", over);
+      window.removeEventListener("drop", drop);
+    };
+  }, []);
+  const close = () => setDialog(null);
+  const editCategory = useCallback((category: Category) => setDialog({ type: "category", category }), []);
+  const balances = useMemo(() => new Map((summary?.accounts ?? []).map((a) => [a.id, a])), [summary?.accounts]);
+  // This month's available amounts, shown beside categories when picking one.
+  const available = useMemo(
+    () => new Map((summary?.categories ?? []).map((c) => [c.id, c.available])),
+    [summary?.categories],
+  );
+  // Real group names only: "Hidden categories" is a display group, never a category's group.
+  const groups = useMemo(() => (budget ? groupNames(budget) : []), [budget?.categories, budget?.groupOrder]);
+  // A first launch's empty budget starts in the system's currency and formats, not the built-in ones.
+  useEffect(() => {
+    if (budget && model.ready && isUntouched(budget)) model.settle((d) => void Object.assign(d, localeDefaults()));
+  }, [budget, model.ready]);
+  // A different budget starts on the start page (Settings › General).
+  useEffect(() => {
+    setPage(startPage());
+    setAccountId("all");
+    setRegisterFilter(undefined);
+    setMonth(today().slice(0, 7));
+  }, [budgetId]);
+  // Loans live on their accounts now; the old Loan planner page opens the first loan's register
+  // (one with details first), else the budget.
+  useEffect(() => {
+    if (page !== "loans" || !budget) return;
+    const open = budget.accounts.filter((a) => !a.archived);
+    const loan =
+      open.find((a) => loanTerms(budget, a.id)) ?? open.find((a) => hasLoan(budget, a, balances.get(a.id)?.balance));
+    setRegisterFilter(undefined);
+    if (loan) setAccountId(loan.id);
+    setPage(loan ? "transactions" : "budget");
+  }, [page, budget]);
+
+  const confirm = (title: string, text: string, label: string, action: () => void | Promise<void>) =>
+    setDialog({ type: "confirm", title, text, label, action });
+  const exportDraft = async (value: Budget | null = budget, recovery = false) => {
+    if (!value) return;
+    try {
+      const path = recovery ? await api.exportRecoveryDraft(value) : await api.export(value);
+      toast({
+        message: recovery ? "Recovery draft exported." : "Full backup exported.",
+        action: { label: "Show in folder", onClick: () => void api.reveal(path).catch(fail) },
+      });
+    } catch (e) {
+      fail(e);
+    }
+  };
+  const exportAccount = (account: Account) => {
+    if (!budget) return;
+    void api
+      .exportTransactions(budget, account.id, null)
+      .then((path) =>
+        toast({
+          message: `Exported ${account.name}.`,
+          action: { label: "Show in folder", onClick: () => void api.reveal(path).catch(fail) },
+        }),
+      )
+      .catch((e) => fail(e));
+  };
+  const reload = () => {
+    if (model.dirty())
+      confirm(
+        "Reload from disk?",
+        "This replaces your unsaved changes with the saved budget. Export them first if you want to keep both.",
+        "Discard changes & reload",
+        model.fetchDatabase,
+      );
+    else void model.fetchDatabase();
+  };
+  // Saves the budget (and makes the on-close backup) before the installer replaces the app.
+  const installUpdate = () =>
+    void updates
+      .install(model.installUpdate)
+      .catch((e) => fail(e, "Couldn't install the update: "));
+  const switchBudget = (id: string) =>
+    model.switchBudget(id).catch((e) => {
+      fail(e, "Couldn't open that budget: ");
+      throw e;
+    });
+  const loadImport = async (file: File) => {
+    try {
+      const raw = JSON.parse(await file.text());
+      const imported = raw.data?.plan || raw.data?.budget ? await api.importYnab(raw) : (raw as Budget);
+      await api.validate(imported);
+      confirm(
+        "Restore from this backup?",
+        `Replace “${budget?.name}” with “${imported.name}” (${imported.accounts.length} accounts, ${imported.transactions.length} transactions)? A backup of the current budget is made first.`,
+        "Back up & restore",
+        () => model.restoreBackup(imported),
+      );
+    } catch (e) {
+      fail(e, "Couldn't read that file: ");
+    }
+  };
+
+  if (!budget || !summary)
+    return (
+      <div className="loading-screen">
+        {customTitleBar && (
+          <div className="loading-titlebar">
+            <TitleBar />
+          </div>
+        )}
+        <h1>UrBudget</h1>
+        <p>{model.calculationError ? `Could not calculate ${monthName(month)}: ${model.calculationError}` : model.error || (budget ? `Updating ${monthName(month)} totals…` : "Opening your budget…")}</p>
+        {model.calculationError ? (
+          <button className="primary" onClick={model.retryCalculation}>Retry calculation</button>
+        ) : model.error ? (
+          <button className="primary" onClick={() => location.reload()}>
+            Try again
+          </button>
+        ) : (
+          <LoaderCircle className="spin" />
+        )}
+        {budget && model.calculationError && <CalculationRecovery
+          month={month} currentMonth={model.calculationMonth ?? today().slice(0, 7)} changeMonth={setMonth}
+          model={model} exportDraft={() => exportDraft(budget, true)} openBudget={switchBudget} closeEditor={close}
+        />}
+      </div>
+    );
+  const formatKey = configureFormat(budget);
+  const currentAccount = budget.accounts.find((a) => a.id === accountId);
+  const navigateAccount = (account: string) => {
+    setAccountId(account);
+    setPage("transactions");
+    setRegisterFilter(undefined);
+  };
+  const thisMonth = model.calculationMonth ?? today().slice(0, 7);
+  const editCalculated: typeof edit = (update) => { if (currentSummary) edit(update); };
+  const transformCalculated: typeof model.transform = (work) => currentSummary
+    ? model.transform(work) : Promise.reject(new Error("Wait for the budget calculation to finish before changing these amounts."));
+  // A loan's actions, from its register, its payment category and its account menus. Without
+  // details saved, each opens the account form at them.
+  const loanActions: LoanActions = {
+    record: (a) => { if (currentSummary) setDialog(loanTerms(budget, a.id) ? { type: "loanPayment", account: a } : { type: "account", account: a, focusLoan: true }); },
+    plan: (a) => {
+      if (!currentSummary) return;
+      // Nothing to plan without details, or once it's paid off.
+      const owed = -(balances.get(a.id)?.balance ?? a.openingBalance);
+      if (!loanTerms(budget, a.id) || owed <= 0) return setDialog({ type: "account", account: a, focusLoan: true });
+      if (page !== "transactions" || accountId !== a.id) navigateAccount(a.id);
+      setDialog({ type: "planner", account: a });
+    },
+    details: (a) => setDialog({ type: "account", account: a, focusLoan: true }),
+  };
+  const dialogLoan = dialog && (dialog.type === "planner" || dialog.type === "loanPayment") ? loanTerms(budget, dialog.account.id) : undefined;
+
+  /** Applies an assistant proposal as one undoable change; a refreshed card comes back when the budget moved. */
+  const applyProposal = async (threadId: string, p: Proposal): Promise<Proposal> => {
+    if (!currentSummary) throw new Error("Wait for the budget calculation to finish before applying these changes.");
+    let outcome = null as { patch: Patch | null; proposal: Proposal } | null;
+    let after: Budget | null = null;
+    try {
+      await model.transform(async (b) => {
+        outcome = await assistant.apply(b, threadId, p.id);
+        if (!outcome.patch) throw new Error("refreshed");
+        after = applyPatch(b, outcome.patch);
+        return after;
+      });
+    } catch (e) {
+      if (outcome && !outcome.patch) return outcome.proposal;
+      if (outcome?.patch) await assistant.mark(threadId, p.id, "proposed").catch(() => {});
+      throw e;
+    }
+    if (after) lastApplied.current = { id: p.id, budget: after };
+    toast({ message: `Applied: ${p.title}`, action: { label: "Undo", onClick: () => void undoProposal(threadId, p) } });
+    return outcome!.proposal;
+  };
+  const undoProposal = async (threadId: string, p: Proposal): Promise<Proposal> => {
+    if (lastApplied.current?.id === p.id) {
+      model.undo();
+      lastApplied.current = null;
+    }
+    return assistant.mark(threadId, p.id, "undone");
+  };
+  /** Opens the assistant with an import's uncategorized transactions attached and a request ready to send. */
+  const categorize = (uncategorized: Uncategorized) =>
+    ask({ text: categorizeText(uncategorized), selected: uncategorized.ids.slice(0, ATTACH_LIMIT) });
+  const reviewImport = async (threadId: string, p: Proposal) => {
+    try {
+      const file = await assistant.importFile(threadId, p.id);
+      const account = budget.accounts.find((a) => a.id === file.account);
+      if (!account) throw new Error("That account no longer exists.");
+      setDialog({
+        type: "import",
+        account,
+        file: new File([file.csv], file.name, { type: "text/csv" }),
+        proposal: { threadId, id: p.id },
+      });
+    } catch (e) {
+      fail(e);
+    }
+  };
+  const highlightStyle = (() => {
+    if (!assistantOpen || !highlight) return "";
+    const esc = (v: string) => (typeof CSS !== "undefined" && CSS.escape ? CSS.escape(v) : v.replace(/["\\]/g, "\\$&"));
+    const selectors = [
+      ...(page === "budget" && (!highlight.month || highlight.month === month)
+        ? highlight.categories.map((c) => `[data-category="${esc(c)}"] > *`)
+        : []),
+      ...(page === "transactions" ? highlight.transactions.map((t) => `[id="reg-${esc(t)}"]`) : []),
+    ];
+    return selectors.length
+      ? `${selectors.join(",")}{background:var(--accent-soft)!important;box-shadow:inset 3px 0 0 var(--accent)}`
+      : "";
+  })();
+
+  const title =
+    page === "budget" ? (
+      <div className="month-nav">
+        <button className="icon-button" aria-label="Previous month" onClick={() => setMonth(shiftMonth(month, -1))}>
+          <ChevronLeft size={16} />
+        </button>
+        <h1>
+          <span className="month-long">{monthName(month)}</span>
+          <span className="month-short">{monthName(month, "short")}</span>
+        </h1>
+        <button className="icon-button" aria-label="Next month" onClick={() => setMonth(shiftMonth(month, 1))}>
+          <ChevronRight size={16} />
+        </button>
+        <MonthPicker value={month} onChange={setMonth} label="Choose budget month" />
+        {month !== thisMonth && (
+          <button className="link-button" onClick={() => setMonth(thisMonth)}>
+            Today
+          </button>
+        )}
+      </div>
+    ) : page === "transactions" ? (
+      <div className="title-stack">
+        <h1>{currentAccount?.name ?? "All transactions"}</h1>
+        <span>
+          {currentAccount
+            ? `${kindLabel(currentAccount)}${currentAccount.archived ? " · Closed" : ""}`
+            : `${budget.accounts.length} accounts`}
+        </span>
+      </div>
+    ) : (
+      <h1>{titles[page]}</h1>
+    );
+
+  // On Windows these sit in the title bar beside the window buttons; elsewhere, in the header.
+  const saveStatus = (
+    <SyncStatus sync={shownSync} onSave={() => void model.flush()} onReload={reload} onSettings={() => setPage("settings")} />
+  );
+  const assistantButton = (
+    <button
+      className="assistant-toggle"
+      aria-pressed={assistantOpen}
+      title={keyLabel("Assistant (Ctrl+J)")}
+      onClick={() => showAssistant(!assistantOpen)}
+    >
+      <MessageSquareText size={15} />
+      <span className="header-label">Assistant</span>
+    </button>
+  );
+
+  const cloudChips = (
+    <>
+      <UpdateChip updates={updates} onOpen={() => openSettings("general")} />
+      <SyncChip cloud={cloud} onOpen={() => openSettings("sync")} />
+    </>
+  );
+
+  return (
+    <HeaderSlotElement.Provider value={headerSlot}>
+    <LoanActionsContext.Provider value={loanActions}>
+    <div
+      className={`app-shell${assistantOpen ? " with-assistant" : ""}${customTitleBar ? " has-titlebar" : ""}`}
+      style={{ "--sidebar-width": `${layout.width}px`, "--assistant-width": `${assistantWidth.width}px` } as CSSProperties}
+    >
+      {customTitleBar && (
+        <TitleBar>
+          {cloudChips}
+          {saveStatus}
+          {assistantButton}
+        </TitleBar>
+      )}
+      {highlightStyle && <style>{highlightStyle}</style>}
+      <Sidebar
+        budget={budget}
+        budgetId={budgetId}
+        balances={balances}
+        page={page}
+        accountId={accountId}
+        layout={layout}
+        edit={edit}
+        onNavigate={setPage}
+        onAccount={navigateAccount}
+        onAddAccount={() => setDialog({ type: "account" })}
+        onEditAccount={(account) => setDialog({ type: "account", account })}
+        onReconcile={(account) => { if (currentSummary) setDialog({ type: "reconcile", account }); }}
+        onExportAccount={exportAccount}
+        onSync={(account) => setDialog({ type: "bankSync", account })}
+        onSyncDetails={(account) => setDialog({ type: "bankSyncDetails", account })}
+        onLoan={loanActions.plan}
+        onSwitchBudget={(id) => void switchBudget(id).catch(() => {})}
+        onNewBudget={() => setDialog({ type: "newBudget" })}
+        onManageBudgets={() => setDialog({ type: "manageBudgets" })}
+      />
+
+      <main className="main-area">
+        <header className="app-header">
+          <div className="header-title">{title}</div>
+          <div className="header-slot" ref={setHeaderSlot} />
+          <div className="header-actions">
+            {!customTitleBar && cloudChips}
+            {!customTitleBar && saveStatus}
+            <button
+              className="icon-button"
+              aria-label="Undo"
+              title={keyLabel("Undo (Ctrl+Z)")}
+              disabled={!model.canUndo || !!operation || sync === "conflict"}
+              onClick={model.undo}
+            >
+              <Undo2 size={16} />
+            </button>
+            <button
+              className="icon-button"
+              aria-label="Redo"
+              title={keyLabel("Redo (Ctrl+Shift+Z)")}
+              disabled={!model.canRedo || !!operation || sync === "conflict"}
+              onClick={model.redo}
+            >
+              <Redo2 size={16} />
+            </button>
+            {!customTitleBar && assistantButton}
+          </div>
+        </header>
+        <SampleBanner
+          budget={budget}
+          budgetId={budgetId}
+          openBudget={switchBudget}
+          onNewBudget={() => setDialog({ type: "newBudget" })}
+        />
+        {(sync === "conflict" || model.error) && (
+          <div className="alert" role="alert">
+            <TriangleAlert size={16} />
+            <span>{model.error}</span>
+            {sync === "conflict" ? (
+              <>
+                <button className="secondary" onClick={() => void exportDraft()}>
+                  Export unsaved changes
+                </button>
+                <button className="secondary" onClick={reload}>
+                  Reload from disk
+                </button>
+              </>
+            ) : sync === "error" ? (
+              <button className="secondary" onClick={() => void model.flush()}>
+                Retry
+              </button>
+            ) : (
+              <button className="secondary" onClick={model.dismissError}>
+                Dismiss
+              </button>
+            )}
+          </div>
+        )}
+        {calculating && (
+          <div className="calculating" role="status"><span><LoaderCircle size={12} className="spin" />Updating {monthName(month)} totals…</span></div>
+        )}
+        <div key={formatKey} inert={!currentSummary && ["budget", "transactions"].includes(page)} aria-busy={!currentSummary} className={`page-scroll${page === "transactions" || page === "budget" || page === "reports" ? " fill" : ""}`}>
+          {page === "budget" && isBlank(budget) && (
+            <Welcome
+              key={budgetId}
+              budget={budget}
+              budgetId={budgetId}
+              edit={edit}
+              transform={model.transform}
+              openBudget={switchBudget}
+              onAddAccount={() => setDialog({ type: "account" })}
+              importYnab={model.importYnab}
+              acceptYnab={model.acceptYnab}
+              resolveYnab={model.resolveYnab}
+              onAsk={(text) => ask({ text })}
+            />
+          )}
+          {page === "budget" && !isBlank(budget) && (
+            <BudgetPage
+              budget={budget}
+              budgetId={budgetId}
+              undo={model.undo}
+              summary={summary}
+              month={month}
+              edit={editCalculated}
+              transform={transformCalculated}
+              onEditorChange={setPlanningEditor}
+              onEditCategory={editCategory}
+              onAsk={(names) =>
+                ask({ text: names.length === 1 ? `Help me with ${names[0]} this month.` : `Help me with ${names.join(", ")} this month.` })
+              }
+              onNewCategory={() => setDialog({ type: "category" })}
+              onAddAccount={() => setDialog({ type: "account" })}
+              onOpenRegister={({ accountId: account, ...filter }) => {
+                setAccountId(account);
+                setRegisterFilter(filter);
+                setPage("transactions");
+              }}
+              onOpenSample={() => void openSample(budget, budgetId, switchBudget).catch((e) => fail(e))}
+              onAddTransaction={() => setDialog({ type: "transaction", isNew: true })}
+              onPayCard={(id) => {
+                const card = budget.accounts.find((a) => a.id === id);
+                if (card) setDialog({ type: "payment", account: card });
+              }}
+            />
+          )}
+          {page === "transactions" && (
+            <TransactionsPage
+              budget={budget}
+              accountId={accountId}
+              account={currentAccount}
+              summary={balances.get(accountId)}
+              netWorth={summary.netWorth}
+              edit={editCalculated}
+              transform={transformCalculated}
+              initialFilter={registerFilter}
+              available={available}
+              undo={model.undo}
+              onEditorChange={setPlanningEditor}
+              onAsk={(ids) => ask({ selected: ids })}
+              onEditAccount={(account) => setDialog({ type: "account", account })}
+              onReconcile={(account) => setDialog({ type: "reconcile", account })}
+              onPayCard={(account) => setDialog({ type: "payment", account })}
+              onOpenTransfer={(account, id) => {
+                setAccountId(account);
+                setRegisterFilter({ focus: id });
+              }}
+              onImport={(account) => setDialog({ type: "import", account })}
+              onSync={(account) => setDialog({ type: "bankSync", account })}
+              onEdit={(transaction) => setDialog({ type: "transaction", transaction })}
+              onAddDialog={(transaction, repeat) => setDialog({ type: "transaction", transaction, isNew: true, repeat })}
+            />
+          )}
+          {page === "reports" && (
+            <Reports
+              budget={budget}
+              month={month}
+              onInspect={(filter) => {
+                setAccountId("all");
+                setRegisterFilter(filter);
+                setPage("transactions");
+              }}
+            />
+          )}
+          {page === "payees" && <Payees budget={budget} edit={edit} transform={model.transform} undo={model.undo} />}
+          {page === "settings" && (
+            <SettingsPage
+              key={settingsTab?.key}
+              initialTab={settingsTab?.tab}
+              budget={budget}
+              sync={sync}
+              syncLabel={syncLabels[sync]}
+              metadata={metadata}
+              edit={edit}
+              transform={model.transform}
+              flush={model.flush}
+              onReload={reload}
+              onExport={() => void exportDraft()}
+              onImportFile={(file) => void loadImport(file)}
+              importYnab={model.importYnab}
+              acceptYnab={model.acceptYnab}
+              resolveYnab={model.resolveYnab}
+              onAsk={(text) => ask({ text })}
+              openBudget={switchBudget}
+              onBankSync={() => setDialog({ type: "bankSync" })}
+              onCategorize={categorize}
+              theme={theme}
+              setTheme={setTheme}
+              cloud={cloud}
+              updates={updates}
+              onInstallUpdate={installUpdate}
+              budgetId={budgetId}
+              isClean={() => !model.dirty() && sync === "saved"}
+              onResetLayout={() => {
+                resetLayout();
+                layout.setWidth(236);
+                if (layout.collapsed) layout.toggle();
+              }}
+            />
+          )}
+        </div>
+      </main>
+      {assistantOpen && (
+        <AssistantBoundary budgetId={budgetId} onClose={() => showAssistant(false)}>
+          <AssistantPanel
+            budget={budget}
+            budgetId={budgetId}
+            summary={summary}
+            screen={{ page, month, accountId: page === "transactions" ? accountId : null }}
+            request={assistantRequest}
+            width={assistantWidth.width}
+            onResize={assistantWidth.setWidth}
+            onClose={() => showAssistant(false)}
+            onOpenSettings={() => openSettings("assistant")}
+            onApply={applyProposal}
+            onUndo={undoProposal}
+            canUndo={(p) => lastApplied.current?.id === p.id && lastApplied.current.budget === budget}
+            onReviewImport={(threadId, p) => void reviewImport(threadId, p)}
+            onHighlight={setHighlight}
+          />
+        </AssistantBoundary>
+      )}
+
+      {/* Clicks wait while anything is saving; the dialog shows only if it takes a while. */}
+      {model.operation && !operation && updates.phase !== "installing" && <div className="operation-guard" aria-hidden />}
+      {operation && updates.phase !== "installing" && (
+        <Blocking title={operation}>
+          <p role="status">Please keep this window open; this only takes a moment.</p>
+          <LoaderCircle className="spin" />
+        </Blocking>
+      )}
+      {updates.phase === "installing" && (
+        <Blocking title="Installing the update">
+          <p role="status">{updates.channel === "microsoftStore"
+            ? "Your budget is saved first, then Windows downloads and installs the update. Windows may ask for permission and close UrBudget. Reopen it from Start if it doesn't restart."
+            : "Your budget is saved first, then UrBudget restarts on the new version."}</p>
+          <LoaderCircle className="spin" />
+        </Blocking>
+      )}
+      {model.recovery && (
+        <Blocking title="Restore unsaved changes?">
+          <p>
+            UrBudget closed before some changes were saved. Restore them to continue where
+            you left off, or keep the saved budget.
+          </p>
+          <div className="modal-actions">
+            <button className="secondary" onClick={() => void exportDraft(model.recovery!.budget)}>
+              Export them
+            </button>
+            <button className="secondary" onClick={() => void model.fetchDatabase()}>
+              Keep saved budget
+            </button>
+            <button className="primary" onClick={() => void model.restoreRecovery().catch((e) => fail(e))}>
+              Restore changes
+            </button>
+          </div>
+        </Blocking>
+      )}
+      {currentSummary && dialog?.type === "newBudget" && (
+        <NewBudgetDialog current={{ budget, summary, token: metadata?.token ?? "" }} close={close} open={switchBudget} />
+      )}
+      {dialog?.type === "manageBudgets" && (
+        <ManageBudgetsDialog
+          close={close}
+          open={switchBudget}
+          onNew={() => setTimeout(() => setDialog({ type: "newBudget" }))}
+        />
+      )}
+      {dialog?.type === "account" && (
+        <AccountForm
+          initial={dialog.account}
+          balance={dialog.account && balances.get(dialog.account.id)?.balance}
+          budget={budget}
+          focusLoan={dialog.focusLoan}
+          close={close}
+          save={(account, loan) => {
+            edit((d) => {
+              const index = d.accounts.findIndex((a) => a.id === account.id);
+              if (index < 0) d.accounts.push(account);
+              else d.accounts[index] = account;
+              // A loan's details, by account (null removes them).
+              if (loan !== undefined && (loan || d.loans?.some((l) => l.accountId === account.id)))
+                d.loans = [...(d.loans ?? []).filter((l) => l.accountId !== account.id), ...(loan ? [loan] : [])];
+              if (account.kind !== "credit" || account.onBudget === false) return;
+              // A card's payment category follows the card's name, as in YNAB.
+              const payment = d.categories.find((c) => c.paymentAccountId === account.id);
+              if (payment) payment.name = account.name;
+              else
+                d.categories.push({
+                  id: id(),
+                  name: account.name,
+                  group: "Credit Card Payments",
+                  target: 0,
+                  paymentAccountId: account.id,
+                });
+            });
+            close();
+          }}
+        />
+      )}
+      {dialog?.type === "category" && (
+        <CategoryForm
+          initial={dialog.category}
+          groups={groups}
+          month={month}
+          currentMonth={thisMonth}
+          close={close}
+          save={(category) => {
+            edit((d) => {
+              const index = d.categories.findIndex((c) => c.id === category.id);
+              if (index < 0) d.categories.push(category);
+              else d.categories[index] = category;
+            });
+            close();
+          }}
+        />
+      )}
+      {dialog?.type === "transaction" && (
+        <TransactionForm
+          budget={budget}
+          initial={dialog.transaction}
+          isNew={dialog.isNew ?? !dialog.transaction}
+          repeatable={dialog.isNew ?? !dialog.transaction}
+          initialRepeat={dialog.repeat}
+          defaultAccount={currentAccount?.id}
+          close={close}
+          onCreateCategory={newCategory.create}
+          save={async (transaction, repeat) => {
+            let before: Budget | undefined;
+            await model.transform((b) => {
+              before = b;
+              return saveTransaction(b, transaction, repeat);
+            });
+            close();
+            if (before) learn(before, transaction);
+            const message = scheduledMessage(transaction, repeat);
+            if (message) toast({ message, action: { label: "Undo", onClick: model.undo } });
+          }}
+        />
+      )}
+      {newCategory.dialog}
+      {dialog?.type === "import" && (
+        <Modal title={`Import into ${dialog.account.name}`} close={close} wide>
+          <BankImport
+            budget={budget}
+            transform={model.transform}
+            initialAccount={dialog.account.id}
+            initialFile={dialog.file}
+            embedded
+            onImported={(count, uncategorized) => {
+              const from = dialog.proposal;
+              if (from) void assistant.mark(from.threadId, from.id, "applied").catch(() => {});
+              close();
+              toast({
+                message: count === 1 ? "Imported 1 transaction for review." : `Imported ${count} transactions for review.`,
+                action: { label: "Undo", onClick: model.undo },
+                offer: uncategorized.ids.length
+                  ? { label: "Categorize with the assistant", onClick: () => categorize(uncategorized) }
+                  : undefined,
+              });
+            }}
+            onAskAssistant={
+              // A file the assistant already converted goes back to it from its own card instead.
+              dialog.proposal
+                ? undefined
+                : (file, problem) => {
+                    close();
+                    ask({ text: importHelpText(dialog.account.name, problem), files: [file] });
+                  }
+            }
+          />
+        </Modal>
+      )}
+      {dialog?.type === "bankSync" && (
+        <Modal title="Sync with your bank" close={close} wide>
+          <BankSync
+            budget={budget}
+            balances={balances}
+            first={dialog.account?.id}
+            transform={model.transform}
+            close={close}
+            onAsk={(account, problem) => {
+              close();
+              ask({ text: syncHelpText(account.name, problem) });
+            }}
+            onCategorize={categorize}
+          />
+        </Modal>
+      )}
+      {dialog?.type === "bankSyncDetails" && (
+        <Modal title={`Bank sync · ${dialog.account.name}`} close={close}>
+          <BankSyncDetails
+            budget={budget}
+            account={budget.accounts.find((a) => a.id === dialog.account.id) ?? dialog.account}
+            balances={balances}
+            edit={edit}
+            onSync={() => setDialog({ type: "bankSync", account: dialog.account })}
+            onSettings={() => {
+              close();
+              openSettings("import");
+            }}
+            onAsk={() => {
+              close();
+              ask({ text: syncHelpText(dialog.account.name) });
+            }}
+            close={close}
+          />
+        </Modal>
+      )}
+      {currentSummary && dialog?.type === "reconcile" && (
+        <ReconcileForm
+          account={dialog.account}
+          cleared={balances.get(dialog.account.id)?.cleared ?? dialog.account.openingBalance}
+          money={money}
+          close={close}
+          save={async (balance) => {
+            const reconciled = await api.reconcile(budget, dialog.account.id, balance, today(), id());
+            edit((d) => Object.assign(d, reconciled));
+            close();
+          }}
+        />
+      )}
+      {dialog?.type === "payment" && (
+        <div inert={!currentSummary || undefined} aria-busy={!currentSummary || undefined} style={{ display: "contents" }}>
+        <CardPaymentForm
+          budget={budget}
+          card={dialog.account}
+          balances={balances}
+          available={available}
+          close={close}
+          pay={async (payment) => {
+            await transformCalculated((b) => saveTransaction(b, payment));
+            close();
+            const from = budget.accounts.find((a) => a.id === payment.accountId)?.name ?? "";
+            const paid = `${money(-payment.amount)} to ${dialog.account.name} from ${from}`;
+            toast({
+              // Dated ahead, it's a scheduled payment.
+              message: payment.date > today() ? `Scheduled ${paid} for ${formatDate(payment.date)}.` : `Paid ${paid}.`,
+              action: { label: "Undo", onClick: model.undo },
+            });
+          }}
+        />
+        </div>
+      )}
+      {dialog?.type === "loanPayment" && dialogLoan && (
+        <div inert={!currentSummary || undefined} aria-busy={!currentSummary || undefined} style={{ display: "contents" }}>
+        <LoanPaymentForm
+          budget={budget}
+          loan={dialog.account}
+          terms={dialogLoan}
+          balances={balances}
+          close={close}
+          record={async (p) => {
+            await transformCalculated(async (b) => {
+              const paid = await api.recordLoanPayment(b, p.terms, p.from, p.amount, p.date, p.id);
+              // A category chosen here becomes the loan's payment category when it had none.
+              const missing = !paid.categories.some((c) => c.id === dialogLoan.categoryId);
+              return missing
+                ? { ...paid, loans: paid.loans?.map((l) => (l.accountId === p.terms.accountId ? { ...l, categoryId: p.terms.categoryId } : l)) }
+                : paid;
+            });
+            close();
+            toast({
+              message: `Recorded a ${money(p.amount)} payment to ${dialog.account.name}${p.date > today() ? ` for ${formatDate(p.date)}` : ""}.`,
+              action: { label: "Undo", onClick: model.undo },
+            });
+          }}
+        />
+        </div>
+      )}
+      {currentSummary && dialog?.type === "planner" && dialogLoan && (
+        <LoanPlanner
+          budget={budget}
+          account={dialog.account}
+          terms={dialogLoan}
+          balance={balances.get(dialog.account.id)?.balance ?? dialog.account.openingBalance}
+          close={close}
+        />
+      )}
+      {dialog?.type === "confirm" && (
+        <Modal title={dialog.title} close={close}>
+          <p>{dialog.text}</p>
+          <div className="modal-actions">
+            <button className="secondary" onClick={close}>
+              Cancel
+            </button>
+            <button
+              className="primary"
+              onClick={async () => {
+                try {
+                  await dialog.action();
+                  close();
+                } catch (e) {
+                  fail(e);
+                }
+              }}
+            >
+              {dialog.label}
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+    </LoanActionsContext.Provider>
+    </HeaderSlotElement.Provider>
+  );
+}

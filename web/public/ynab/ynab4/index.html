@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YNAB 4 alternative: a free desktop budget in a file</title>
+  <meta name="description" content="YNAB 4 was the desktop YNAB you bought once. Why it no longer opens on a current Mac, and honest ways to move your budget to a free desktop app.">
+  <link rel="canonical" href="https://urbudget.app/ynab/ynab4/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="A YNAB 4 alternative: desktop, free, your budget in a file">
+  <meta property="og:description" content="What happened to YNAB 4, why it won't open on a current Mac, and three honest ways to move on, including bringing your history over from YNAB 4's CSV export.">
+  <meta property="og:url" content="https://urbudget.app/ynab/ynab4/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="A YNAB 4 alternative: desktop, free, your budget in a file">
+  <meta name="twitter:description" content="What happened to YNAB 4, why it won't open on a current Mac, and three honest ways to move on, including bringing your history over from YNAB 4's CSV export.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Switch from YNAB", "item": "https://urbudget.app/ynab/" },
+          { "@type": "ListItem", "position": 3, "name": "YNAB 4 alternative", "item": "https://urbudget.app/ynab/ynab4/" }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "A YNAB 4 alternative",
+        "description": "What happened to YNAB 4, why it no longer opens on current macOS, who UrBudget suits among YNAB 4 users, and how to move a YNAB 4 budget.",
+        "mainEntityOfPage": "https://urbudget.app/ynab/ynab4/",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-17",
+        "author": { "@id": "https://urbudget.app/#org" },
+        "publisher": { "@id": "https://urbudget.app/#org" }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">A YNAB 4 alternative</h1>
+        <p class="lead">YNAB 4 was the YNAB you bought once and ran on your own computer. If that's what you miss, UrBudget works the same way: a desktop app, your budget in a file you keep. And it's free. It can't open YNAB 4 files, so here are the honest ways to move.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>What happened to YNAB 4</h2>
+        <p>YNAB 4 came out in June 2012, for Windows and Mac. On December 30, 2015, YNAB launched the version it sells today, a web app with phone apps, and moved to a subscription. YNAB 4 kept running on people's computers, but YNAB's help center says support for it ended in 2019.</p>
+        <p>The way across has closed too. The same help article says YNAB retired its YNAB 4 migration tool in 2026, the tool that moved a YNAB 4 budget into the current YNAB. (YNAB's pricing page still mentions a 10% lifetime discount on the yearly plan for YNAB 4 owners and links to the migration steps, so ask YNAB before you count on either.)</p>
+
+        <h3>Why it won't open on a current Mac</h3>
+        <p>YNAB 4 is a 32-bit app, and starting with macOS Catalina (10.15), Macs don't run 32-bit apps. So YNAB 4 doesn't open on Catalina or anything newer. To run it on a Mac now, you'd need one still on macOS Mojave (10.14) or earlier.</p>
+
+        <h3>On Windows</h3>
+        <p>Windows still runs 32-bit programs, so YNAB 4 may still open on a Windows PC. But it has had no fixes or support from YNAB since 2019.</p>
+
+        <h2>Who UrBudget suits</h2>
+        <div class="choose">
+          <div class="us">
+            <h3>UrBudget fits you if you</h3>
+            <ul>
+              <li>budget at a desktop or laptop: UrBudget runs on Windows 10 and 11 and on macOS 12 or later</li>
+              <li>want a free app: all of UrBudget, on all your own computers, with future updates</li>
+              <li>liked having your budget in a file on your computer: it works offline, with automatic backups, and there's no account to make</li>
+              <li>still budget the envelope way: every dollar gets a job, with targets, rollover and credit-card payment categories</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Something else fits better if you</h3>
+            <ul>
+              <li>want your YNAB 4 budget brought over whole, categories and all: Actual Budget, a free open-source app, imports YNAB 4 budgets directly (<a href="/vs/actual-budget/">UrBudget vs Actual</a>)</li>
+              <li>budget on your phone: UrBudget has no phone app</li>
+              <li>share one budget with a partner: UrBudget syncs your own computers, but there's no shared budget for several people</li>
+            </ul>
+          </div>
+        </div>
+
+        <h2>Moving your YNAB 4 budget</h2>
+        <div class="note">
+          <p><strong>UrBudget can't import YNAB 4 budget files.</strong> It reads the current YNAB (with a token or its export file) and bank statement files. These are the ways that do work, from most complete to least.</p>
+        </div>
+
+        <h3>1. If you ever moved it to the current YNAB</h3>
+        <p>If you used YNAB's migration tool before it was retired, your budget is in the current YNAB, and UrBudget's token import brings it over: accounts, every transaction, categories, targets, notes and scheduled transactions, checked month by month against YNAB's totals. <a href="/ynab/">See how the token import works</a>.</p>
+        <p>The import needs a YNAB subscription or trial that's still running; YNAB's API doesn't answer for a lapsed one. YNAB keeps most account data for up to 24 months after a subscription ends, so if yours lapsed within that time, subscribing again for a month ($14.99) may be all it takes to import it.</p>
+
+        <h3>2. Start fresh with today's balances</h3>
+        <p>Often the cleanest choice, and the one that takes the least work.</p>
+        <ol class="steps">
+          <li><b>Add your accounts.</b> In UrBudget, add each checking and savings account and each credit card with today's balance, from your bank or from YNAB 4.</li>
+          <li><b>Set up your categories.</b> YNAB 4's category list is a good model: copy the ones you still use, and give the irregular ones a target.</li>
+          <li><b>Give your money a job.</b> Assign the money in your accounts until nothing is left unassigned, then budget forward from there. <a href="/getting-started/">The five steps</a>.</li>
+        </ol>
+        <p>Keep YNAB 4, or its CSV export below, for looking up old transactions. New ones come from your bank's statement files (CSV, OFX, QFX or QIF), which UrBudget imports with duplicates skipped.</p>
+
+        <h3>3. Bring the transaction history over from YNAB 4's CSV export</h3>
+        <p>This gets you every past transaction and correct balances, but not your old budget: categories and monthly budgeted amounts don't come over this way. It takes some spreadsheet work.</p>
+        <ol class="steps">
+          <li><b>Export from YNAB 4.</b> In YNAB 4, choose File, then Export Budget Data. It saves two CSV files: one ending in Budget and one ending in Register. You only need the Register file.</li>
+          <li><b>Leave the amounts as they are.</b> UrBudget 1.0.3 and later reads YNAB 4's Outflow and Inflow amounts with their currency symbol, such as $12.34, and with a comma for cents, such as 12,34 €. On an older version, update first.</li>
+          <li><b>Split it by account.</b> Open the Register file in a spreadsheet app (Excel, Numbers, LibreOffice or Google Sheets). UrBudget imports a file into one account at a time, and the Register mixes all your accounts. Sort or filter by the Account column, then copy each account's rows, with the header row, into its own file and save it as CSV.</li>
+          <li><b>Add the account in UrBudget.</b> Add it with a starting balance of 0, then open its register and choose Import file.</li>
+          <li><b>Import and review.</b> Pick the account's CSV and the date order that matches its dates (for example month/day/year for 01/31/2016). UrBudget reads the Date, Payee, Memo, Outflow and Inflow columns and ignores the rest. Every row is shown before anything is saved. Then compare the account's balance with YNAB 4's, and adjust the starting balance if they differ.</li>
+        </ol>
+        <p>What to expect afterwards:</p>
+        <ul>
+          <li><strong>No categories.</strong> Money out lands in an Uncategorized category and money in counts as income. Recategorize what matters to you, or leave old history as a record. Payee rules you set up first (in Payees &amp; rules) can categorize rows as they come in.</li>
+          <li><strong>Transfers aren't linked.</strong> A transfer between two accounts comes in as money out of one and money into the other, not as one transfer.</li>
+          <li><strong>One file holds up to 10,000 transactions</strong> and 20 MB. Split a longer account history by year; importing a file that overlaps one you've already imported is safe, because rows already there are marked as duplicates.</li>
+        </ul>
+        <p>If you want the history only to look things up, import it into a separate budget (make one from the budget menu) and start your everyday budget fresh, as in option 2.</p>
+
+        <div class="guide-cta">
+          <h2>A desktop budget in a file, again</h2>
+          <p>Free on Windows and macOS, with no account and no card.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=ynab4" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/getting-started/">How envelope budgeting works</a>
+          </div>
+        </div>
+
+        <p class="sources">YNAB and Actual Budget are trademarks of their owners. UrBudget isn't affiliated with either.</p>
+        <ul class="related" aria-label="Related">
+          <li><a href="/ynab/price/">How much YNAB costs</a></li>
+          <li><a href="/ynab/export/">How to export your YNAB data</a></li>
+          <li><a href="/ynab/cancel/">How to cancel YNAB</a></li>
+          <li><a href="/ynab/">Switch from YNAB</a></li>
+          <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+          <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

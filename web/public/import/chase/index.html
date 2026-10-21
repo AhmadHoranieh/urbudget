@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to download Chase transactions (CSV or QFX)</title>
+  <meta name="description" content="Chase's Spending Planner downloads this year's and last year's transactions on a computer as CSV, QFX, QIF or QBO. Which file to pick and how to import it.">
+  <link rel="canonical" href="https://urbudget.app/import/chase/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to download Chase transactions (CSV or QFX)">
+  <meta property="og:description" content="Where the download is on chase.com, how far back it goes, why the app only gives a PDF, and which file to import into a budget.">
+  <meta property="og:url" content="https://urbudget.app/import/chase/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to download Chase transactions (CSV or QFX)">
+  <meta name="twitter:description" content="Where the download is on chase.com, how far back it goes, why the app only gives a PDF, and which file to import into a budget.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "UrBudget",
+            "item": "https://urbudget.app/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Bank import guides",
+            "item": "https://urbudget.app/import/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Chase",
+            "item": "https://urbudget.app/import/chase/"
+          }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to download Chase transactions",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-17",
+        "author": {
+          "@id": "https://urbudget.app/#org"
+        },
+        "publisher": {
+          "@id": "https://urbudget.app/#org"
+        },
+        "mainEntityOfPage": "https://urbudget.app/import/chase/"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to download Chase transactions</h1>
+        <p class="lead">In Spending Planner on chase.com you can download this year's and last year's checking and credit card transactions as a spreadsheet (CSV) or as a Quicken, QuickBooks or Microsoft Money file. The Chase Mobile app only gives you a PDF. Here's where the download is, which file to pick, and how to bring it into UrBudget.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>What Chase lets you download</h2>
+        <ul>
+          <li><strong>Four file types, on a computer.</strong> Chase lists a spreadsheet (CSV), Quicken Web Connect (QFX), Quicken or Microsoft Money (QIF), and QuickBooks Web Connect (QBO).</li>
+          <li><strong>This year and last year.</strong> That's what Chase says Spending Planner's download covers on a computer. Other download screens on chase.com may offer a different range.</li>
+          <li><strong>Checking accounts and credit cards.</strong> Chase documents the download in Spending Planner, its spending tool for Chase checking and credit card customers.</li>
+          <li><strong>Only a PDF in the app.</strong> The Chase Mobile app downloads a PDF of last calendar year's transactions. That's useful at tax time, but no budgeting app can import a PDF.</li>
+        </ul>
+
+        <h2>Download your transactions from chase.com</h2>
+        <p>Chase's help pages describe the download inside Spending Planner on chase.com. Use a browser on a computer.</p>
+        <ol class="steps">
+          <li><b>Sign in at chase.com.</b> Skip the Chase Mobile app for this; its download is a PDF.</li>
+          <li><b>Open Spending Planner.</b> Chase puts it in the <i>Manage Your Spending Plan</i> section of the <i>Plan, Track, or Manage</i> dashboard.</li>
+          <li><b>Scroll down the Spending Summary tab.</b> Spending Planner opens on <i>Spending Summary</i>. Below your spending by category are the download options, which cover this year and last year.</li>
+          <li><b>Save a Quicken Web Connect (QFX) file.</b> Choose the QFX format and save the file. If Chase asks which account, pick one: UrBudget imports each file into a single account, so download your checking and your card separately.</li>
+        </ol>
+
+        <h2>Which format to pick for UrBudget</h2>
+        <div class="compare-wrap" role="region" aria-label="Chase's download formats and how UrBudget handles them" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col">Chase's format</th><th scope="col" class="us">In UrBudget</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Quicken Web Connect (QFX)</th><td class="us"><b>The one to pick.</b> Money out is negative and money in is positive, on your checking account and your card alike. Each transaction carries Chase's own ID, so a file that overlaps your last one doesn't add anything twice.</td></tr>
+              <tr><th scope="row">Spreadsheet (CSV)</th><td class="us">Imports only if its columns are ones UrBudget reads. Chase doesn't publish its CSV layout, so if you use it, look at the preview: a purchase has to show as money out.</td></tr>
+              <tr><th scope="row">Quicken or Microsoft Money (QIF)</th><td class="us">Imports, but without transaction IDs. UrBudget spots repeats by date, payee and amount instead, and you set the date order yourself.</td></tr>
+              <tr><th scope="row">QuickBooks Web Connect (QBO)</th><td class="us">Not supported. UrBudget doesn't open .qbo files.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Import it into UrBudget</h2>
+        <ol class="steps">
+          <li><b>Open the matching account.</b> In UrBudget, select the account the file is for, such as your Chase checking or your Chase card, and choose <b>Import file</b> above its transactions.</li>
+          <li><b>Add the file.</b> Choose <i>Choose a file</i> and pick the .qfx you saved, or drag it onto the box. UrBudget reads the format from the file name.</li>
+          <li><b>Preview it.</b> Choose <i>Preview transactions</i>. A QFX file needs no date order. If you went with CSV or QIF, set <i>Dates in the file</i> to Month/day/year before you preview.</li>
+          <li><b>Review the rows.</b> Rows from an earlier import are marked as already imported and skipped. A row with the same amount as a transaction you typed in within 10 days is offered as a match, so you don't end up with both. Any row with more than one possible match needs your choice.</li>
+          <li><b>Import.</b> Choose the import button, which shows how many transactions will come in. They wait in the register for your approval.</li>
+        </ol>
+
+        <h2>If something looks wrong</h2>
+        <ul>
+          <li><strong>Today's card purchase isn't in the file.</strong> Chase says Spending Planner's budget is built from posted transactions, so a purchase that's still pending may not be there yet. It will be in your next download, and the rows you already have are skipped.</li>
+          <li><strong>Checking and card transactions are mixed together.</strong> Every row in a file goes into the account you're importing into. If the preview shows more than one account's transactions, cancel and download each account on its own.</li>
+          <li><strong>You need older transactions.</strong> Spending Planner's download goes back to the start of last year. Older months are in your PDF statements, which can't be imported. If you start your budget from today's balances, you don't need them.</li>
+          <li><strong>The only choice is a PDF.</strong> You're in the Chase Mobile app. Switch to chase.com on a computer.</li>
+          <li><strong>Purchases show up as money coming in.</strong> That's a spreadsheet file writing purchases as positive amounts. Tick <b>Purchases are positive</b> (UrBudget 1.0.3 and later) and preview again, or import the QFX file instead.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Put your Chase file to work</h2>
+          <p>UrBudget is free on Windows and macOS. It never asks for your Chase login.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=import-chase" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/import/">All bank guides</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related guides">
+          <li><a href="/import/">All bank import guides</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+          <li><a href="/import/citi/">Download Citi transactions</a></li>
+          <li><a href="/import/wells-fargo/">Download Wells Fargo transactions</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

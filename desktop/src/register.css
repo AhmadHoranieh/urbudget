@@ -1,0 +1,1494 @@
+/* Account registers. Imported by Register.tsx. */
+/* ---------- Register ---------- */
+/* The table runs to the window's right edge, so its scrollbar sits at the edge like the
+   page's own would; the summary and toolbar keep their margin. The left margin is inside the
+   pinned block and the scroll area (not the page), so rows' marks can sit in it (.approve). */
+.register-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.register-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+}
+/* Balances separated by hairlines, like the budget's figures. */
+.register-summary .stat + .stat {
+  padding-left: 20px;
+  border-left: 1px solid var(--border);
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+}
+.stat strong {
+  margin-top: 2px;
+  font-size: 16px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.register-summary .button-row,
+.register-summary > button {
+  flex: none;
+}
+.register-summary .secondary + .icon-button {
+  margin-left: -16px;
+}
+.register {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+/* The balances and toolbar, laid over the top of the scroll area (which starts at the top of the
+   page) and painted with the page's background, so rows scrolling up pass under them unseen.
+   They stop short of the scrollbar, which runs the page's full height. */
+.register-pinned {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-right: var(--scrollbar-size);
+  padding: var(--gutter) calc(var(--gutter) - var(--scrollbar-size)) 8px var(--gutter);
+  background: var(--bg);
+}
+.register-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.search {
+  position: relative;
+  flex: 1 1 160px;
+  flex-direction: row;
+  max-width: 440px;
+}
+.search svg {
+  position: absolute;
+  top: 50%;
+  left: 9px;
+  color: var(--muted);
+  transform: translateY(-50%);
+}
+.search input {
+  width: 100%;
+  padding-left: 30px;
+}
+.count {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 1080px) {
+  .register-toolbar .count {
+    display: none;
+  }
+}
+/* The scroll area runs to the window edge (its scrollbar sits outside the table); the table
+   inside fills it, like the budget table, with a header that sticks to the top. */
+
+.register-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  /* Starts under the pinned block (usePinned measures it), its rows just below it. */
+  margin-top: calc(-1 * var(--pinned, 0px));
+  /* With the scrollbar, the gap on the right equals the page margin on the left. */
+  padding: var(--pinned, 0px) calc(var(--gutter) - var(--scrollbar-size)) var(--gutter) var(--gutter);
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+/* WebKit before Safari 18.2 (macOS 15.1's) has no scrollbar-gutter: there the bar's track stays
+   instead, empty until there's something to scroll, so the margins still match. */
+@supports not (scrollbar-gutter: stable) {
+  .register-scroll {
+    overflow-y: scroll;
+  }
+}
+/* A spreadsheet-like grid, like the budget table: square corners, a line between every column
+   and row, and padding inside each cell. */
+.register-table {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  /* The sticky header draws the top edge, so it stays put while the rows scroll under it. */
+  border-top: none;
+}
+
+/* Columns have fixed widths (set from the register, resizable by dragging a header's edge). */
+.reg-row {
+  --cell-pad: 10px;
+  display: grid;
+  grid-template-columns: var(--cols);
+  align-items: center;
+  width: 100%;
+  height: var(--row);
+  padding: 0;
+  border-bottom: 1px solid var(--border);
+}
+.reg-row > span,
+.split-line > span {
+  align-self: stretch;
+  padding: 0 var(--cell-pad);
+  line-height: calc(var(--row) - 1px);
+}
+/* `~`, not `+`: a flagged row's edge bar (an <i>) sits between the first two cells. */
+.reg-row > span ~ span,
+.split-line > span ~ span {
+  border-left: 1px solid var(--border);
+}
+/* Cells holding fields line them up in the middle and let them fill the cell. */
+.reg-editor > span,
+.reg-editor .split-line > span {
+  display: flex;
+  align-items: center;
+  line-height: normal;
+}
+.reg-editor > span > *,
+.reg-editor .split-line > span > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.reg-editor > .status-cell > *,
+.reg-editor .split-line > span > .icon-button {
+  flex: none;
+}
+.reg-row > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* A transfer's payee, "To: Savings", after a highlighted button that opens it in the other
+   account. Laid out like the editor's cells so it sits mid-row. */
+.reg-row > .transfer-payee {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: normal;
+}
+.transfer-payee > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.transfer-link {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: pointer;
+}
+.transfer-link:hover:not(:disabled) {
+  background: var(--accent);
+  color: #fff;
+}
+/* A selected row is tinted like the button, so the button takes the page colour there. */
+.reg-row.selected .transfer-link:not(:hover) {
+  background: var(--surface);
+}
+/* A scheduled transfer has no other side to open yet: a plain icon. */
+.transfer-link:disabled {
+  background: transparent;
+  cursor: default;
+}
+/* "No Category (Transfer)": a transfer between budget accounts needs none, and says so quietly. */
+.reg-row > .transfer-note {
+  color: var(--muted);
+}
+/* Spending with no category yet (uncategorized.ts): a filled label in the attention colour, as
+   YNAB marks it. A split that has such a line says so in the warning colour. */
+.reg-row > .needs-category {
+  color: var(--warning);
+  font-weight: 500;
+}
+.needs-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  height: 22px;
+  padding: 0 10px 0 7px;
+  overflow: hidden;
+  border-radius: 11px;
+  background: var(--attention);
+  color: var(--on-attention);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 22px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.needs-pill > svg {
+  flex: none;
+}
+/* Dated in the future: it hasn't happened yet, so its text reads quieter (its checkbox, flag
+   and cleared mark stay as they are). */
+.reg-row.future > span:not(:first-of-type, .icon-col) {
+  opacity: 0.6;
+}
+/* "Starting balance": where the running balance begins, not a transaction, so it reads quieter. */
+.reg-row.opening > span:nth-child(-n + 6) {
+  color: var(--text-2);
+}
+.reg-row.reg-head {
+  position: sticky;
+  /* Sticky offsets count from inside the scroll area's padding, so this is just under the
+     pinned block. */
+  top: 0;
+  z-index: 3;
+  height: 36px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border-strong);
+  border-bottom-color: var(--border-strong);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+/* The margin beside the heading is the page's, so marks in it (.approve) pass under it too. */
+.reg-row.reg-head::before {
+  position: absolute;
+  top: -1px;
+  right: calc(100% + 1px);
+  bottom: -1px;
+  width: var(--gutter);
+  background: var(--bg);
+  content: "";
+}
+.reg-row:not(.reg-head):hover {
+  background: var(--hover);
+}
+.reg-row.selected,
+.reg-row.selected:hover {
+  background: var(--accent-soft);
+}
+.register-scroll:focus {
+  outline: none;
+}
+/* The keyboard's place in the list: a bar along its row's edge, while the keys move it. */
+.register-scroll.keyed:focus .reg-row.cursor {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.register-scroll .reg-row:not(.reg-editor) {
+  cursor: default;
+  user-select: none;
+}
+/* Anywhere in the checkbox's cell works the checkbox (Register's check). */
+.reg-row > .select-cell {
+  cursor: pointer;
+}
+/* Unapproved (imported or scheduled) entries stand out until approved. */
+.reg-row.unapproved > [data-field="Date"],
+.reg-row.unapproved > [data-field="Payee"] {
+  font-weight: 600;
+}
+/* The checkbox column (a flag bar may come before it). */
+.reg-row > span:first-of-type {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.reg-row .date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-2);
+}
+.flag {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+/* ---------- Icon columns ---------- */
+/* Flag and Cleared hold an icon, centered, under an icon for a heading. Dragged wider, they
+   show names instead: the flag's, the heading's, and Enter and Skip on scheduled rows. The
+   names stay readable to screen readers while hidden. */
+.reg-row > span.icon-col {
+  container: icon-col / inline-size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 4px;
+  line-height: normal;
+}
+.col-icon {
+  display: inline-flex;
+  flex: none;
+}
+@container icon-col (max-width: 79px) {
+  .col-label,
+  .flag-cell .flag-tag > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  /* A flag is its banner alone, a little larger; the tint comes back on hover. */
+  .flag-cell .flag-tag {
+    padding: 0 5px;
+    background: transparent;
+  }
+  .flag-cell :is(.flag-tag, .flag-pick) .flag-icon {
+    width: 16px;
+    height: 12px;
+  }
+}
+@container icon-col (min-width: 80px) {
+  .col-icon {
+    display: none;
+  }
+  /* The Flag column reads like the text columns: from the left. */
+  .flag-cell > :is(.flag-pick, .flag-tag, .sort-button) {
+    margin-right: auto;
+    margin-left: 6px;
+  }
+}
+.reg-head > [role="columnheader"].icon-col {
+  justify-content: center;
+}
+/* Cells that lay out buttons don't use the tall text line-height (it would push labels down). */
+.reg-row > span.date {
+  line-height: normal;
+}
+/* Waiting for approval: a blue dot in the margin beside the row, like an unread marker. Click
+   it (or press A) to approve. */
+.reg-row .approve {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--gutter) / -2 - 12px);
+  transform: translateY(-50%);
+}
+.approve {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+}
+.approve::before {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  content: "";
+  transition:
+    transform 0.12s var(--ease),
+    box-shadow 0.12s var(--ease);
+}
+.approve:hover::before {
+  transform: scale(1.2);
+  box-shadow: 0 0 0 5px var(--accent-soft);
+}
+/* The cleared mark (ClearedMark): a dashed ring that turns solid green, with the check showing,
+   on hover; a solid green check once cleared; a lock once reconciled. */
+.clear-button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: color-mix(in srgb, var(--muted) 70%, var(--surface));
+}
+.clear-button:disabled {
+  opacity: 1;
+}
+.status-icon {
+  display: block;
+  flex: none;
+}
+.status-icon .disc {
+  fill: var(--positive);
+  transition: fill 0.12s var(--ease);
+}
+.status-icon .ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  /* Ten even dashes around the ring (its length is 2π × 7.25). */
+  stroke-dasharray: 2.4 2.155;
+  transition: stroke 0.12s var(--ease);
+}
+.status-icon .tick {
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.status-icon.cleared .tick {
+  stroke: var(--surface);
+}
+.status-icon.uncleared .tick {
+  stroke: var(--positive);
+  opacity: 0;
+  transition: opacity 0.12s var(--ease);
+}
+.clear-button:hover:not(:disabled) .status-icon.uncleared {
+  color: var(--positive);
+}
+.clear-button:hover:not(:disabled) .status-icon.uncleared .ring {
+  stroke-dasharray: none;
+}
+.clear-button:hover:not(:disabled) .status-icon.uncleared .tick {
+  opacity: 1;
+}
+.clear-button:hover:not(:disabled) .status-icon.cleared .disc {
+  fill: color-mix(in srgb, var(--positive) 82%, var(--text));
+}
+.status-icon.reconciled {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--positive-soft);
+  color: var(--positive);
+}
+/* Header cells fill the header's height, so the dividers between them do too. */
+.reg-head > [role="columnheader"] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  overflow: visible;
+}
+.reg-head > [role="columnheader"].num {
+  justify-content: flex-end;
+}
+.reg-head > [role="columnheader"] {
+  line-height: normal;
+}
+
+/* ---------- Sorting ---------- */
+.sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.sort-button:hover {
+  color: var(--text);
+}
+[aria-sort] > .sort-button {
+  color: var(--accent);
+}
+
+/* ---------- Flags ---------- */
+/* A flag is a bar on the row's left edge, so it never crowds the date. */
+.reg-row {
+  position: relative;
+}
+.flag-bar {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 0;
+  width: 4px;
+  border-radius: 0 3px 3px 0;
+}
+/* Each flag takes its theme's hue (the --flag-* tokens in styles.css). */
+[data-flag="red"] { --flag: var(--flag-red); }
+[data-flag="orange"] { --flag: var(--flag-orange); }
+[data-flag="yellow"] { --flag: var(--flag-yellow); }
+[data-flag="green"] { --flag: var(--flag-green); }
+[data-flag="blue"] { --flag: var(--flag-blue); }
+[data-flag="purple"] { --flag: var(--flag-purple); }
+/* Anything else marked with a flag (a dot, the row's edge bar) is filled with its color. */
+[data-flag]:not(.flag-tag, .flag-icon) {
+  background: var(--flag);
+}
+.flag-icon {
+  flex: none;
+  color: var(--flag);
+}
+.menu .flag {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}
+/* The Flag column: a label tinted in the flag's color, inside a button that opens the flag menu.
+   An empty one is a hollow flag, faint until the row is hovered or selected. */
+.reg-row > span.flag-cell {
+  display: flex;
+  align-items: center;
+}
+.flag-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  height: 24px;
+  padding: 0 10px 0 8px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--flag) 22%, transparent);
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.flag-tag > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.flag-pick {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+.flag-pick:hover .flag-tag,
+.flag-pick:focus-visible .flag-tag {
+  background: color-mix(in srgb, var(--flag) 32%, transparent);
+}
+.flag-pick.empty {
+  padding: 0 6px;
+  opacity: 0.5;
+}
+.reg-row:hover .flag-pick.empty,
+.reg-row.selected .flag-pick.empty,
+.register-scroll.keyed .reg-row.cursor .flag-pick.empty,
+.flag-pick.empty:focus-visible {
+  opacity: 0.85;
+}
+.flag-pick.empty:hover {
+  background: var(--surface-2);
+  opacity: 1;
+}
+/* The row editor's flag: the flag (a faint one without) over its menu, which opens from it; the
+   menu itself once the column is wider. */
+.flag-select {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 30px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+  transition: border-color 0.12s var(--ease), box-shadow 0.12s var(--ease);
+}
+.flag-select:hover {
+  border-color: color-mix(in srgb, var(--border-strong) 60%, var(--muted));
+}
+.flag-select:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.flag-select.empty .flag-icon {
+  opacity: 0.8;
+}
+.reg-editor .flag-select select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+@container icon-col (min-width: 80px) {
+  .flag-select {
+    display: flex;
+    height: auto;
+    border: none;
+    background: none;
+    box-shadow: none;
+  }
+  .flag-select > .flag-icon {
+    display: none;
+  }
+  .reg-editor .flag-select select {
+    position: static;
+    opacity: 1;
+  }
+}
+/* The Flag column is turned off, or there isn't room; then the bar at the row's edge shows the flag. */
+.register.no-flag .reg-row .flag-cell {
+  display: none;
+}
+.register:not(.no-flag) .flag-bar {
+  display: none;
+}
+
+/* ---------- Splits and scheduled ---------- */
+.split-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  margin-left: -3px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+}
+.split-toggle:hover {
+  color: var(--accent);
+}
+.reg-row.split-line {
+  background: var(--surface-2);
+  color: var(--text-2);
+  font-size: 12.5px;
+}
+.reg-row.split-line > span:nth-child(4),
+.register.all .reg-row.split-line > span:nth-child(5) {
+  padding-left: 14px;
+}
+.reg-row.upcoming {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+.reg-row.upcoming > span:first-child {
+  align-items: center;
+  justify-content: center;
+}
+/* Enter and Skip on a scheduled row: two quiet icons in the Cleared column. Pointing at the row,
+   tabbing to them or dragging the column wider opens them into a labelled pair of buttons, which
+   grows leftward over the row's empty balance cell. */
+.reg-row > span.upcoming-actions {
+  position: relative;
+  overflow: visible;
+}
+.schedule-actions {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  transform: translateY(-50%);
+  transition:
+    background-color 0.15s var(--ease),
+    border-color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease);
+}
+.row-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 4px;
+  border: none;
+  border-radius: 5px;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    padding 0.15s var(--ease),
+    color 0.15s var(--ease);
+}
+.row-action:hover,
+.row-action:focus-visible {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.action-label {
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-width 0.15s var(--ease),
+    margin 0.15s var(--ease),
+    opacity 0.15s var(--ease);
+}
+.reg-row.upcoming:hover .schedule-actions,
+.schedule-actions:focus-within {
+  background: var(--surface);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+:is(.reg-row.upcoming:hover, .schedule-actions:focus-within) .row-action {
+  padding: 0 8px;
+  color: var(--accent);
+}
+:is(.reg-row.upcoming:hover, .schedule-actions:focus-within) .action-label {
+  max-width: 4em;
+  margin-left: 5px;
+  opacity: 1;
+}
+@container icon-col (min-width: 80px) {
+  .row-action {
+    padding: 0 8px;
+    color: var(--accent);
+  }
+  .action-label {
+    max-width: 4em;
+    margin-left: 5px;
+    opacity: 1;
+  }
+}
+/* How often a scheduled row repeats, ahead of its memo; and "Paused", dashed. */
+.repeat-label {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 11.5px;
+  line-height: 18px;
+}
+.repeat-label.paused-label {
+  border-style: dashed;
+  border-color: var(--border-strong);
+}
+/* A paused schedule reads quieter still, its actions as they are. */
+.reg-row.upcoming.paused > span:not(.icon-col) {
+  opacity: 0.6;
+}
+/* The scheduled row's calendar: it opens the schedule's menu (Edit, Pause, Delete…). */
+.schedule-menu-button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
+}
+.schedule-menu-button:hover,
+.schedule-menu-button:focus-visible {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+/* The heading over the scheduled rows, across the table: it folds them away, and says what's
+   due in the next 30 days. */
+.reg-row.schedules-head {
+  background: var(--surface-2);
+}
+.reg-row.schedules-head:hover {
+  background: var(--surface-2);
+}
+.reg-row.schedules-head > span {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 calc(var(--cell-pad) + 2px) 0 8px;
+  line-height: normal;
+}
+.schedules-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 8px 0 4px;
+  border: none;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.schedules-toggle:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.schedules-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--zero-soft);
+  color: var(--text-2);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+  line-height: 18px;
+  text-align: center;
+}
+.schedules-note {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.schedules-note strong {
+  color: var(--text-2);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.schedules-note strong.positive {
+  color: var(--positive);
+}
+
+/* ---------- Editing in the table ---------- */
+/* The row being edited reads as one card across the table: a soft accent tint, an accent bar on
+   the left and a light outline, fields without column lines between them, and a footer of
+   actions along the bottom. Every control in it is 30px tall. Field lines are 40px under 4px of
+   padding, so fields sit 9px from the top; the 48px footer leaves its buttons 9px from the bottom.
+   These heights add up to editHeight in Register.tsx. */
+.reg-row.reg-editor {
+  grid-auto-rows: auto;
+  align-content: start;
+  height: auto;
+  padding-top: 4px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 45%, transparent);
+}
+.reg-row.reg-editor:hover {
+  background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+}
+.reg-row.reg-editor > span ~ span,
+.reg-editor .split-line > span ~ span {
+  border-left-color: transparent;
+}
+.reg-row.reg-editor > span,
+.reg-editor .split-line > span {
+  overflow: visible;
+}
+.reg-row.reg-editor > span,
+.reg-editor .split-line > span {
+  height: 40px;
+}
+/* The editor's split lines share its columns. (Splits expanded in the list are rows of their own.) */
+.reg-editor .split-line {
+  display: contents;
+}
+.split-line-label {
+  padding-left: 14px;
+  font-size: 12px;
+}
+.editor-actions .remaining {
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.editor-actions .remaining.warning-text {
+  color: var(--warning);
+}
+.reg-editor input:not([type="checkbox"]),
+.reg-editor select {
+  width: 100%;
+  height: 30px;
+  padding: 0 9px;
+  font-size: 13px;
+}
+.reg-editor .combobox input {
+  padding-right: 22px;
+}
+.reg-editor select {
+  padding-right: 24px;
+}
+.reg-editor .date-input input {
+  padding: 0 24px 0 8px;
+  font-size: 12.5px;
+}
+/* The date field reaches nearer the column's edges than other fields, so the column can be as
+   narrow as the dates it lists (the date column's `field` in Register.tsx). */
+.reg-row.reg-editor > span.date-field {
+  padding: 0 calc(var(--cell-pad) - 6px);
+}
+.num-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* The footer starts where the first field does and stops as far from the right edge, so both
+   sides keep the same margin. */
+.editor-actions {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  /* As far in from each side as the first field (the flag, in an icon column) is from the left. */
+  padding: 0 calc(var(--select, 36px) + 4px);
+  border-top: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border));
+  line-height: normal;
+}
+.editor-actions .primary.small,
+.editor-actions .secondary.small {
+  height: 30px;
+  padding: 0 14px;
+  font-size: 13px;
+}
+/* Split, Add line and More options: the same height as the buttons, their hover box flush
+   with the fields' left edge. */
+.editor-actions .link-button {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+/* Repeat, in a new transaction's footer: a quiet menu until it's set, then in the accent. */
+.repeat-field {
+  position: relative;
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 13px;
+}
+.repeat-field:hover {
+  background: var(--hover);
+}
+.repeat-field.on {
+  color: var(--accent);
+}
+.repeat-field:focus-within {
+  background: var(--hover);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+/* The select lies unseen over the whole field, which shows the choice and a caret. */
+.reg-editor .repeat-field select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+/* The caret: smaller than a field's, and in the field's colour (the accent once set). Its mask
+   lifts it over the select, so clicks pass through it. */
+.repeat-field::after {
+  content: "";
+  flex: none;
+  width: 12px;
+  height: 12px;
+  background: currentColor;
+  mask-image: var(--select-caret);
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  pointer-events: none;
+}
+.editor-actions .link-button:hover:not(:disabled) {
+  background: var(--hover);
+  text-decoration: none;
+}
+.editor-actions .primary.small {
+  min-width: 72px;
+}
+.editor-hint {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.editor-hint kbd {
+  padding: 0 4px;
+  font-size: 11px;
+}
+.compact .editor-hint {
+  display: none;
+}
+.editor-actions .form-error {
+  margin: 0;
+}
+.register-table > .reg-editor {
+  flex: none;
+}
+
+/* ---------- Selection actions ---------- */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+/* The desktop's bar floats over the bottom of the register, centred in a dock as wide as the
+   register's table, which it answers to when the register is very narrow. */
+.bulk-dock {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 16px;
+  left: var(--gutter);
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  container: bulk-dock / inline-size;
+  pointer-events: none;
+}
+.bulk-dock > .bulk-bar {
+  gap: 6px;
+  max-width: 100%;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+  animation: bulk-in 0.18s var(--ease);
+}
+@keyframes bulk-in {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+/* Room to scroll the last rows clear of the bar, and messages show above it rather than on it. */
+.register.has-selection .register-scroll {
+  padding-bottom: 84px;
+}
+body:has(.bulk-dock) .toasts {
+  bottom: 84px;
+}
+/* How many: an accent pill, which also ends the selection. */
+.bulk-count {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+  height: 32px;
+  padding: 0 4px 0 12px;
+  border-radius: 16px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.bulk-count button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+}
+.bulk-count button:hover {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+/* What they come to, as a small balance with a hairline before the actions. */
+.bulk-total {
+  align-items: flex-end;
+  min-width: 64px;
+  padding: 0 12px 0 6px;
+  border-right: 1px solid var(--border);
+}
+.bulk-total > span {
+  font-size: 10px;
+}
+.bulk-total strong {
+  margin-top: 0;
+  font-size: 13px;
+  line-height: 16px;
+}
+.bulk-total strong.positive {
+  color: var(--positive);
+}
+.bulk-total strong.negative {
+  color: var(--negative);
+}
+/* What can be done: quiet square icons. Approve, when some need it, leads as the bar's one filled
+   button; Delete stands apart at the end, in red. */
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.bulk-action {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-2);
+  transition:
+    background-color 0.12s var(--ease),
+    color 0.12s var(--ease);
+}
+.bulk-action:hover,
+.bulk-action[aria-expanded="true"] {
+  background: var(--hover);
+  color: var(--text);
+}
+.bulk-action.bulk-approve {
+  margin-right: 2px;
+  background: var(--accent);
+  color: #fff;
+}
+.bulk-action.bulk-approve:hover {
+  background: var(--accent-hover);
+  color: #fff;
+}
+.bulk-action.bulk-delete {
+  margin-left: 9px;
+  color: var(--negative);
+}
+.bulk-action.bulk-delete::before {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: -6px;
+  width: 1px;
+  background: var(--border);
+  content: "";
+}
+.bulk-action.bulk-delete:hover {
+  background: color-mix(in srgb, var(--negative) 12%, transparent);
+  color: var(--negative);
+}
+/* A very narrow register keeps the count and the actions. */
+@container bulk-dock (max-width: 479px) {
+  .bulk-total {
+    display: none;
+  }
+}
+.danger-text {
+  color: var(--negative);
+}
+
+/* ---------- Filters ---------- */
+.filter-popover {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 300px;
+  padding: 14px;
+}
+.with-clear {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.with-clear .combobox {
+  flex: 1;
+}
+.amount-range {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.amount-range input {
+  width: 100%;
+  min-width: 0;
+}
+.filter-popover-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.value-popover {
+  width: 280px;
+  padding: 10px;
+}
+.value-popover form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.value-popover label {
+  flex: 1;
+}
+
+/* ---------- Empty ---------- */
+.register-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 40px 24px;
+  color: var(--muted);
+  text-align: center;
+}
+.register-empty h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+}
+.register-empty p {
+  margin: 0;
+}
+
+/* ---------- Search with filter chips ---------- */
+.search-box {
+  display: flex;
+  flex: 1 1 260px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 200px;
+  max-width: 640px;
+  min-height: 30px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: text;
+}
+.search-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.search-box > svg {
+  flex: none;
+  margin-right: 2px;
+  color: var(--muted);
+}
+.search-box input {
+  flex: 1;
+  min-width: 140px;
+  height: 24px;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  box-shadow: none;
+}
+.search-box input:focus {
+  box-shadow: none;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 260px;
+  height: 22px;
+  padding: 0 2px 0 8px;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.chip-text {
+  background: var(--zero-soft);
+  color: var(--text);
+}
+.chip-remove {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  opacity: 0.7;
+}
+.chip-remove:hover {
+  background: color-mix(in srgb, var(--text) 12%, transparent);
+  opacity: 1;
+}
+.search-suggestions ul {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+}
+.search-suggestions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.search-suggestions li.active {
+  background: var(--accent-soft);
+}
+.search-suggestions li.search-hint {
+  padding: 4px 8px 2px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: default;
+}
+.search-suggestions kbd {
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+/* Not enough room for Memo: it's hidden (the editor's memo too). */
+.register.no-memo .reg-row .memo {
+  display: none;
+}
+.register.compact .reg-row {
+  --cell-pad: 6px;
+}
+/* Very narrow: the running balance goes too. */
+.register.no-balance .reg-row > .balance {
+  display: none;
+}
+
+/* ---------- Scheduled transactions (SchedulesModal) ---------- */
+/* The toolbar's Scheduled button, with how many there are. */
+.schedules-button .schedules-count {
+  margin-left: 2px;
+}
+.schedules-intro {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+.schedules-modal > .help {
+  margin: 12px 0 14px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.schedules-empty {
+  padding: 28px 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+.schedules-empty h3 {
+  margin: 0 0 4px;
+  font-size: 14px;
+}
+.schedules-empty p {
+  margin: 0;
+  color: var(--muted);
+}
+/* One schedule a line: its date, name and details (a button that opens it), its amount, and
+   its actions. */
+.schedule-list {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  list-style: none;
+}
+.schedule-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 8px 0 0;
+}
+.schedule-list li + li {
+  border-top: 1px solid var(--border);
+}
+.schedule-list li.paused > :not(.schedule-actions-row) {
+  opacity: 0.6;
+}
+.schedule-main {
+  display: grid;
+  flex: 1;
+  grid-template-columns: 96px minmax(0, 1fr);
+  grid-template-areas:
+    "date name"
+    "date meta";
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 1px;
+  min-width: 0;
+  padding: 8px 0 8px 14px;
+  border: none;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.schedule-main:hover {
+  background: var(--hover);
+}
+.schedule-date {
+  grid-area: date;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.schedule-name {
+  grid-area: name;
+  overflow: hidden;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.schedule-meta {
+  grid-area: meta;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.schedule-meta .repeat-label {
+  line-height: 16px;
+}
+.schedule-amount {
+  flex: none;
+  min-width: 90px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.schedule-amount.positive {
+  color: var(--positive);
+}
+.schedule-actions-row {
+  display: flex;
+  flex: none;
+  gap: 2px;
+  color: var(--muted);
+}
+.schedule-actions-row .icon-button:hover {
+  color: var(--accent);
+}
+.schedule-actions-row .danger-hover:hover {
+  color: var(--negative);
+}

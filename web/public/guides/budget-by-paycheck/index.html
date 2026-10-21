@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to budget by paycheck: an 8-week biweekly example</title>
+  <meta name="description" content="Budget each paycheck when it lands: bills due before the next payday first, then later bills, then the rest. An eight-week biweekly example with real dates.">
+  <link rel="canonical" href="https://urbudget.app/guides/budget-by-paycheck/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to budget by paycheck">
+  <meta property="og:description" content="Cover what's due before the next payday, set aside for rent, and plan for the months with a third paycheck. With an eight-week biweekly example.">
+  <meta property="og:url" content="https://urbudget.app/guides/budget-by-paycheck/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to budget by paycheck">
+  <meta name="twitter:description" content="Cover what's due before the next payday, set aside for rent, and plan for the months with a third paycheck. With an eight-week biweekly example.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://urbudget.app/guides/" },
+          { "@type": "ListItem", "position": 3, "name": "Budget by paycheck", "item": "https://urbudget.app/guides/budget-by-paycheck/" }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to budget by paycheck",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-19",
+        "author": { "@id": "https://urbudget.app/#org" },
+        "publisher": { "@id": "https://urbudget.app/#org" },
+        "mainEntityOfPage": "https://urbudget.app/guides/budget-by-paycheck/"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to budget by paycheck</h1>
+        <p class="lead">Pay comes every week or two, but rent and most bills come once a month, so a budget built on one monthly number doesn't match the money in your account. Budget each paycheck when it arrives instead: first what's due before the next one, then what's due after it, then everything else.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>Budget the paycheck you have, not the one you expect</h2>
+        <p>The rule that makes this work: give money jobs once it's in your account. Your next paycheck is a forecast, not cash. It can be smaller after unpaid time off or a change in withholding, or arrive a day late around a holiday, and a bill paid with money that hasn't arrived turns into an overdraft.</p>
+        <p>So each paycheck gets its jobs on the day it lands, and you assign only that paycheck's money. You still have a monthly budget. You just fill it one paycheck at a time. It's the same rule as any envelope budget; <a href="/getting-started/">getting started</a> covers the basics.</p>
+
+        <h2>List your paydays and bills by due date</h2>
+        <p>Take the next two months. Write down every payday, then every bill with its due date and amount, and what you spend each week on things like groceries and gas. Sort the bills by date and put each one under the last payday before it's due. That paycheck has to pay it.</p>
+        <p>If a bill is due on a payday, put it under the paycheck before, in case the payment goes out before the pay comes in.</p>
+
+        <h3>The example: $1,850 every other Friday</h3>
+        <p>Say you take home $1,850 every other Friday, starting Friday, October 2, 2026. The eight weeks to Thursday, November 26 bring four paychecks: October 2, October 16, October 30 and November 13. The next one comes on November 27. You start with nothing left over from September, and October 1's rent is already paid. These are the monthly bills:</p>
+        <div class="compare-wrap" role="region" aria-label="Monthly bills in the example" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col">Bill</th><th scope="col">Due</th><th scope="col">Amount</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Rent</th><td>1st</td><td>$1,400</td></tr>
+              <tr><th scope="row">Car payment</th><td>5th</td><td>$340</td></tr>
+              <tr><th scope="row">Phone</th><td>9th</td><td>$75</td></tr>
+              <tr><th scope="row">Utilities</th><td>18th</td><td>$180</td></tr>
+              <tr><th scope="row">Car insurance</th><td>22nd</td><td>$135</td></tr>
+              <tr><th scope="row">Subscriptions</th><td>25th</td><td>$35</td></tr>
+              <tr><th scope="row">Total</th><td></td><td>$2,165</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Groceries cost about $125 a week and gas $45, so each two-week stretch needs $340 for those. Here is each paycheck's stretch, with the bills that land in it:</p>
+        <div class="compare-wrap" role="region" aria-label="What is due in each paycheck's stretch" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col">Paycheck</th><th scope="col">Covers</th><th scope="col">Bills due before the next paycheck</th><th scope="col">With groceries and gas</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Friday, October 2</th><td>October 2 to 15</td><td>Car payment October 5 ($340), phone October 9 ($75)</td><td>$755</td></tr>
+              <tr><th scope="row">Friday, October 16</th><td>October 16 to 29</td><td>Utilities October 18 ($180), car insurance October 22 ($135), subscriptions October 25 ($35)</td><td>$690</td></tr>
+              <tr><th scope="row">Friday, October 30</th><td>October 30 to November 12</td><td>Rent November 1 ($1,400), car payment November 5 ($340), phone November 9 ($75)</td><td>$2,155</td></tr>
+              <tr><th scope="row">Friday, November 13</th><td>November 13 to 26</td><td>Utilities November 18 ($180), car insurance November 22 ($135), subscriptions November 25 ($35)</td><td>$690</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Three stretches fit easily in one paycheck. The one that starts October 30 doesn't: rent lands in it, and $2,155 is $305 more than $1,850. That $305 has to come from a paycheck that arrives earlier.</p>
+
+        <h2>Give each paycheck its jobs, in order</h2>
+        <p>Decide the order once, so each paycheck takes a few minutes to assign:</p>
+        <ol class="steps">
+          <li>
+            <b>What's due before the next paycheck.</b>
+            The bills in this paycheck's stretch, plus groceries, gas and anything else you'll spend before the next payday.
+          </li>
+          <li>
+            <b>What's due after it.</b>
+            If the next paycheck can't cover its own stretch, set the difference aside now. Rent is the usual one. Splitting it, half from each of the two paychecks before it's due, evens them out.
+          </li>
+          <li>
+            <b>Everything else.</b>
+            Spending that isn't a bill, <a href="/guides/sinking-funds/">sinking funds</a> for bigger costs, savings and extra debt payments, until every dollar of this paycheck has a job.
+          </li>
+        </ol>
+
+        <h2>Eight weeks, paycheck by paycheck</h2>
+        <p>The example sets aside half the rent, $700, in step 2. The stretch from October 30 needs only $305 more than a paycheck, but $700 is easy to remember and leaves the paychecks about even. Step 3 is the same each time: $60 for household and personal costs, $100 of fun money and $100 for sinking funds, with the rest going to a category called Month ahead, which the end of this guide explains.</p>
+
+        <h3>Paycheck 1: Friday, October 2</h3>
+        <div class="compare-wrap" role="region" aria-label="Where the October 2 paycheck goes" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col">Category</th><th scope="col">Assigned</th><th scope="col">Left to assign</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Paycheck arrives</th><td></td><td>$1,850</td></tr>
+              <tr><th scope="row">Car payment, due October 5</th><td>$340</td><td>$1,510</td></tr>
+              <tr><th scope="row">Phone, due October 9</th><td>$75</td><td>$1,435</td></tr>
+              <tr><th scope="row">Groceries, two weeks</th><td>$250</td><td>$1,185</td></tr>
+              <tr><th scope="row">Gas, two weeks</th><td>$90</td><td>$1,095</td></tr>
+              <tr><th scope="row">Household and personal</th><td>$60</td><td>$1,035</td></tr>
+              <tr><th scope="row">Fun money</th><td>$100</td><td>$935</td></tr>
+              <tr><th scope="row">Sinking funds</th><td>$100</td><td>$835</td></tr>
+              <tr><th scope="row">Month ahead</th><td>$835</td><td>$0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Step 1 takes $755. Step 2 takes nothing: the two paychecks before November 1 are October 16 and October 30, and each will carry half the rent. That leaves $1,095 for step 3, far more than usual, because this is October's extra paycheck (more on that below). After the usual $260, the other $835 goes to Month ahead.</p>
+
+        <h3>Paycheck 2: Friday, October 16</h3>
+        <div class="compare-wrap" role="region" aria-label="Where the October 16 paycheck goes" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col">Category</th><th scope="col">Assigned</th><th scope="col">Left to assign</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Paycheck arrives</th><td></td><td>$1,850</td></tr>
+              <tr><th scope="row">Utilities, due October 18</th><td>$180</td><td>$1,670</td></tr>
+              <tr><th scope="row">Car insurance, due October 22</th><td>$135</td><td>$1,535</td></tr>
+              <tr><th scope="row">Subscriptions, due October 25</th><td>$35</td><td>$1,500</td></tr>
+              <tr><th scope="row">Groceries, two weeks</th><td>$250</td><td>$1,250</td></tr>
+              <tr><th scope="row">Gas, two weeks</th><td>$90</td><td>$1,160</td></tr>
+              <tr><th scope="row">Rent, half of November 1's</th><td>$700</td><td>$460</td></tr>
+              <tr><th scope="row">Household and personal</th><td>$60</td><td>$400</td></tr>
+              <tr><th scope="row">Fun money</th><td>$100</td><td>$300</td></tr>
+              <tr><th scope="row">Sinking funds</th><td>$100</td><td>$200</td></tr>
+              <tr><th scope="row">Month ahead</th><td>$200</td><td>$0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Step 1 takes $690. The next stretch will be $305 short, so step 2 sets aside half of November 1's rent, which covers that with room to spare. $460 is left for step 3.</p>
+
+        <h3>Paycheck 3: Friday, October 30</h3>
+        <div class="compare-wrap" role="region" aria-label="Where the October 30 paycheck goes" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col">Category</th><th scope="col">Assigned</th><th scope="col">Left to assign</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Paycheck arrives</th><td></td><td>$1,850</td></tr>
+              <tr><th scope="row">Rent, the other half for November 1</th><td>$700</td><td>$1,150</td></tr>
+              <tr><th scope="row">Car payment, due November 5</th><td>$340</td><td>$810</td></tr>
+              <tr><th scope="row">Phone, due November 9</th><td>$75</td><td>$735</td></tr>
+              <tr><th scope="row">Groceries, two weeks</th><td>$250</td><td>$485</td></tr>
+              <tr><th scope="row">Gas, two weeks</th><td>$90</td><td>$395</td></tr>
+              <tr><th scope="row">Household and personal</th><td>$60</td><td>$335</td></tr>
+              <tr><th scope="row">Fun money</th><td>$100</td><td>$235</td></tr>
+              <tr><th scope="row">Sinking funds</th><td>$100</td><td>$135</td></tr>
+              <tr><th scope="row">Month ahead</th><td>$135</td><td>$0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Rent is due Sunday, November 1, two days after this paycheck lands. Its other half comes first, and with the $700 from October 16, all $1,400 is there in time. The November 13 paycheck can cover its own stretch, so step 2 is empty, and $395 is left for step 3.</p>
+
+        <h3>Paycheck 4: Friday, November 13</h3>
+        <div class="compare-wrap" role="region" aria-label="Where the November 13 paycheck goes" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col">Category</th><th scope="col">Assigned</th><th scope="col">Left to assign</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Paycheck arrives</th><td></td><td>$1,850</td></tr>
+              <tr><th scope="row">Utilities, due November 18</th><td>$180</td><td>$1,670</td></tr>
+              <tr><th scope="row">Car insurance, due November 22</th><td>$135</td><td>$1,535</td></tr>
+              <tr><th scope="row">Subscriptions, due November 25</th><td>$35</td><td>$1,500</td></tr>
+              <tr><th scope="row">Groceries, two weeks</th><td>$250</td><td>$1,250</td></tr>
+              <tr><th scope="row">Gas, two weeks</th><td>$90</td><td>$1,160</td></tr>
+              <tr><th scope="row">Rent, half of December 1's</th><td>$700</td><td>$460</td></tr>
+              <tr><th scope="row">Household and personal</th><td>$60</td><td>$400</td></tr>
+              <tr><th scope="row">Fun money</th><td>$100</td><td>$300</td></tr>
+              <tr><th scope="row">Sinking funds</th><td>$100</td><td>$200</td></tr>
+              <tr><th scope="row">Month ahead</th><td>$200</td><td>$0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>This one works like October 16's: its own bills, then half of the next rent. The other half of December's rent comes from the November 27 paycheck, four days before it's due on Tuesday, December 1.</p>
+
+        <h3>The eight weeks in one table</h3>
+        <div class="compare-wrap" role="region" aria-label="All four paychecks, by step" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col">Paycheck</th><th scope="col">1. Due before the next</th><th scope="col">2. Set aside for later</th><th scope="col">3. Everything else</th><th scope="col">Left</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">October 2</th><td>$755</td><td>$0</td><td>$1,095</td><td>$0</td></tr>
+              <tr><th scope="row">October 16</th><td>$690</td><td>$700</td><td>$460</td><td>$0</td></tr>
+              <tr><th scope="row">October 30</th><td>$1,455</td><td>$0</td><td>$395</td><td>$0</td></tr>
+              <tr><th scope="row">November 13</th><td>$690</td><td>$700</td><td>$460</td><td>$0</td></tr>
+              <tr><th scope="row">Total: $7,400</th><td>$3,590</td><td>$1,400</td><td>$2,410</td><td>$0</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Where the $7,400 went: $2,930 paid the bills, $1,360 bought groceries and gas, and $640 went on household costs and fun. The other $2,470 is still in the account, every dollar with a job: $1,370 in Month ahead, $400 in sinking funds and $700 toward December's rent. Every bill was paid from paychecks that had already arrived.</p>
+        <div class="note">
+          <p>Two-week stretches drift against the calendar, so the list changes from month to month. On this schedule, Friday, February 5, 2027 is both a payday and the car payment's due date, so that payment moves under the January 22 paycheck. Redo the list each month for the two months ahead.</p>
+        </div>
+
+        <h2>When a paycheck can't cover the next two weeks</h2>
+        <p>Sometimes step 1 alone needs more than the paycheck. Fix it in this order:</p>
+        <ul>
+          <li>Shrink step 3 for this paycheck. Fun money and savings can wait two weeks.</li>
+          <li>Borrow from a category whose bill is weeks or months away, and pay it back from the next paycheck.</li>
+          <li>Ask the biller whether the due date can move to a week with fewer bills.</li>
+        </ul>
+        <p>If it happens every month, the stretch with rent in it is too heavy for one paycheck. Set aside more in step 2, and work toward getting a month ahead.</p>
+
+        <h2>Months with a third paycheck</h2>
+        <p>Pay every other week brings 26 paychecks a year. Twelve months of two make 24, so two months a year bring a third. On the example's schedule, every other Friday from October 2, 2026, these are the three-paycheck months:</p>
+        <div class="compare-wrap" role="region" aria-label="Three-paycheck months in 2026 and 2027" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col">Month</th><th scope="col">Paydays</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">May 2026</th><td>May 1, 15 and 29</td></tr>
+              <tr><th scope="row">October 2026</th><td>October 2, 16 and 30</td></tr>
+              <tr><th scope="row">April 2027</th><td>April 2, 16 and 30</td></tr>
+              <tr><th scope="row">October 2027</th><td>October 1, 15 and 29</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>All the other months of 2026 and 2027 have two. To find your own: a month has three paydays when its first one falls on the 1st, 2nd or 3rd of a 31-day month, or the 1st or 2nd of a 30-day month. February has three only in a leap year, with a payday on February 1.</p>
+        <p>Plan your bills around two paychecks a month, and decide what the third one is for before it arrives. In the example, October's three paychecks only had to pay one rent, November's, so the October 2 paycheck had nothing to set aside, and $835 of it went to Month ahead. Good jobs for a third paycheck:</p>
+        <ul>
+          <li><strong>Sinking funds that are behind</strong>, such as car insurance or holiday gifts. The <a href="/guides/sinking-funds/">sinking funds guide</a> shows how to work out what each one needs.</li>
+          <li><strong>Getting a month ahead</strong> (below). A whole spare paycheck twice a year is the fastest way there.</li>
+          <li><strong>Debt</strong>: an extra payment on the card or loan with the highest interest rate.</li>
+          <li><strong>Something you've been putting off</strong>, decided in advance so the money doesn't just drift into everyday spending.</li>
+        </ul>
+        <p>Two calendar details. When a payday falls on a bank holiday, as December 25, 2026 does on this schedule, your employer's payroll calendar says which day the money comes. And about once every 11 years, a biweekly schedule fits 27 paydays into one calendar year. On this one, the next is 2032, which has three three-paycheck months: January, July and December.</p>
+
+        <h2>Paid weekly</h2>
+        <p>The method is the same, with shorter stretches. Each paycheck covers seven days: a week of groceries and gas, and any bill due before the next payday. A big bill needs money from several paychecks, so $1,400 of rent is $350 from each of the four paychecks before it's due.</p>
+        <p>Weekly pay brings 52 paychecks a year, so four months bring a fifth (five months, in a year with 53 paydays). The same rule finds them: a month has five paydays when its first one is on the 1st, 2nd or 3rd of a 31-day month, or the 1st or 2nd of a 30-day month. With pay every Friday, October 2026 is one, with paydays on the 2nd, 9th, 16th, 23rd and 30th. The four before November 1 are October 9, 16, 23 and 30, so the October 2 paycheck has no rent to put aside. Treat it the way biweekly pay treats the third paycheck.</p>
+
+        <h2>Semimonthly isn't biweekly</h2>
+        <p>Semimonthly pay comes twice a month on set dates, such as the 1st and 15th, or the 15th and the last day of the month. Biweekly pay comes every other week on the same weekday. For a paycheck budget, the difference matters:</p>
+        <div class="compare-wrap" role="region" aria-label="Biweekly and semimonthly pay compared" tabindex="0">
+          <table class="compare">
+            <thead>
+              <tr><th scope="col"><span class="visually-hidden">Question</span></th><th scope="col">Biweekly</th><th scope="col">Semimonthly</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">When</th><td>Every 14 days, same weekday</td><td>Two set dates each month</td></tr>
+              <tr><th scope="row">Paychecks a year</th><td>26 (27 in some years)</td><td>24</td></tr>
+              <tr><th scope="row">Each paycheck, on $48,100 a year after tax</th><td>$1,850</td><td>$2,004.17</td></tr>
+              <tr><th scope="row">Months with a third paycheck</th><td>Two a year</td><td>None</td></tr>
+              <tr><th scope="row">Days between paydays</th><td>Always 14</td><td>13 to 17, depending on the dates and the month</td></tr>
+              <tr><th scope="row">Which bills each paycheck pays</th><td>Shifts a little from month to month</td><td>The same every month</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>On semimonthly pay, you can split the bills once: the same ones fall after the same paycheck every month. There's no third paycheck because each check is already bigger. The two extra biweekly paychecks are spread across all 24. When a set date falls on a weekend or holiday, the money may come a day or two early or late; your employer's payroll calendar says when.</p>
+
+        <h2>The way out: get a month ahead</h2>
+        <p>Budgeting paycheck to paycheck works, but every bill depends on the paycheck right before it, and one short or late paycheck means something doesn't get paid. Being a month ahead means that on the first of each month, that month's whole budget is already in your account, from paychecks that came the month before. Then pay dates stop mattering. You budget the month once, on the 1st, and every paycheck that arrives during it goes toward next month.</p>
+        <p>The simplest target is two paychecks. In the example that's $3,700, enough for even a month with five weeks of groceries and gas: $2,165 of bills, $850 of groceries and gas, and $520 of household costs, fun money and sinking funds come to $3,535.</p>
+        <p>Give it a category and fill it in step 3, as the example does with Month ahead. The eight weeks put $1,370 there, more than a third of the way. If nothing else changes, it passes $3,700 with the April 2, 2027 paycheck, the first of April's three, six months after starting. A tax refund or a raise gets you there sooner. Once you're there, most months' budgets come from two paychecks, $3,700, and the two months with three leave a whole paycheck for goals.</p>
+        <p>The <a href="/guides/irregular-income/">irregular income guide</a> works through living on last month's income, month by month, and the <a href="/guides/sinking-funds/">sinking funds guide</a> covers the bills that don't come every month.</p>
+
+        <h2>In UrBudget</h2>
+        <p>UrBudget's budget is monthly, like most envelope budgets, with no separate paycheck view. You fill each month one paycheck at a time:</p>
+        <ul>
+          <li><strong>Schedule the paycheck.</strong> Open an account’s transaction register, choose Scheduled, then New scheduled transaction. Pick Inflow, set the category to <i>Unassigned (income)</i> and set Repeat to Every other week (or Weekly, or Twice a month). On payday it's entered while the app is open, or the next time you open it, and only then does it show in Unassigned.</li>
+          <li><strong>Schedule the bills.</strong> Add rent, the car payment and the rest as outflows that repeat Monthly. The register lists scheduled transactions above its posted transactions, with what's due in the next 30 days, and a scheduled bill counts toward what its category needs in the month it's due.</li>
+          <li><strong>Assign as each paycheck lands.</strong> Type amounts in the Assigned column. Drag your bill categories into due-date order, and the budget reads like your list. Amounts can be math, so 1400/2 assigns half the rent. If you assign more than you have, Unassigned turns negative and says so.</li>
+          <li><strong>Next month's bills, now.</strong> Half of November 1's rent can go straight into November: go to next month with the arrow beside the month's name and assign there. It's held back from this month's Unassigned, so it can't be spent twice.</li>
+          <li><strong>Targets.</strong> Give each bill a target with <i>Set aside each period</i>, repeating Monthly. Select the categories due before your next paycheck and choose Underfunded under Quick assign: it fills just those, and shows each change before you apply it. Groceries can repeat Weekly on a day of the week: $125 on Fridays asks for $625 in October 2026, which has five Fridays, and $500 in November. Bills that come every few months take a First due date.</li>
+          <li><strong>See tight weeks coming.</strong> The Forecast report starts from today's balance, adds your scheduled paychecks and bills and an estimate of everyday spending, and shows the lowest point ahead and its date.</li>
+        </ul>
+        <p>Prefer a spreadsheet? The free <a href="/tools/envelope-budget-template/">envelope budget template</a> works the same way, and its steps start with the bills due before your next paycheck.</p>
+
+        <div class="guide-cta">
+          <h2>Budget each paycheck as it lands</h2>
+          <p>UrBudget is free on Windows and macOS. No account, card or bank connection required.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=guide-budget-by-paycheck" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/guides/">All guides</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related guides">
+          <li><a href="/guides/irregular-income/">How to budget on irregular income</a></li>
+          <li><a href="/guides/sinking-funds/">Sinking funds, explained</a></li>
+          <li><a href="/tools/envelope-budget-template/">Free envelope budget template</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

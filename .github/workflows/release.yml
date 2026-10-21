@@ -1,0 +1,105 @@
+# Builds UrBudget's installers on GitHub's machines and attaches them to a draft release:
+# a signed, notarized macOS .dmg (Apple Silicon and Intel in one app), the Windows installer,
+# and the Microsoft Store package (.msix).
+# Run it from the Actions tab (Release → Run workflow) or by pushing a tag such as desktop-v1.0.8
+# for the version in desktop/ (`node scripts/versions.mjs desktop 1.0.8` sets it; RELEASING.md).
+# Android and iOS have their own tags and workflows. Desktop's earlier releases are tagged v1.0.7.
+# Signing uses the repository secrets that `node desktop/scripts/mac-signing.mjs` stores, and
+# TAURI_SIGNING_PRIVATE_KEY, the updater key that signs the update packages installed copies fetch
+# (desktop/README.md › The updater signing key). Without it the build stops.
+# Publishing the draft release puts the installers on urbudget.app (publish.yml).
+name: Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["desktop-v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+
+jobs:
+  build:
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target universal-apple-darwin
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+          - platform: windows-latest
+            args: ""
+            rust-targets: ""
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - name: Check the tag names this version
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: node scripts/versions.mjs --tag "$GITHUB_REF_NAME"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri -> target
+
+      - name: Install dependencies
+        working-directory: desktop
+        run: npm ci
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # macOS: the bundler imports the certificate into a temporary keychain, signs the app,
+          # then sends it to Apple for notarization. Unused on Windows.
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # The updater key has no password.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+        with:
+          projectPath: desktop
+          tagName: desktop-v__VERSION__
+          releaseName: UrBudget __VERSION__
+          # Publishing the draft puts the installers on urbudget.app (publish.yml); write what's
+          # new here first, and it shows on the download page.
+          releaseBody: ""
+          releaseDraft: true
+          # urbudget.app serves updates (publish.yml), not a latest.json on GitHub.
+          includeUpdaterJson: false
+          args: ${{ matrix.args }}
+
+      # Windows: the same build packed as an MSIX for the Microsoft Store (unsigned; the Store
+      # signs it). Upload it in Partner Center → UrBudget → submission → Packages.
+      - name: Pack the Microsoft Store package
+        if: matrix.platform == 'windows-latest'
+        working-directory: desktop
+        run: node scripts/pack-msix.mjs
+
+      - name: Attach the Store package to the release
+        if: matrix.platform == 'windows-latest'
+        working-directory: desktop
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          gh release upload "desktop-v$version" "src-tauri/target/msix/UrBudget_${version}_x64.msix" --clobber

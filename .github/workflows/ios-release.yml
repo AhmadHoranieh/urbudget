@@ -1,0 +1,80 @@
+# Builds the native iOS app in ios/ for the App Store and uploads it to App Store Connect, where it
+# shows in TestFlight once Apple has processed it; submit it for review from there.
+# Push a tag such as ios-v1.0.8 for the version in ios/project.yml
+# (`node scripts/versions.mjs ios 1.0.8` sets it; RELEASING.md), or run it from the Actions tab on
+# main. The build number is this workflow's run number, so every upload has a new one.
+# Needs the app's record in App Store Connect (bundle ID app.urbudget) and an App Store Connect API
+# key with Admin access, so Xcode can make the signing certificate and profile: the app-store
+# environment's APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID and APP_STORE_CONNECT_KEY (the
+# .p8 file's text) secrets.
+name: iOS release
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["ios-v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-release-${{ github.ref }}
+
+jobs:
+  upload:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    environment: app-store
+    env:
+      KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check what's being released
+        env:
+          KEY: ${{ secrets.APP_STORE_CONNECT_KEY }}
+        run: |
+          set -euo pipefail
+          # Store builds come from main: a tag on a commit main has, or a run on main.
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "::error::$GITHUB_SHA isn't on main."; exit 1; }
+          if [ "$GITHUB_REF_TYPE" = tag ]; then node scripts/versions.mjs --tag "$GITHUB_REF_NAME"; else node scripts/versions.mjs; fi
+          if [ -z "$KEY_ID" ] || [ -z "$ISSUER_ID" ] || [ -z "$KEY" ]; then
+            echo "::error::The app-store environment needs the APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID and APP_STORE_CONNECT_KEY secrets (RELEASING.md)."
+            exit 1
+          fi
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios,aarch64-apple-ios-sim
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: crates -> target
+
+      - name: Test on the iOS Simulator
+        run: |
+          device=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; print(next(d["udid"] for r in json.load(sys.stdin)["devices"].values() for d in r if d["name"].startswith("iPhone")))')
+          xcodebuild -project ios/UrBudget.xcodeproj -scheme UrBudget -destination "id=$device" \
+            -derivedDataPath build CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- test
+
+      - name: Archive and upload to App Store Connect
+        env:
+          KEY: ${{ secrets.APP_STORE_CONNECT_KEY }}
+        run: |
+          set -euo pipefail
+          key="$RUNNER_TEMP/AuthKey_$KEY_ID.p8"
+          trap 'rm -f -- "$key"' EXIT
+          printf '%s' "$KEY" > "$key"
+          auth=(-allowProvisioningUpdates -authenticationKeyPath "$key" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID")
+          xcodebuild -project ios/UrBudget.xcodeproj -scheme UrBudget -configuration Release \
+            -destination 'generic/platform=iOS' -derivedDataPath build -archivePath "$RUNNER_TEMP/UrBudget.xcarchive" \
+            "${auth[@]}" CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER" archive
+          # ExportOptions.plist's destination "upload" sends the signed app to App Store Connect.
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/UrBudget.xcarchive" \
+            -exportOptionsPlist ios/ExportOptions.plist -exportPath "$RUNNER_TEMP/export" "${auth[@]}"

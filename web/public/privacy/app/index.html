@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>UrBudget app privacy policy</title>
+  <meta name="description" content="How UrBudget handles local budgets, optional connections, purchases and reports, and how to request deletion.">
+  <link rel="canonical" href="https://urbudget.app/privacy/app/">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+</head>
+<body>
+  <main id="main" class="container page-body">
+    <h1>UrBudget privacy policy</h1>
+    <article class="legal">
+        <p class="updated">Last updated: October 21, 2026</p>
+
+        <div class="notice notice-info operator">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <p><b>Who we are.</b> UrBudget, the desktop and mobile apps and the website at urbudget.app, is run by Ahmad Horanieh, an independent developer (“UrBudget”, “we”, “us”). We are the controller of the personal data described here. Contact: <a href="mailto:support@urbudget.app">support@urbudget.app</a>.</p>
+        </div>
+
+        <h2>The short version</h2>
+        <ul>
+          <li>Your budgets live in a database on your own device. Optional Sync sends us encrypted copies we cannot read. Optional AI features send selected information directly to your chosen provider; reporting a reply sends us only the text you review and submit.</li>
+          <li>There are no analytics services, advertising or tracking tools on this website or in the app. We keep a few daily counts ourselves, described under Technical data, and they record nothing about who.</li>
+          <li>We collect what we need to sign you in, deliver purchases, run Sync, review reports and answer your emails.</li>
+          <li>Payments are processed by Polar for website purchases or Google Play for purchases made through Google Play. We never receive your full card details.</li>
+          <li>You can delete your account and everything synced to it in the app's Account &amp; sync settings.</li>
+        </ul>
+
+        <h2>Budgets on your device</h2>
+        <p>UrBudget stores each budget in a SQLite database in the app's data folder on your computer or phone, along with local backups and assistant history. Exports go to the location you choose. You don't need an account to budget locally. Budget files reach our servers only if you enable Sync; a report can separately include budget information if you choose to leave it in the submitted text.</p>
+        <p>Local budget files and assistant history are not separately encrypted by UrBudget. Your device's screen lock, storage encryption and account permissions protect them. Android's operating-system backup and device-transfer features may copy local budgets, settings and assistant history, depending on your device and backup settings. Exports may also be backed up or shared by the destination you choose. Android connection secrets are encrypted using Android Keystore and stored outside Android's automatic backup area.</p>
+        <p>The app contacts our servers only when it needs to:</p>
+        <ul>
+          <li><strong>Sign in and sync,</strong> if you turn on Sync (see below).</li>
+          <li><strong>Verify a Google Play purchase,</strong> if you subscribe to Sync or restore it through Google Play (see Purchases).</li>
+          <li><strong>Submit an assistant report,</strong> only when you review its text and select Send report (see Assistant reports).</li>
+        </ul>
+        <p>Some optional features connect your device directly to other companies, under your own account with them. These requests do not pass through UrBudget's servers:</p>
+        <ul>
+          <li><strong>YNAB import:</strong> the app uses your YNAB token to download the budget you select. File import reads the file you choose on your device.</li>
+          <li id="bank-sync"><strong>SimpleFIN bank connections:</strong> the app exchanges your setup token for a SimpleFIN access URL and uses that credential to retrieve your connected accounts, balances and transactions directly from SimpleFIN Bridge. SimpleFIN and its bank-connection providers handle bank authorization; UrBudget does not receive your bank login details. Imported account and transaction data becomes part of your local budget and is included in encrypted Sync if enabled.</li>
+          <li><strong>AI assistant:</strong> your messages, attached files and budget details the assistant looks up to answer you go to OpenAI or Anthropic, whichever you choose, using your ChatGPT plan or your own API key. This can include financial information. Review attachments and use the assistant only with information you want that provider to process. Conversation history is stored on your device.</li>
+        </ul>
+        <p>Those companies' terms and privacy policies govern what you send them. Disconnecting a connection or clearing local history does not delete information already processed by a provider; use that provider's controls for deletion requests.</p>
+
+        <h2>What we collect, and why</h2>
+        <h3>Your account (only if you create one)</h3>
+        <p>An account is needed for Sync and to associate Google Play purchases with your UrBudget account. We keep your <strong>email address</strong>, when the account was created, and the sign-in sessions you have open (for the app, with the device name you choose, if any). We send a one-time sign-in code to your email address instead of using a password; codes expire after a short time.</p>
+        <h3>Purchases</h3>
+        <p>Polar processes your payment as the merchant of record and collects the details it needs for that, including your payment details, name or country where required for tax, and email address. From Polar we receive what we need to deliver your purchase: your email address, what you bought, transaction and subscription identifiers, and their status (for example active, canceled or refunded). We never see or store your full card number.</p>
+        <p>For purchases made through <strong>Google Play</strong>, Google processes your payment. The app sends Google an obscured identifier derived from your UrBudget account ID to bind the purchase to that account. The app sends our server the purchase token and product identifier; we verify these with Google and store the token, its account association, product and internal entitlement identifiers, purchase state, expiry and acknowledgment state. We use this information to grant or restore Sync access and respond to renewals, cancellations and refunds. Google handles payment details; we do not receive your full card number.</p>
+        <h3>Sync (only if you subscribe)</h3>
+        <p>Each device encrypts your budgets with a key made from your sync passphrase before uploading them. We store:</p>
+        <ul>
+          <li>the <strong>encrypted budget files</strong> and their encrypted names, which we cannot read;</li>
+          <li>each file's <strong>size</strong>, a <strong>revision number</strong>, the <strong>time</strong> it was uploaded and the device name that uploaded it;</li>
+          <li>a random salt and an encrypted check value that lets your devices test a passphrase. We never receive your passphrase or the key made from it, so we cannot decrypt your budgets or recover them if the passphrase is lost.</li>
+        </ul>
+        <h3>Email</h3>
+        <p>We send only the email you need: sign-in codes and messages about your account or subscription. No newsletters or marketing unless you ask for them. If you write to us, we keep the conversation so we can help you.</p>
+        <h3 id="assistant-reports">Assistant reports</h3>
+        <p>Reporting an assistant reply is optional and does not require signing in. Before sending, you can edit or remove private information from the reply and add an optional reason. We store only the submitted reply (up to 4,000 characters), the reason (up to 1,000 characters), a random report reference and the time received. The app does not attach your account, the rest of the conversation, files or budget database. Text you leave in the form may still identify you or include financial information. Authorized administrators review these reports to investigate inappropriate or harmful output and improve the service; reports are not published.</p>
+        <p>Our host processes ordinary connection information for the request. For abuse limits, we store a daily hash of the request's IP address rather than the raw IP in the report or its rate-limit entry. Keep the reference shown after sending if you want us to find or delete a report.</p>
+        <h3>Technical data</h3>
+        <p>Like any website, our hosting provider processes your IP address and basic request information (such as the page requested, browser type and time) to deliver the site, keep it secure and limit abuse, for example by rate-limiting sign-in attempts. We don't use this to build profiles or follow you around the web.</p>
+        <p>We keep four kinds of daily counts, as totals that record nothing about who:</p>
+        <ul>
+          <li><strong>Page views:</strong> how many times each page of this site was viewed, and where visitors came from (the website that linked here, or the short tag a link carries, like ?ref=hn). The site's own script sends this when a page opens; it sets no cookie and sends nothing that identifies you.</li>
+          <li><strong>Downloads:</strong> how many times each installer was downloaded, and which page of this site or which other website the download link was on, or a link's tag.</li>
+          <li><strong>Desktop update checks:</strong> desktop copies installed outside the Microsoft Store ask urbudget.app for updates after starting and once a day while open. We count those requests per day, version and system. They carry the app's version and your system and processor type, nothing else. Store-distributed desktop copies and the Android app use their store's update mechanism.</li>
+          <li><strong>Account activity:</strong> how many sign-ins, sign-in emails, checkouts started, Sync uploads and account deletions happen each day, and of which kind (for example, website or app sign-in).</li>
+        </ul>
+        <p>Visits and downloads by crawlers, scripts and automated browsers are counted separately, so the totals reflect people.</p>
+
+        <h2>Cookies</h2>
+        <p>This website sets one cookie, and only when you sign in: <code>ub_session</code>, an HttpOnly session cookie that keeps you signed in to your account page. It is strictly necessary for that, and it's removed when you sign out. There are no analytics or advertising cookies.</p>
+        <p>This website loads no payment scripts. Checkout happens on Polar's own site, where Polar may use cookies or similar technologies needed to process the payment and prevent fraud; see Polar's privacy policy.</p>
+
+        <h2>Our legal bases</h2>
+        <p>Where data protection laws such as the GDPR apply, we process personal data to <strong>perform our contract</strong> with you (sign-in, Sync, support), to meet <strong>legal obligations</strong> (such as tax and accounting records), and for our <strong>legitimate interests</strong> in keeping the service secure and preventing abuse.</p>
+
+        <h2>Who processes data for us</h2>
+        <p>We use a small number of service providers, each only for the job described:</p>
+        <ul>
+          <li><strong>Cloudflare</strong> hosts the website and the API, including the account database and the encrypted Sync storage. <a href="https://www.cloudflare.com/privacypolicy/" rel="noopener">Cloudflare's privacy policy</a></li>
+          <li><strong>Polar</strong> (Polar Software, Inc.) is our merchant of record for payments: checkout, payment processing, tax, receipts, subscriptions and refunds. For payment data, Polar acts as an independent controller. <a href="https://polar.sh/legal/privacy" rel="noopener">Polar's privacy policy</a></li>
+          <li><strong>Google Play</strong> processes purchases made through Google Play and supplies purchase status so we can provide the entitlement. Google independently processes payment and Play account information. <a href="https://policies.google.com/privacy" rel="noopener">Google's privacy policy</a></li>
+          <li><strong>Resend</strong> delivers our emails (such as sign-in codes), so it processes your email address and the message. <a href="https://resend.com/legal/privacy-policy" rel="noopener">Resend's privacy policy</a></li>
+        </ul>
+        <p>We don't sell your personal data, and we don't share it for advertising. We may disclose information if the law requires it, and we would tell you unless legally prohibited.</p>
+
+        <h2>International transfers</h2>
+        <p>Our providers may process data in the United States and other countries. Where required, these transfers rely on safeguards such as the European Commission's Standard Contractual Clauses.</p>
+
+        <h2>How long we keep it</h2>
+        <ul>
+          <li><strong>Account and Sync data:</strong> for as long as you keep your account. When you delete your account, we delete it along with its sessions and synced budgets.</li>
+          <li><strong>Purchase records:</strong> kept to validate purchase status and prevent the same purchase being claimed by another account, and for as long as tax and accounting laws require. Polar and Google keep their own payment records.</li>
+          <li><strong>Sign-in codes</strong> expire within minutes.</li>
+          <li><strong>Support emails:</strong> for as long as needed to help you, and then deleted.</li>
+          <li><strong>Assistant reports:</strong> deleted by daily cleanup once older than 90 days, or earlier when no longer needed or on a deletion request identifying the report. Abuse-limit entries are routinely cleared after their short rate-limit window.</li>
+          <li><strong>Records of problems</strong>, such as an email we couldn't deliver or sign-in attempts that hit a limit, with the email address or IP address involved: 90 days.</li>
+        </ul>
+
+        <h2 id="your-choices">Your choices and rights</h2>
+        <p>You can delete your account in the app's Settings, under Account &amp; sync, using Delete account. You can also email <a href="mailto:support@urbudget.app">support@urbudget.app</a> to ask for a copy of your data, a correction or deletion, or to object to or restrict processing. To request deletion of an assistant report, include its reference because reports are not linked to your account. Depending on where you live, you may have further rights under laws such as the GDPR, the UK GDPR or the California Consumer Privacy Act, and the right to complain to your data protection authority. We'll answer within one month.</p>
+        <p>Deleting your account removes its sign-in sessions and synced budgets. It does not remove local files, exports or operating-system backups from your devices, or a report that has no account association. Purchase records may remain for the reasons above. Before deleting an account, we ask the payment provider to stop renewals of its known subscriptions; if this fails, deletion does not proceed. You can also manage or cancel a Google Play subscription in Google Play. You can delete local budgets in the app and manage backups through your operating system.</p>
+
+        <h2>Security</h2>
+        <p>Everything between your device and our servers travels over HTTPS. Synced budgets are end-to-end encrypted (XChaCha20-Poly1305, with a key derived from your passphrase using Argon2id). Sign-in uses one-time codes, and the website's session cookie can't be read by scripts. We keep as little data as we can, because data we don't have can't leak.</p>
+
+        <h2>Children</h2>
+        <p>UrBudget isn't directed at children under 16, and we don't knowingly collect their personal data.</p>
+
+        <h2>Changes to this policy</h2>
+        <p>If we change this policy, we'll update the date at the top. If a change is significant and you have an account, we'll also tell you by email before it takes effect.</p>
+
+        <h2>Contact</h2>
+        <p>Questions or requests about privacy: <a href="mailto:support@urbudget.app">support@urbudget.app</a>.</p>
+      </article>
+  </main>
+</body>
+</html>

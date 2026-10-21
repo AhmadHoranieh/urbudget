@@ -1,0 +1,425 @@
+/* The download page, on top of site.css. In page order: the hero with the download for this
+   computer, every download, how to install, what's new, what's free, and questions. */
+
+/* ---------- Hero ---------- */
+
+.dl-hero {
+  position: relative;
+  padding-block: clamp(2rem, 1.5rem + 3vw, 4.5rem) clamp(3rem, 2rem + 3.5vw, 5.5rem);
+  overflow: clip;
+}
+/* Ruled paper, as on the home page, fading out toward the edges. */
+.dl-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--rule) 31px 32px);
+  -webkit-mask-image: radial-gradient(120% 90% at 25% 20%, #000 35%, transparent 80%);
+  mask-image: radial-gradient(120% 90% at 25% 20%, #000 35%, transparent 80%);
+  pointer-events: none;
+}
+.dl-hero-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(2.75rem, 2rem + 3vw, 4rem);
+  align-items: center;
+}
+@media (min-width: 960px) {
+  .dl-hero-grid {
+    grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  }
+}
+.dl-notice {
+  margin-bottom: var(--space-5);
+}
+.dl-hero h1 {
+  font-size: clamp(2.6rem, 1.85rem + 3.4vw, 4.6rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+.dl-hero .lead {
+  max-width: 33rem;
+  margin-top: var(--space-4);
+}
+.dl-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+/* "Get it from the Microsoft Store" is wider than a small phone. */
+.dl-actions .btn {
+  white-space: normal;
+  text-align: center;
+}
+@media (max-width: 520px) {
+  .dl-actions .btn {
+    width: 100%;
+  }
+}
+.dl-btn-quiet {
+  --btn-bg: transparent;
+}
+.dl-btn-quiet:hover {
+  --btn-bg: var(--surface);
+}
+/* "Version 1.0.7, updated October 20 · What's new", from the API. Its line is kept while it
+   loads, so the text under it doesn't jump. */
+.dl-release {
+  min-height: 1.5em;
+  min-height: 1lh;
+  margin-top: var(--space-3);
+  color: var(--text-3);
+  font-size: var(--step--1);
+}
+.dl-hint {
+  margin-top: var(--space-3);
+  color: var(--text-3);
+  font-size: var(--step--1);
+}
+.dl-release + .dl-hint {
+  margin-top: 0.15rem;
+}
+.dl-ticks {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-6) 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-2);
+  font-size: var(--step--1);
+}
+.dl-ticks li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.dl-ticks li::before {
+  content: "";
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  border-radius: 50%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.3l2.2 2.2 4.8-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / 100% no-repeat,
+    var(--brand);
+}
+
+/* The app in its window, on a second sheet that peeks out underneath. */
+/* The app in a glass bezel (site.css) that runs on past the column and off the screen's right
+   edge, where the hero clips it, as in the home page's last card. */
+.dl-shot {
+  /* From the column's right edge to the screen's. */
+  --to-edge: calc((100vw - min(100vw - 2 * var(--gutter), var(--container))) / 2);
+  margin: 0 calc(-1 * var(--to-edge) - 4rem) 0 0;
+}
+
+/* ---------- Sections ---------- */
+
+.dl-section {
+  padding-block: clamp(3rem, 2rem + 3vw, 5rem);
+}
+.dl-band {
+  border-block: 1px solid var(--border);
+  background: var(--bg-soft);
+}
+.dl-head {
+  max-width: 44rem;
+  margin-bottom: var(--space-6);
+}
+.dl-head h2 {
+  font-size: var(--step-3);
+}
+.dl-head p {
+  margin-top: var(--space-2);
+  color: var(--text-2);
+}
+
+/* ---------- Every download ---------- */
+
+.dl-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+.dl-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+  padding: var(--space-5);
+}
+.dl-item + .dl-item {
+  border-top: 1px solid var(--border);
+}
+.dl-item .btn {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+@media (min-width: 720px) {
+  .dl-item {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-5);
+    padding: var(--space-5) var(--space-6);
+  }
+  .dl-item .btn {
+    grid-column: auto;
+    width: auto;
+    min-width: 12rem;
+  }
+}
+/* The downloads for this computer. */
+.dl-item.is-here {
+  background: var(--brand-softer);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.dl-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: var(--brand-soft);
+  color: var(--brand-text);
+}
+.dl-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.dl-body h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  font-size: var(--step-1);
+}
+.dl-body p {
+  max-width: 62ch;
+  margin-top: var(--space-1);
+  color: var(--text-2);
+  font-size: var(--step--1);
+}
+.dl-body .dl-meta {
+  margin-top: var(--space-2);
+  color: var(--text-3);
+  font-size: var(--step--2);
+}
+/* Requirements · file · size: the line breaks between parts, never inside one, and each dot stays
+   at the end of the line it follows. Only on the narrowest screens may a file name break. */
+.dl-meta span {
+  white-space: nowrap;
+}
+/* The space between the spans in the markup is where a line can break. */
+.dl-meta span:not(:last-child):not(:has(+ [hidden]))::after {
+  content: "·";
+  margin-inline: 0.4em 0.15em;
+}
+@media (max-width: 420px) {
+  .dl-meta .dl-meta-file {
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+}
+/* Small phones: the text gets the row's full width. */
+@media (max-width: 480px) {
+  .dl-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .dl-icon {
+    display: none;
+  }
+}
+.dl-here {
+  display: none;
+}
+.dl-item.is-here .dl-here {
+  display: inline-flex;
+}
+
+/* ---------- Installing ---------- */
+
+.dl-steps-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+}
+@media (min-width: 860px) {
+  .dl-steps-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.dl-steps {
+  padding: var(--space-5) var(--space-5) var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+.dl-for {
+  margin: 0 0 var(--space-1);
+  color: var(--text-3);
+  font-size: var(--step--2);
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.dl-steps h3 {
+  font-size: var(--step-1);
+}
+.dl-steps ol {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+.dl-steps li {
+  position: relative;
+  padding-left: 2.35rem;
+  color: var(--text-2);
+  font-size: var(--step--1);
+  line-height: 1.55;
+  counter-increment: step;
+}
+.dl-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -0.1rem;
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+.dl-steps b {
+  color: var(--text);
+}
+.dl-file {
+  color: var(--text);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+/* ---------- What's new ---------- */
+
+/* One card, its sections in columns. Each section draws the rule on its left and top; the card
+   clips the ones along its own edges, so rules show only between sections however they wrap. */
+.dl-notes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+.dl-note {
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  box-shadow: -1px -1px 0 var(--border);
+}
+.dl-note h3 {
+  font-size: var(--step-0);
+  font-weight: 650;
+}
+.dl-note p {
+  margin-top: var(--space-2);
+  color: var(--text-2);
+  font-size: var(--step--1);
+}
+.dl-note ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.dl-note li {
+  position: relative;
+  padding-left: 1.05rem;
+  color: var(--text-2);
+  font-size: var(--step--1);
+  line-height: 1.55;
+}
+.dl-note li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+
+/* ---------- Free, with nothing locked ---------- */
+
+/* The questions follow with their own top padding. */
+.dl-trial-section {
+  padding-bottom: 0;
+}
+
+.dl-trial {
+  display: grid;
+  gap: var(--space-5);
+  padding: clamp(1.5rem, 1rem + 2vw, 2.5rem);
+  border: 1px solid var(--brand-line);
+  border-radius: var(--radius-xl);
+  background: var(--brand-softer);
+}
+@media (min-width: 860px) {
+  .dl-trial {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-7);
+  }
+}
+.dl-trial h2 {
+  font-size: var(--step-2);
+}
+.dl-trial p {
+  max-width: 62ch;
+  margin-top: var(--space-3);
+  color: var(--text-2);
+}
+.dl-trial .cta-row {
+  margin: 0;
+}
+
+/* ---------- Questions ---------- */
+
+.dl-sums {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+}
+.dl-sums dt {
+  color: var(--text);
+  font-size: var(--step--1);
+  font-weight: 620;
+  overflow-wrap: anywhere;
+}
+.dl-sums dd {
+  margin: var(--space-1) 0 0;
+}
+.dl-sums code,
+.dl-command {
+  display: block;
+  font-size: var(--step--2);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

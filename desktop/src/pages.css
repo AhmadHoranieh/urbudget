@@ -1,0 +1,204 @@
+/* Payees & rules and Scheduled. Imported by PayeesPage.tsx. */
+
+/* ---------- Payees ---------- */
+.payee-manager {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+.payee-list {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - var(--titlebar) - var(--header) - 150px);
+  min-height: 240px;
+  overflow: hidden;
+}
+.payee-list .search {
+  flex: none;
+  max-width: none;
+  margin: 10px;
+}
+.payee-list ul {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0 0 6px;
+  overflow: auto;
+  list-style: none;
+}
+.payee-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 12px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+}
+.payee-list li:hover {
+  background: var(--hover);
+}
+.payee-list li.selected {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+.payee-list li small {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.payee-list li.empty {
+  cursor: default;
+}
+.payee-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.payee-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.payee-head h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.payee-detail .field {
+  max-width: 460px;
+}
+.payee-detail .help {
+  margin: 0;
+  font-size: 12px;
+}
+.inline-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inline-form > input,
+.inline-form > .combobox {
+  flex: 1;
+  min-width: 0;
+}
+/* A payee's bank names: chips for its rules, then bank text no rule covers yet. */
+.bank-name-list,
+.bank-seen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.bank-name-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 12.5px;
+}
+.bank-name-list li small {
+  font-size: 11.5px;
+}
+.bank-name-list .icon-button {
+  width: 22px;
+  height: 22px;
+}
+.bank-seen {
+  flex-direction: column;
+  gap: 2px;
+  margin: 8px 0 0;
+  font-size: 12.5px;
+}
+.bank-seen li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.bank-names .form-error {
+  margin: 6px 0 0;
+}
+.bank-names .bank-apply {
+  align-self: flex-start;
+  margin-top: 8px;
+}
+.payee-recent h3 {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+@media (max-width: 860px) {
+  .payee-manager {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .payee-list {
+    max-height: 320px;
+  }
+}
+
+/* ---------- Import rules ---------- */
+.rule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.rule-editor {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 10px;
+}
+.rule-editor .form-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+.rule-editor-actions {
+  display: flex;
+  gap: 8px;
+}
+.rule-apply {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.rules-table td:first-child {
+  width: 32px;
+}
+@media (max-width: 900px) {
+  .rule-editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--zero-soft);
+  color: var(--text-2);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+
+/* One scrolling list; only visible payees have DOM rows. */
+.payee-list ul { max-height: 60vh; overflow: auto; }
+.payee-list li > span:first-child, .payee-list li small { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.payee-list ul:focus-visible li.cursor { outline: 2px solid var(--accent); outline-offset: -2px; }
+.payee-list li.payee-spacer { padding: 0; border: 0; min-height: 0; flex: none; pointer-events: none; }
+.payee-list li.payee-spacer::before { display: none; }

@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>How to download Amex transactions (CSV or QFX)</title>
+  <meta name="description" content="Download American Express card activity as Quicken (QFX), QuickBooks, CSV or Excel: what each covers, which keeps charges as money out, and how to import it.">
+  <link rel="canonical" href="https://urbudget.app/import/american-express/">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f0e14" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/img/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="UrBudget">
+  <meta property="og:title" content="How to download Amex transactions (CSV or QFX)">
+  <meta property="og:description" content="What each American Express download covers, from six statements in Quicken format to two years as CSV, and how to import your card activity into a budget.">
+  <meta property="og:url" content="https://urbudget.app/import/american-express/">
+  <meta property="og:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UrBudget: Your budget, on your computer. Envelope budgeting for Windows and macOS.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="How to download Amex transactions (CSV or QFX)">
+  <meta name="twitter:description" content="What each American Express download covers, from six statements in Quicken format to two years as CSV, and how to import your card activity into a budget.">
+  <meta name="twitter:image" content="https://urbudget.app/img/og.png?v=5d5426e5">
+  <link rel="stylesheet" href="/assets/site.css?v=2">
+  <link rel="stylesheet" href="/assets/compare.css">
+  <script type="module" src="/assets/site.js?v=2"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "UrBudget", "item": "https://urbudget.app/" },
+          { "@type": "ListItem", "position": 2, "name": "Bank import guides", "item": "https://urbudget.app/import/" },
+          { "@type": "ListItem", "position": 3, "name": "American Express", "item": "https://urbudget.app/import/american-express/" }
+        ]
+      },
+      {
+        "@type": "Article",
+        "headline": "How to download American Express transactions",
+        "datePublished": "2026-10-17",
+        "dateModified": "2026-10-19",
+        "author": { "@id": "https://urbudget.app/#org" },
+        "publisher": { "@id": "https://urbudget.app/#org" },
+        "mainEntityOfPage": "https://urbudget.app/import/american-express/"
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" href="/">
+        <img src="/img/favicon.svg" width="30" height="30" alt="">
+        <span>UrBudget</span>
+      </a>
+      <button class="menu-button" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Menu">
+        <svg class="icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+      <div class="site-menu" id="site-menu">
+        <nav aria-label="Main">
+          <ul>
+            <li><a href="/#features">Features</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-compare">Compare<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-compare">
+                <ul>
+                  <li><a href="/ynab/"><b>Switch from YNAB</b><span>One-click import with a token</span></a></li>
+                  <li><a href="/vs/ynab/"><b>UrBudget vs YNAB</b><span>Free instead of paying every year</span></a></li>
+                  <li><a href="/ynab-alternatives/"><b>YNAB alternatives</b><span>The main options, compared honestly</span></a></li>
+                  <li class="nav-panel-foot"><a href="/vs/actual-budget/"><b>vs Actual Budget</b></a><a href="/vs/"><b>All comparisons</b></a></li>
+                </ul>
+              </div>
+            </li>
+            <li class="nav-group">
+              <button class="nav-group-button" type="button" aria-expanded="false" aria-controls="nav-learn">Learn<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+              <div class="nav-panel" id="nav-learn">
+                <ul>
+                  <li><a href="/getting-started/"><b>Getting started</b><span>Envelope budgeting in five steps</span></a></li>
+                  <li><a href="/guides/"><b>Budgeting guides</b><span>Credit cards, irregular income, sinking funds</span></a></li>
+                  <li><a href="/bank-sync/"><b>Bank sync with SimpleFIN</b><span>Connect supported US and Canadian banks</span></a></li>
+                  <li><a href="/import/"><b>Bank import guides</b><span>Download your transactions as a file</span></a></li>
+                  <li><a href="/tools/"><b>Free tools</b><span>Payoff calculators and a budget spreadsheet</span></a></li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </nav>
+        <a class="header-signin" href="/account/">Sign in</a>
+      </div>
+      <a class="btn btn-primary btn-sm header-download" href="/download/">Download</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="page-head" aria-labelledby="page-title">
+      <div class="container">
+        <h1 id="page-title">How to download American Express transactions</h1>
+        <p class="lead">American Express (Amex) lets you download card activity from your online account as a Quicken, QuickBooks, CSV or Excel file. For a budget, the Quicken file is the safe choice. Here's what each download covers, why the format matters for a card, and how to import it into UrBudget.</p>
+      </div>
+    </section>
+
+    <div class="container page-body">
+      <article class="guide">
+        <h2>What Amex lets you download</h2>
+        <div class="compare-wrap" role="region" aria-label="American Express downloads compared" tabindex="0">
+          <table class="compare compare-3">
+            <thead>
+              <tr><th scope="col">Download</th><th scope="col">Formats</th><th scope="col">How far back</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Recent activity and statements</th><td>Quicken, QuickBooks or CSV</td><td>Your recent activity and your past six billing statements</td></tr>
+              <tr><th scope="row">Transaction history</th><td>CSV, Excel or PDF</td><td>The previous two years, which you can sort and filter first</td></tr>
+              <tr><th scope="row">Year-End Summary</th><td>Quicken, QuickBooks, Excel, CSV or PDF</td><td>The year it summarizes</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>All three are in your online account at americanexpress.com. Amex's help pages describe downloading there; they don't mention the Amex app.</p>
+
+        <h2>Download your Amex transactions</h2>
+        <ol class="steps">
+          <li><b>Log in at americanexpress.com.</b> Use a browser on a computer, and pick the card if you have more than one.</li>
+          <li><b>Open Statements &amp; Activity.</b> That's the tab with your billing statements and recent activity.</li>
+          <li><b>Pick the period.</b> Choose your recent activity or one of the last six billing statements.</li>
+          <li><b>Download it as Quicken.</b> Use the download option, choose Quicken (QFX) and save the file.</li>
+        </ol>
+        <p>Do this for each card. Amex's help pages give the formats and limits but don't name every button, and the account pages change from time to time.</p>
+
+        <h2>Which file to choose</h2>
+        <p>Choose <strong>Quicken (QFX)</strong> for anything in your recent activity or last six statements:</p>
+        <ul>
+          <li>Charges come in as money out, and payments and refunds as money in, which is what a credit card account in your budget expects.</li>
+          <li>Each transaction carries an ID from Amex, so downloading overlapping periods never adds a charge twice.</li>
+        </ul>
+        <p>QuickBooks files are for QuickBooks, and UrBudget doesn't open them. It doesn't open Excel workbooks (.xls or .xlsx) either.</p>
+
+        <h3>Older than six statements: the CSV</h3>
+        <p>For activity before your last six statements, the two-year history downloads as CSV, Excel or PDF, but not as a Quicken file. A CSV can work. Amex doesn't publish the CSV's columns, so look at the preview before you import: card files often list charges as positive amounts, which would read as money coming in.</p>
+        <p>If the preview shows your purchases as money in, tick <b>Purchases are positive</b> (in UrBudget 1.0.3 and later) and preview again. Charges then come in as money out and payments as money in.</p>
+
+        <h2>Import it into UrBudget</h2>
+        <ol class="steps">
+          <li><b>Open the card's account.</b> Select your Amex account in UrBudget (add it as a credit card account first if it isn't there) and choose <b>Import file</b> above its transactions.</li>
+          <li><b>Choose the file.</b> Click <i>Choose a file</i>, or drag the .qfx or .csv onto the box. UrBudget picks the format from the extension.</li>
+          <li><b>Set the date order for a CSV.</b> For a CSV, set <i>Dates in the file</i> to Month/day/year if the dates look like 10/31/2026. A QFX file has no setting to change.</li>
+          <li><b>Preview and review.</b> Choose <i>Preview transactions</i>. Charges you already imported are marked and skipped. A charge you typed in yourself, with the same amount within 10 days, is offered as a match, so it isn't counted twice.</li>
+          <li><b>Import.</b> Choose <i>Import</i>, then approve the charges in the register.</li>
+        </ol>
+        <p>When you give each charge a category, the money moves from that category into the card's payment category, so the money for your Amex bill is set aside as you spend.</p>
+
+        <h2>If something looks wrong</h2>
+        <ul>
+          <li><strong>Purchases show up as money coming in.</strong> You're importing a CSV that lists charges as positive amounts. Tick <b>Purchases are positive</b> and preview again, or use the Quicken file.</li>
+          <li><strong>The Quicken option doesn't reach far enough back.</strong> Amex's Quicken and QuickBooks downloads cover recent activity and the last six billing statements. For older months, use the CSV from the two-year history.</li>
+          <li><strong>UrBudget can't read a date.</strong> <i>Dates in the file</i> starts at Year-month-day. Choose Month/day/year and preview again.</li>
+          <li><strong>The same charges appear in two files.</strong> That's expected when periods overlap. The ones already in UrBudget are marked as already imported and skipped.</li>
+        </ul>
+
+        <div class="guide-cta">
+          <h2>Budget with your Amex file</h2>
+          <p>UrBudget is free on Windows and macOS. No account, card or bank connection required.</p>
+          <div class="cta-row">
+            <a class="btn btn-primary btn-lg" href="/download/#ref=import-american-express" data-download-label>Download</a>
+            <a class="btn btn-lg" href="/getting-started/">How envelope budgeting works</a>
+          </div>
+        </div>
+
+        <ul class="related" aria-label="Related guides">
+          <li><a href="/import/">All bank import guides</a></li>
+          <li><a href="/getting-started/">Getting started with envelope budgeting</a></li>
+          <li><a href="/import/apple-card/">Export Apple Card transactions</a></li>
+          <li><a href="/import/citi/">Download Citi transactions</a></li>
+        </ul>
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="/">
+          <img src="/img/favicon.svg" width="30" height="30" alt="">
+          <span>UrBudget</span>
+        </a>
+      </div>
+      <nav class="footer-nav" aria-label="Footer">
+        <div>
+          <h2>Product</h2>
+          <ul>
+            <li><a href="/download/">Download</a></li>
+            <li><a href="/pricing/">Pricing</a></li>
+            <li><a href="https://github.com/AhmadHoranieh/urbudget">Source code</a></li>
+            <li><a href="/account/">Account</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Compare</h2>
+          <ul>
+            <li><a href="/ynab/">Switch from YNAB</a></li>
+            <li><a href="/ynab-alternatives/">YNAB alternatives</a></li>
+            <li><a href="/mint-alternatives/">Mint alternatives</a></li>
+            <li><a href="/vs/ynab/">UrBudget vs YNAB</a></li>
+            <li><a href="/vs/">All comparisons</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Learn</h2>
+          <ul>
+            <li><a href="/getting-started/">Getting started</a></li>
+            <li><a href="/guides/">Budgeting guides</a></li>
+            <li><a href="/bank-sync/">Bank sync with SimpleFIN</a></li>
+            <li><a href="/import/">Bank import guides</a></li>
+            <li><a href="/tools/">Free tools</a></li>
+          </ul>
+        </div>
+        <div>
+          <h2>Support</h2>
+          <ul>
+            <li><a href="mailto:support@urbudget.app">support@urbudget.app</a></li>
+            <li><a href="/#faq">FAQ</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
+            <li><a href="/refunds/">Refunds</a></li>
+          </ul>
+        </div>
+      </nav>
+    </div>
+    <div class="container footer-bottom">
+      <p>© <span data-year>2026</span> UrBudget</p>
+    </div>
+  </footer>
+</body>
+</html>

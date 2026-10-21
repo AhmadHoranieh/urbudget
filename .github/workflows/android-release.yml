@@ -1,0 +1,100 @@
+# Builds the signed Android App Bundle (.aab) of the native app in android/ for Google Play.
+# Push a tag such as android-v1.0.8 for the version in android/app/build.gradle.kts
+# (`node scripts/versions.mjs android 1.0.8` sets it; RELEASING.md), or run it from the Actions tab
+# on main. Nothing is sent to Play from here: upload the bundle from the run's artifacts in Play
+# Console (Test and release → a track → Create new release), with mapping.txt for readable crashes.
+# Signing uses the upload key in the google-play environment's four ANDROID_UPLOAD_* secrets.
+name: Android release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_code:
+        description: Version code, only to upload the same version again (Play needs a new code for each upload). Empty uses the version's own.
+        required: false
+  push:
+    tags: ["android-v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release-${{ github.ref }}
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: google-play
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check what's being released
+        id: release
+        run: |
+          set -euo pipefail
+          # Store builds come from main: a tag on a commit main has, or a run on main.
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "::error::$GITHUB_SHA isn't on main."; exit 1; }
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            node scripts/versions.mjs --tag "$GITHUB_REF_NAME"
+          else
+            node scripts/versions.mjs
+            echo "version=$(node --input-type=module -e 'import { readVersions } from "./scripts/versions.mjs"; console.log(readVersions().android)')" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+          cmdline-tools-version: '15859902'
+      - name: Install Android toolchain
+        run: |
+          sdkmanager "platforms;android-37.0" "build-tools;36.0.0" "ndk;30.0.16248370"
+          echo "NDK_HOME=$ANDROID_HOME/ndk/30.0.16248370" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: crates -> ../android/app/build/rust-target
+
+      - name: Test, lint and build the signed bundle
+        working-directory: android
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          URBUDGET_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+          URBUDGET_ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
+          URBUDGET_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_UPLOAD_KEY_PASSWORD }}
+          VERSION_CODE: ${{ inputs.version_code }}
+        run: |
+          set -euo pipefail
+          test -n "$UPLOAD_KEYSTORE_BASE64" || { echo "::error::The google-play environment has no ANDROID_UPLOAD_KEYSTORE_BASE64 secret."; exit 1; }
+          export URBUDGET_ANDROID_KEYSTORE="$RUNNER_TEMP/urbudget-upload.jks"
+          trap 'rm -f -- "$URBUDGET_ANDROID_KEYSTORE"' EXIT
+          printf '%s' "$UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$URBUDGET_ANDROID_KEYSTORE"
+          chmod 600 "$URBUDGET_ANDROID_KEYSTORE"
+          code=()
+          if [ -n "$VERSION_CODE" ]; then code=("-PversionCode=$VERSION_CODE"); fi
+          bash gradlew --no-daemon "${code[@]}" :app:testDebugUnitTest :app:lintRelease :app:bundleRelease
+          bundle=app/build/outputs/bundle/release/app-release.aab
+          jarsigner -verify "$bundle"
+          unzip -l "$bundle" | grep -qE 'META-INF/.*\.(RSA|EC|DSA)$' || { echo "::error::The bundle isn't signed."; exit 1; }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UrBudget-android-${{ steps.release.outputs.version }}
+          path: |
+            android/app/build/outputs/bundle/release/app-release.aab
+            android/app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error
+          retention-days: 14

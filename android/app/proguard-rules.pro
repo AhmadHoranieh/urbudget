@@ -1,0 +1,2 @@
+-keep class app.urbudget.nativeapp.NativeBridge { *; }
+-keep class app.urbudget.SecretStore { public static *; }
