@@ -18,8 +18,8 @@ android {
         minSdk = 26
         targetSdk = 37
         // Preserve Tauri Android's million-based version scheme for in-place upgrades.
-        versionCode = providers.gradleProperty("versionCode").orElse("1000007").get().toInt()
-        versionName = "1.0.7"
+        versionCode = providers.gradleProperty("versionCode").orElse("1000000").get().toInt()
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += requestedAbis }
     }
