@@ -4,6 +4,8 @@ Notable changes to UrBudget, organized using [Keep a Changelog](https://keepacha
 
 ## [Unreleased]
 
+## [1.0.8] - 2026-10-22
+
 ### Changed
 
 - UrBudget is now free and open source, with nothing locked: there's no trial, license or read-only mode any more.
@@ -136,5 +138,6 @@ Also
 - Quick Assign's Underfunded now funds "maintain a balance" targets.
 - Notifications are easier to read in dark mode.
 
-[Unreleased]: https://github.com/AhmadHoranieh/local-budget/compare/v1.0.7...HEAD
+[Unreleased]: https://github.com/AhmadHoranieh/urbudget/compare/desktop-v1.0.8...HEAD
+[1.0.8]: https://github.com/AhmadHoranieh/urbudget/releases/tag/desktop-v1.0.8
 [1.0.7]: https://github.com/AhmadHoranieh/local-budget/compare/v1.0.6...v1.0.7

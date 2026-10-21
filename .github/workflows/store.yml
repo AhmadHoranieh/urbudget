@@ -8,6 +8,11 @@
 # Account settings → User management → Microsoft Entra applications, Manager role):
 # MSSTORE_TENANT_ID, MSSTORE_CLIENT_ID, MSSTORE_SELLER_ID and MSSTORE_CLIENT_SECRET, a key made on
 # that page. Keys expire: when this can't sign in, add a new key there and replace the secret.
+#
+# When the listing has to change with the package (new screenshots, a different price), leave the
+# submission as a draft: tick "draft" when running this by hand, or set the repository variable
+# STORE_DRAFT to true before publishing the release. Then edit the listing in Partner Center and
+# submit it there; delete the variable afterwards so the next release goes straight to review.
 name: Microsoft Store
 
 on:
@@ -18,6 +23,10 @@ on:
       tag:
         description: Published desktop release to send to the Microsoft Store, such as desktop-v1.0.8
         required: true
+      draft:
+        description: Leave the submission as a draft in Partner Center, to change the listing before submitting it there
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -28,6 +37,7 @@ jobs:
     runs-on: windows-latest
     env:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
+      DRAFT: ${{ inputs.draft || vars.STORE_DRAFT == 'true' }}
       GH_TOKEN: ${{ github.token }}
       # UrBudget's Store ID in Partner Center.
       PRODUCT_ID: 9PMQMBZJG06R
@@ -47,10 +57,15 @@ jobs:
           CLIENT_SECRET: ${{ secrets.MSSTORE_CLIENT_SECRET }}
         run: msstore reconfigure --tenantId $env:TENANT_ID --sellerId $env:SELLER_ID --clientId $env:CLIENT_ID --clientSecret $env:CLIENT_SECRET
 
-      # A new submission made from the published one, with this package, sent for certification.
+      # A new submission made from the published one, with this package, sent for certification
+      # (or left as a draft in Partner Center, see above).
       - name: Submit to the Microsoft Store
         shell: pwsh
         run: |
           $msix = Get-ChildItem store -Filter *.msix | Select-Object -First 1
           if (-not $msix) { throw "No .msix on release $env:TAG." }
-          msstore publish $msix.FullName -id $env:PRODUCT_ID -v
+          $publish = @($msix.FullName, '-id', $env:PRODUCT_ID, '-v')
+          if ($env:DRAFT -eq 'true') { $publish += '--noCommit' }
+          msstore publish @publish
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ($env:DRAFT -eq 'true') { "The submission is a draft: finish the listing in Partner Center and submit it there." >> $env:GITHUB_STEP_SUMMARY }
