@@ -12,7 +12,8 @@ const UNASSIGNED = 93852;
 // the app shows it ("$1,994.27 more needed this month").
 const CARD_NEEDS = { "Visa Signature": 199427, "Amex Gold": 37268 };
 const out = process.argv[2] ? resolve(process.argv[2]) : fileURLToPath(new URL("../../../migration-showcase", import.meta.url));
-const src = readFileSync(generator, "utf8");
+// LF line endings, so the multi-line swaps below also match a Windows checkout's CRLF copy.
+const src = readFileSync(generator, "utf8").replace(/\r\n/g, "\n");
 let s = src.replace(/(?<![\w.])(\d{1,3}(?:_\d{3})+)(?![\w])/g, "S($1)");
 s = s.replace("let seed = 20261015;", "const S = (v) => Math.round((v * 0.3) / 100) * 100;\nlet seed = 20261015;");
 const swaps = [

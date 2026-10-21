@@ -594,6 +594,14 @@ code.wrap {
 .header-signin {
   margin-right: var(--space-1);
 }
+/* The source on GitHub: the mark alone here, with its name in the phone menu. */
+.site-menu .header-github {
+  gap: var(--space-2);
+  padding: 0 0.6rem;
+}
+.header-github-label {
+  display: none;
+}
 
 .menu-button {
   display: none;
@@ -661,11 +669,22 @@ code.wrap {
     padding: 0 var(--space-3);
     font-size: var(--step-0);
   }
-  .header-signin {
+  .header-signin,
+  .site-menu .header-github {
     margin: var(--space-2) 0 0;
     border-top: 1px solid var(--border);
     border-radius: 0;
     padding-top: var(--space-2) !important;
+  }
+  .site-menu .header-github {
+    padding-left: var(--space-3);
+  }
+  .header-github + .header-signin {
+    margin-top: 0;
+    border-top: 0;
+  }
+  .header-github-label {
+    display: inline;
   }
 }
 

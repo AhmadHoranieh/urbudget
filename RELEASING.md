@@ -46,7 +46,7 @@ configuration was removed from `desktop/` on 21 October 2026.
 
 ## One-time setup for the phone apps
 
-Neither phone workflow has run yet: watch the first run of each.
+Android's release workflow has built a signed bundle; iOS's first ran for `ios-v1.0.0`. Watch the first upload to each store.
 
 **Android** needs the upload key, in the repository's `google-play` environment (Settings →
 Environments; GitHub makes it on the first run). It's the key made for Play App Signing

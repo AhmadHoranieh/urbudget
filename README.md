@@ -1,9 +1,24 @@
-# UrBudget
+<p align="center">
+  <img src="desktop/assets/icon.svg" width="112" height="112" alt="">
+</p>
+
+<h1 align="center">UrBudget</h1>
+
+<p align="center">
+  <a href="https://urbudget.app">urbudget.app</a> ·
+  <a href="https://urbudget.app/download/">Download for Windows and Mac</a> ·
+  <a href="docs/README.md">Docs</a>
+</p>
 
 A private envelope budget for Windows, macOS, iPhone, iPad and Android. The apps are free and open
 source under the [GNU AGPL v3](LICENSE); the only paid part is optional end-to-end encrypted sync
 through urbudget.app, $3 a month. One Rust engine does the accounting everywhere; each app draws
 its own interface.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="web/public/img/budget-dark-1280.webp">
+  <img src="web/public/img/budget-light-1280.webp" alt="UrBudget for Windows: a month's budget, with categories, targets and what's available in each">
+</picture>
 
 | Folder | What it is |
 | --- | --- |
