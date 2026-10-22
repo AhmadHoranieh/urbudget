@@ -231,7 +231,7 @@ struct MainTabs: View {
             .background {
             // Hidden buttons carry ⌘1–⌘5, as the desktop's sidebar shortcuts do.
                 ForEach(Array(Self.tabs.enumerated()), id: \.offset) { index, destination in
-                    Button("") { tab = destination.tab }
+                    Button { tab = destination.tab } label: { Text(verbatim: "") }
                         .keyboardShortcut(KeyEquivalent(Character(String(index + 1))), modifiers: .command)
                         .hidden()
                 }

@@ -26,6 +26,10 @@ final class LocalizationTests: XCTestCase {
         for (key, value) in expected {
             XCTAssertEqual(arabic.localizedString(forKey: key, value: "MISSING", table: nil), value, key)
         }
+        // A new budget's starter names and the sample's name use the engine's Arabic words.
+        XCTAssertEqual(arabic.localizedString(forKey: "starter.group.savings", value: "MISSING", table: nil), "المدخرات")
+        XCTAssertEqual(arabic.localizedString(forKey: "Groceries", value: "MISSING", table: nil), "البقالة")
+        XCTAssertEqual(arabic.localizedString(forKey: "Sample budget", value: "MISSING", table: nil), "ميزانية تجريبية")
         // A named key carries its English in the catalog, and its Arabic here.
         XCTAssertEqual(arabic.localizedString(forKey: "state.open", value: "MISSING", table: nil), "مفتوحة")
         XCTAssertEqual(try bundle("en").localizedString(forKey: "state.open", value: "MISSING", table: nil), "Open")
@@ -75,6 +79,8 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(transactionCount(3), "3 transactions")
         XCTAssertEqual(String(localized: "Removed \(Int64(1)) backups", locale: .app), "Removed 1 backup")
         XCTAssertEqual(String(localized: "Removed \(Int64(4)) backups", locale: .app), "Removed 4 backups")
+        XCTAssertEqual(StarterBudget.groups.map(\.name), ["Bills", "Needs", "Wants", "Savings"])
+        XCTAssertEqual(StarterBudget.groups[1].categories, ["Groceries", "Transportation", "Medical", "Insurance"])
         XCTAssertEqual(Dates.ordinal(22), "22nd")
         XCTAssertEqual(Dates.monthLabel("2026-10"), "October 2026")
         XCTAssertEqual(Locale.app.numberingSystem.identifier, "latn")

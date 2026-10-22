@@ -85,7 +85,8 @@ struct NewCategoryForm: View {
             guard !started else { return }
             started = true
             name = presetName
-            group = presetGroup ?? existing.first ?? "Everyday"
+            // A budget's first group is named in the app's language, as the engine names its own.
+            group = presetGroup ?? existing.first ?? String(localized: "Everyday", comment: "The group of a budget's first category.")
         }
     }
 }

@@ -9547,6 +9547,17 @@
         }
       }
     },
+    "Everyday" : {
+      "comment" : "The group of a budget's first category. Same word as the engine's sample budget.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "المصروفات اليومية"
+          }
+        }
+      }
+    },
     "Everyday spending" : {
       "localizations" : {
         "ar" : {
@@ -24143,12 +24154,12 @@
       }
     },
     "starter.group.savings" : {
-      "comment" : "A starter category group: money put aside.",
+      "comment" : "A starter category group: money put aside. Same word as the engine's sample budget.",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "الادخار"
+            "value" : "المدخرات"
           }
         },
         "en" : {
