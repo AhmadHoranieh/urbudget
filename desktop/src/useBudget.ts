@@ -48,6 +48,8 @@ export function useBudget(month: string, editorOpen = false) {
   const [operation, setOperation] = useState("");
   const operationRef = useRef(false);
   const updateReadyToClose = useRef(false);
+  /** Runs after everything is saved when the window closes, such as installing an update. */
+  const exitTask = useRef<(() => Promise<unknown>) | null>(null);
   const [error, setError] = useState("");
   const [metadata, setMetadata] = useState<DatabaseStatus | null>(null);
   const [recovery, setRecovery] = useState<Recovery | null>(null);
@@ -387,10 +389,23 @@ export function useBudget(month: string, editorOpen = false) {
           event.preventDefault();
           return;
         }
-        if (pendingRecovery.current || dirty() || running.current || getPref("backupOnClose")) {
+        const task = exitTask.current;
+        if (task || pendingRecovery.current || dirty() || running.current || getPref("backupOnClose")) {
           event.preventDefault();
-          if (await prepareExit()) await getCurrentWindow().destroy();
-          else
+          if (await prepareExit()) {
+            if (task) {
+              // Windows may end the app while it installs; otherwise the window closes after.
+              updateReadyToClose.current = true;
+              try {
+                await task();
+              } catch {
+                // Closing never waits on an update; it installs another time.
+              } finally {
+                updateReadyToClose.current = false;
+              }
+            }
+            await getCurrentWindow().destroy();
+          } else
             setError(
               "The window is staying open because changes are not saved. Resolve the database conflict or export your draft first.",
             );
@@ -594,6 +609,10 @@ export function useBudget(month: string, editorOpen = false) {
     settle,
     flush,
     prepareExit,
+    /** Sets what closing the window does once everything is saved (null for nothing). */
+    setExitTask: (task: (() => Promise<unknown>) | null) => {
+      exitTask.current = task;
+    },
     fetchDatabase,
     restoreRecovery,
     dirty,
