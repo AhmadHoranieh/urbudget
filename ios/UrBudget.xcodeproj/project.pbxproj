@@ -475,6 +475,7 @@
 				CA351523A99133CA4CB65C4C /* Sources */,
 				209D2764DD227DB869790F34 /* Resources */,
 				3F2DCFDB844E597BD4DD87D7 /* Frameworks */,
+				C4EC5791A1B2C3D4E5F60718 /* Check strings */,
 			);
 			buildRules = (
 			);
@@ -560,6 +561,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "\"$SRCROOT/scripts/build-rust.sh\"";
+		};
+		C4EC5791A1B2C3D4E5F60718 /* Check strings */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Check strings";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "sh \"$SRCROOT/scripts/check-extracted-strings.sh\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
