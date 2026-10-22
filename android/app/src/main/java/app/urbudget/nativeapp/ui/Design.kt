@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,6 +34,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import app.urbudget.nativeapp.R
 
 /** The phone's side margin (the desktop's `--gutter` on phones). */
 internal val Gutter = 16.dp
@@ -70,7 +74,7 @@ internal fun UrSheet(onDismiss: () -> Unit, content: @Composable ColumnScope.() 
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp), containerColor = ur.surface, contentColor = ur.text,
         scrimColor = ur.scrim, tonalElevation = 0.dp,
         dragHandle = { Box(Modifier.padding(top = 8.dp, bottom = 4.dp).size(36.dp, 5.dp).clip(CircleShape).background(ur.borderStrong)) }) {
-        CompositionLocalProvider(LocalSheet provides true) { Column(Modifier.fillMaxWidth().imePadding(), content = content) }
+        FollowLanguage { CompositionLocalProvider(LocalSheet provides true) { Column(Modifier.fillMaxWidth().imePadding(), content = content) } }
     }
 }
 
@@ -80,14 +84,14 @@ internal fun SheetHeader(title: String, onCancel: (() -> Unit)?, confirm: String
                          onBack: (() -> Unit)? = null, cancelFirst: Boolean = false) {
     Box(Modifier.fillMaxWidth().heightIn(min = 52.dp).padding(horizontal = 6.dp)) {
         when {
-            onBack != null -> IconButton(onBack, Modifier.align(Alignment.CenterStart)) { Icon(Icons.Outlined.ChevronLeft, "Back", tint = ur.accent) }
-            onCancel != null && (confirm != null || cancelFirst) -> TextButton(onCancel, Modifier.align(Alignment.CenterStart)) { Text("Cancel", color = ur.accent, fontWeight = FontWeight.Normal) }
+            onBack != null -> IconButton(onBack, Modifier.align(Alignment.CenterStart)) { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, stringResource(R.string.common_back), tint = ur.accent) }
+            onCancel != null && (confirm != null || cancelFirst) -> TextButton(onCancel, Modifier.align(Alignment.CenterStart)) { Text(stringResource(R.string.common_cancel), color = ur.accent, fontWeight = FontWeight.Normal) }
         }
         Text(title, Modifier.align(Alignment.Center).padding(horizontal = 96.dp), style = MaterialTheme.typography.titleMedium, color = ur.text,
             maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
         if (confirm != null && onConfirm != null) TextButton(onConfirm, Modifier.align(Alignment.CenterEnd), enabled = enabled) {
             Text(confirm, color = if (enabled) ur.accent else ur.muted, fontWeight = FontWeight.Bold)
-        } else if (onCancel != null && !cancelFirst) TextButton(onCancel, Modifier.align(Alignment.CenterEnd)) { Text("Done", color = ur.accent, fontWeight = FontWeight.Bold) }
+        } else if (onCancel != null && !cancelFirst) TextButton(onCancel, Modifier.align(Alignment.CenterEnd)) { Text(stringResource(R.string.common_done), color = ur.accent, fontWeight = FontWeight.Bold) }
     }
 }
 
@@ -137,7 +141,7 @@ internal fun PhoneTopBar(title: String? = null, subtitle: String? = null, onBack
                          actions: @Composable RowScope.() -> Unit = {}) {
     Box(Modifier.fillMaxWidth().background(ur.bg).statusBarsPadding().height(64.dp).padding(horizontal = 12.dp)) {
         Row(Modifier.align(Alignment.CenterStart), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (onBack != null) RoundIconButton(Icons.Outlined.ChevronLeft, "Back", onBack)
+            if (onBack != null) RoundIconButton(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, stringResource(R.string.common_back), onBack)
             leading?.invoke()
             if (center == null && title != null) Column(Modifier.padding(start = if (onBack == null && leading == null) 4.dp else 2.dp)) {
                 Text(title, style = if (onBack == null) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineSmall,
@@ -227,7 +231,7 @@ internal fun ListRow(title: String, modifier: Modifier = Modifier, subtitle: Str
             }
             if (value != null) Text(value, Modifier.padding(start = 10.dp), style = MaterialTheme.typography.bodyLarge.merge(Tabular), fontWeight = FontWeight.SemiBold, color = valueColor, maxLines = 1)
             trailing?.let { Box(Modifier.padding(start = 10.dp)) { it() } }
-            if (chevron) Icon(Icons.Outlined.ChevronRight, null, Modifier.padding(start = 4.dp).size(20.dp), tint = ur.muted)
+            if (chevron) Icon(Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, Modifier.padding(start = 4.dp).size(20.dp), tint = ur.muted)
         }
         if (divider) Hairline(start = if (icon != null) 68.dp else 16.dp)
     }
@@ -299,14 +303,14 @@ internal fun FilterPill(text: String, active: Boolean, onClick: () -> Unit, icon
 /** Uncleared is a dashed ring, cleared a green disc with a tick, reconciled a lock. */
 @Composable
 internal fun ClearedMark(status: String, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
-    val clickable = if (onClick != null) Modifier.clip(CircleShape).clickable(role = Role.Checkbox, onClickLabel = "Toggle cleared", onClick = onClick) else Modifier
+    val clickable = if (onClick != null) Modifier.clip(CircleShape).clickable(role = Role.Checkbox, onClickLabel = stringResource(R.string.cleared_toggle), onClick = onClick) else Modifier
     Box(modifier.size(28.dp).then(clickable), contentAlignment = Alignment.Center) {
         when (status) {
             "cleared" -> Box(Modifier.size(19.dp).clip(CircleShape).background(ur.positive), contentAlignment = Alignment.Center) {
-                Icon(Icons.Outlined.Check, "Cleared", Modifier.size(13.dp), tint = ur.surface)
+                Icon(Icons.Outlined.Check, stringResource(R.string.status_cleared), Modifier.size(13.dp), tint = ur.surface)
             }
             "reconciled" -> Box(Modifier.size(20.dp).clip(CircleShape).background(ur.positiveSoft), contentAlignment = Alignment.Center) {
-                Icon(Icons.Outlined.Lock, "Reconciled", Modifier.size(12.dp), tint = ur.positive)
+                Icon(Icons.Outlined.Lock, stringResource(R.string.status_reconciled), Modifier.size(12.dp), tint = ur.positive)
             }
             else -> {
                 val ring = ur.muted
@@ -332,7 +336,7 @@ internal fun SearchField(value: String, onChange: (String) -> Unit, placeholder:
             BasicTextField(value, onChange, inputModifier.fillMaxWidth(), singleLine = true, textStyle = MaterialTheme.typography.bodyLarge.copy(color = ur.text),
                 cursorBrush = SolidColor(ur.accent))
         }
-        if (value.isNotEmpty()) Icon(Icons.Outlined.Cancel, "Clear search", Modifier.size(20.dp).clip(CircleShape).clickable { onChange("") }, tint = ur.muted)
+        if (value.isNotEmpty()) Icon(Icons.Outlined.Cancel, stringResource(R.string.common_clear_search), Modifier.size(20.dp).clip(CircleShape).clickable { onChange("") }, tint = ur.muted)
     }
 }
 

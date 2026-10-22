@@ -7,6 +7,7 @@ import org.junit.After
 import org.json.JSONObject
 
 class MoneyTest {
+    @Before fun english() = EnglishWords.install()
     @Before @After fun resetFormat() { Money.configure(JSONObject().put("currency", "SAR")) }
     @Test fun desktopNumberPreferencesRoundTripWithoutAmbiguousSeparators() {
         Money.configure(JSONObject().put("currency", "EUR").put("dateFormat", "dmy").put("numberFormat", JSONObject().put("decimal", ",").put("group", ".").put("symbol", "after")))
