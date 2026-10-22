@@ -19,6 +19,7 @@ import android.text.TextPaint
 import android.text.style.StyleSpan
 import android.text.style.RelativeSizeSpan
 import org.json.JSONObject
+import app.urbudget.nativeapp.Money
 import app.urbudget.nativeapp.R
 import app.urbudget.nativeapp.Words
 import java.io.FileOutputStream
@@ -128,7 +129,7 @@ private class AssistantReportPrint(private val report: JSONObject) : PrintDocume
         append(report.text("title") + "\n")
         setSpan(StyleSpan(Typeface.BOLD), 0, length, 0)
         setSpan(RelativeSizeSpan(1.6f), 0, length, 0)
-        append("${report.text("budget")} · ${report.text("period")} · ${report.text("created").take(10)}\n\n")
+        append(Money.joined(listOf(report.text("budget"), report.text("period"), report.text("created").take(10))) + "\n\n")
         report.text("body").lines().forEach { source ->
             val heading = source.startsWith('#')
             val start = length

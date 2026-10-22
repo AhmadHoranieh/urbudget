@@ -86,8 +86,8 @@ private fun schedulesModel(budget: JSONObject, today: LocalDate): SchedulesModel
         val frequency = schedule.text("frequency")
         ScheduleItem(schedule.text("id"), schedule,
             t.text("payee").ifBlank { accounts[t.text("transferAccountId")]?.let { Words[R.string.transfer_to_account, it] } ?: Words[R.string.schedule_unnamed] },
-            listOfNotNull(if (due) Words[R.string.schedule_due_on, Money.date(next)] else Money.date(next), frequencies.firstOrNull { it.first == frequency }?.second ?: frequency,
-                accounts[t.text("accountId")], category, if (paused) Words[R.string.schedule_paused] else null).joinToString(" · "),
+            Money.joined(listOfNotNull(if (due) Words[R.string.schedule_due_on, Money.date(next)] else Money.date(next), frequencies.firstOrNull { it.first == frequency }?.second ?: frequency,
+                accounts[t.text("accountId")], category, if (paused) Words[R.string.schedule_paused] else null)),
             money(t.optLong("amount"), currency), t.optLong("amount") > 0, due, paused, frequency == "never" || frequency.isBlank(), Money.date(next))
     }
     return SchedulesModel(lines, summary, money(summary.goingOut, currency), money(summary.comingIn, currency))
@@ -241,8 +241,8 @@ private fun SettingsPage(navigate: (String) -> Unit, budget: JSONObject, vm: Bud
         item { SectionTitle(stringResource(R.string.tab_budget)) }
         item {
             ListCard {
-                ListRow(stringResource(R.string.settings_budget_formats), subtitle = "${budget.text("name")} · ${formatSummary(budget)}", icon = Icons.Outlined.Tune, onClick = { dialog = "budget" }, divider = true)
-                ListRow(stringResource(R.string.settings_flag_names), subtitle = flagNames.joinToString(" · ").ifBlank { stringResource(R.string.settings_flag_names_hint) }, icon = Icons.Outlined.Flag, onClick = { dialog = "flags" })
+                ListRow(stringResource(R.string.settings_budget_formats), subtitle = "${Money.own(budget.text("name"))} · ${formatSummary(budget)}", icon = Icons.Outlined.Tune, onClick = { dialog = "budget" }, divider = true)
+                ListRow(stringResource(R.string.settings_flag_names), subtitle = Money.joined(flagNames).ifBlank { stringResource(R.string.settings_flag_names_hint) }, icon = Icons.Outlined.Flag, onClick = { dialog = "flags" })
             }
         }
         item { SectionTitle(stringResource(R.string.settings_appearance)) }

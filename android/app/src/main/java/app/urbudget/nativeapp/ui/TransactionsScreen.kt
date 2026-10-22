@@ -424,7 +424,7 @@ private fun TransactionLine(line: TxLine, selecting: Boolean, selected: Boolean,
                         Icon(if (line.card) Icons.Outlined.CreditCard else Icons.Outlined.SwapHoriz, null, Modifier.size(16.dp), tint = ur.accent)
                     }
                     if (line.flag.isNotBlank()) FlagDot(line.flag, Modifier.padding(end = 6.dp), 10.dp)
-                    Text(line.payee, Modifier.weight(1f), fontSize = 16.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    Text(Money.own(line.payee), Modifier.weight(1f), fontSize = 16.5.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         color = if (!line.approved) ur.accent else ur.text)
                     Text(line.amountText, Modifier.padding(start = 8.dp), fontSize = 16.5.sp, fontWeight = FontWeight.SemiBold,
                         color = if (line.amount > 0) ur.positive else ur.text, style = Tabular, maxLines = 1)
@@ -436,14 +436,14 @@ private fun TransactionLine(line: TxLine, selecting: Boolean, selected: Boolean,
                             else TagChip(chip.text, if (chip.kind == ChipMore) Modifier else Modifier.weight(1f, fill = false))
                         }
                     }
-                    if (line.accountName.isNotBlank()) Text(line.accountName, Modifier.padding(start = 8.dp), color = ur.muted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (line.accountName.isNotBlank()) Text(Money.own(line.accountName), Modifier.padding(start = 8.dp), color = ur.muted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     // Approving sits on this line so amounts stay in one column.
                     if (!line.approved && !selecting) Box(Modifier.padding(start = 8.dp).size(28.dp).clip(CircleShape).background(ur.accentSoft)
                         .clickable(role = Role.Button, onClickLabel = stringResource(R.string.common_approve), onClick = approve), contentAlignment = Alignment.Center) {
                         Icon(Icons.Outlined.Check, stringResource(R.string.common_approve), Modifier.size(16.dp), tint = ur.accent)
                     }
                 }
-                if (line.memo.isNotBlank()) Text(line.memo, color = ur.muted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (line.memo.isNotBlank()) Text(Money.own(line.memo), color = ur.muted, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             ClearedMark(line.cleared, Modifier.padding(start = 6.dp), onClick = if (selecting || line.cleared == "reconciled") null else toggleCleared)
         }
@@ -549,7 +549,7 @@ private fun SelectionDock(approve: (() -> Unit)?, category: () -> Unit, cleared:
             Row { Action(stringResource(R.string.flag_label), Icons.Outlined.Flag) { flagMenu = true } }
             DropdownMenu(flagMenu, { flagMenu = false }, shape = RoundedCornerShape(16.dp), containerColor = ur.surface) {
                 DropdownMenuItem(text = { Text(stringResource(R.string.flag_none)) }, leadingIcon = { Icon(Icons.Outlined.OutlinedFlag, null) }, onClick = { flag(""); flagMenu = false })
-                flags.forEach { (id, name) -> DropdownMenuItem(text = { Text(name) }, leadingIcon = { FlagDot(id, size = 14.dp) }, onClick = { flag(id); flagMenu = false }) }
+                flags.forEach { (id, name) -> DropdownMenuItem(text = { Text(Money.own(name)) }, leadingIcon = { FlagDot(id, size = 14.dp) }, onClick = { flag(id); flagMenu = false }) }
             }
         }
         Action(stringResource(R.string.common_delete), Icons.Outlined.DeleteOutline, ur.negative, delete)
@@ -783,7 +783,7 @@ internal fun TransactionDialog(original: JSONObject?, budget: JSONObject, initia
                             leading = if (flag.isNotBlank()) ({ FlagDot(flag, size = 16.dp) }) else null) { flagMenu = true }
                         DropdownMenu(flagMenu, { flagMenu = false }, shape = RoundedCornerShape(16.dp), containerColor = ur.surface) {
                             DropdownMenuItem(text = { Text(stringResource(R.string.flag_none)) }, leadingIcon = { Icon(Icons.Outlined.OutlinedFlag, null) }, onClick = { flag = ""; flagMenu = false })
-                            flags.forEach { (id, name) -> DropdownMenuItem(text = { Text(name) }, leadingIcon = { FlagDot(id, size = 14.dp) }, onClick = { flag = id; flagMenu = false }) }
+                            flags.forEach { (id, name) -> DropdownMenuItem(text = { Text(Money.own(name)) }, leadingIcon = { FlagDot(id, size = 14.dp) }, onClick = { flag = id; flagMenu = false }) }
                         }
                     }
                     if (!approved) Hairline(start = 52.dp)
@@ -939,7 +939,7 @@ private fun PayeePickerSheet(budget: JSONObject, payees: List<PayeeInfo>, accoun
                 }
             }
             if (transfers.isNotEmpty()) {
-                item { Text(stringResource(R.string.payee_section_transfers), Modifier.fillMaxWidth().background(ur.surface2).padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.labelSmall, color = ur.muted, letterSpacing = .6.sp) }
+                item { Text(stringResource(R.string.payee_section_transfers), Modifier.fillMaxWidth().background(ur.surface2).padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.labelSmall, color = ur.muted, letterSpacing = headerTracking) }
                 items(transfers, key = { "t:${it.text("id")}" }) { other ->
                     Row(Modifier.fillMaxWidth().clickable { onTransfer(other.text("id")) }.padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.SwapHoriz, null, tint = ur.accent)
@@ -948,10 +948,10 @@ private fun PayeePickerSheet(budget: JSONObject, payees: List<PayeeInfo>, accoun
                     }
                 }
             }
-            if (matches.isNotEmpty()) item { Text(stringResource(R.string.payee_section_payees), Modifier.fillMaxWidth().background(ur.surface2).padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.labelSmall, color = ur.muted, letterSpacing = .6.sp) }
+            if (matches.isNotEmpty()) item { Text(stringResource(R.string.payee_section_payees), Modifier.fillMaxWidth().background(ur.surface2).padding(horizontal = 20.dp, vertical = 8.dp), style = MaterialTheme.typography.labelSmall, color = ur.muted, letterSpacing = headerTracking) }
             items(matches, key = { "p:$it" }) { name ->
                 Row(Modifier.fillMaxWidth().clickable { onPayee(name) }.padding(horizontal = 20.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(name, Modifier.weight(1f), color = ur.text, fontWeight = if (name == payee && transfer.isBlank()) FontWeight.Bold else FontWeight.Normal)
+                    Text(Money.own(name), Modifier.weight(1f), color = ur.text, fontWeight = if (name == payee && transfer.isBlank()) FontWeight.Bold else FontWeight.Normal)
                     if (name == payee && transfer.isBlank()) Icon(Icons.Outlined.Check, null, tint = ur.accent)
                 }
             }

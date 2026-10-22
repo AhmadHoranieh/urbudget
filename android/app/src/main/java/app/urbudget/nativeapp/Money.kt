@@ -27,7 +27,7 @@ object Money {
     private val symbols = ConcurrentHashMap<String, String>()
     private val dates = mapOf("dmy" to "dd/MM/yyyy", "mdy" to "MM/dd/yyyy", "dmmmy" to "d MMM yyyy", "iso" to "yyyy-MM-dd")
     private val formatters = ConcurrentHashMap<Pair<String, Locale>, DateTimeFormatter>()
-    private val bidiMarks = Regex("[‎‏⁦-⁩]")
+    private val bidiMarks = Regex("[\u200E\u200F\u2066-\u2069]")
     fun configure(budget: JSONObject) {
         dateFormat = budget.optString("dateFormat", "iso")
         val saved = budget.optJSONObject("numberFormat")
@@ -51,15 +51,41 @@ object Money {
      * Text that must read left to right (an amount, a date, a signed figure or a sum), isolated as one
      * run when the interface is right to left. Already-isolated pieces inside it join that run.
      */
-    fun ltr(text: String): String = if (rightToLeft && text.isNotEmpty()) "⁦${text.replace("⁦", "").replace("⁩", "")}⁩" else text
+    fun ltr(text: String): String = if (rightToLeft && text.isNotEmpty()) "\u2066${text.replace("\u2066", "").replace("\u2069", "")}\u2069" else text
 
     /**
      * Text the person wrote (a name, a memo, an email), isolated in its own direction when the
      * interface is right to left, so "Car (2024)" never comes out as "(Car (2024". Display only.
      */
-    fun own(text: String): String = if (rightToLeft && text.isNotEmpty()) "$FSI$text$PDI" else text
-    private const val FSI = "⁨"
-    private const val PDI = "⁩"
+    fun own(text: String): String = if (rightToLeft && startsLeftToRight(text)) "$FSI$text$PDI" else text
+
+    /**
+     * Whether the text's first strong letter, outside pieces already isolated, reads left to right.
+     * Arabic text, figures and already-isolated pieces read right in a right-to-left line as they are.
+     */
+    private fun startsLeftToRight(text: String): Boolean {
+        var depth = 0
+        for (c in text) {
+            when (c) {
+                '\u2066', '\u2067', '\u2068' -> { depth++; continue }
+                '\u2069' -> { if (depth > 0) depth--; continue }
+            }
+            if (depth > 0) continue
+            when (Character.getDirectionality(c)) {
+                Character.DIRECTIONALITY_LEFT_TO_RIGHT -> return true
+                Character.DIRECTIONALITY_RIGHT_TO_LEFT, Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC -> return false
+            }
+        }
+        return false
+    }
+
+    /**
+     * Short pieces joined by " · ", each isolated, so a right-to-left line reads them in order even
+     * when neighbours are both Latin ("Checking · Groceries") or a name runs into a date.
+     */
+    fun joined(pieces: Iterable<String>): String = pieces.joinToString(" · ") { own(it) }
+    private const val FSI = "\u2068"
+    private const val PDI = "\u2069"
 
     /** A date pattern with the interface's month and day names and Western digits. */
     fun pattern(pattern: String): DateTimeFormatter = formatters.computeIfAbsent(pattern to language) { (p, locale) -> DateTimeFormatter.ofPattern(p, locale) }

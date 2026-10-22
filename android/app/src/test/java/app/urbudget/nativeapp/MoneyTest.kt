@@ -17,6 +17,23 @@ class MoneyTest {
         assertEquals("15/10/2026", Money.date("2026-10-15"))
         assertThrows(IllegalArgumentException::class.java) { Money.parse("1,234.56") }
     }
+    @Test fun inArabicNamesAndFiguresKeepTheirOwnDirection() {
+        try {
+            Money.useInterface(java.util.Locale.forLanguageTag("ar"), true)
+            assertEquals("\u2068Car (2024)\u2069", Money.own("Car (2024)"))
+            assertEquals("البقالة", Money.own("البقالة"))
+            assertEquals("2026-10-01", Money.own("2026-10-01"))
+            assertEquals("\u2068Checking\u2069 · البقالة", Money.joined(listOf("Checking", "البقالة")))
+            assertEquals("\u2066-12.00 SAR\u2069", Money.format(-1200, "SAR"))
+            assertEquals("\u2066+12.00 SAR\u2069", Money.signed(1200, "SAR"))
+            assertEquals(-1200L, Money.parse(Money.format(-1200, "SAR").removeSuffix(" SAR\u2069") + "\u2069"))
+            assertEquals("15 أكتوبر 2026", java.time.LocalDate.of(2026, 10, 15).format(Money.pattern("d MMMM yyyy")))
+        } finally {
+            Money.useInterface(java.util.Locale.ENGLISH, false)
+        }
+        assertEquals("Car (2024)", Money.own("Car (2024)"))
+        assertEquals("-12.00 SAR", Money.format(-1200, "SAR"))
+    }
     @Test fun parsesExactCentsWithoutFloatingPointRounding() {
         assertEquals(101L, Money.parse("1.01"))
         assertEquals(-123456L, Money.parse("-1,234.56"))

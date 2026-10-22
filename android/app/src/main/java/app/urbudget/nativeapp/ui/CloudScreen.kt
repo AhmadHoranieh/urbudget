@@ -165,7 +165,7 @@ internal fun CloudScreen(vm: BudgetViewModel) {
                 }
             }
             if (report != null && (report.text("message").isNotBlank() || report.text("at").isNotBlank())) item {
-                Text(listOfNotNull(report.text("message").ifBlank { null }, report.text("at").ifBlank { null }?.let { stringResource(R.string.cloud_last_attempt, it) }).joinToString(" · "),
+                Text(Money.joined(listOfNotNull(report.text("message").ifBlank { null }, report.text("at").ifBlank { null }?.let { stringResource(R.string.cloud_last_attempt, it) })),
                     Modifier.padding(horizontal = 4.dp), color = ur.muted, style = MaterialTheme.typography.bodySmall)
             }
             if (reportedBudgets.isNotEmpty()) item {
@@ -253,7 +253,7 @@ private fun SyncConflictDialog(entry: JSONObject, busy: Boolean, close: () -> Un
         if (conflicts.isNotEmpty()) LazyColumn(Modifier.fillMaxWidth().heightIn(max = 420.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(conflicts, key = { it.text("key") }) { difference ->
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("${difference.text("label")} · ${difference.text("field")}", fontWeight = FontWeight.Bold)
+            Text(Money.joined(listOf(difference.text("label"), difference.text("field"))), fontWeight = FontWeight.Bold)
             Text(stringResource(R.string.conflict_this_device_value, (difference.opt("local") ?: stringResource(R.string.conflict_deleted)).toString()))
             Text(stringResource(R.string.conflict_cloud_value, (difference.opt("remote") ?: stringResource(R.string.conflict_deleted)).toString()))
             Choice(stringResource(R.string.conflict_keep), choices[difference.text("key")].orEmpty(), listOf("local" to stringResource(R.string.conflict_this_device), "cloud" to stringResource(R.string.conflict_cloud)), { choices = choices + (difference.text("key") to it) })

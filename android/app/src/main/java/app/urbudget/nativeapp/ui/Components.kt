@@ -218,14 +218,14 @@ internal fun Choice(label: String, selected: String, choices: List<Pair<String, 
             verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(label, style = MaterialTheme.typography.bodySmall, color = ur.muted)
-                Text(chosen, style = MaterialTheme.typography.bodyLarge, color = ur.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(Money.own(chosen), style = MaterialTheme.typography.bodyLarge, color = ur.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             Icon(Icons.Outlined.UnfoldMore, null, tint = ur.muted)
         }
         DropdownMenu(expanded && choices.size <= 20, { expanded = false }, modifier = Modifier.heightIn(max = 360.dp),
             shape = RoundedCornerShape(14.dp), containerColor = ur.surface) {
             choices.forEach { (id, name) ->
-                DropdownMenuItem(text = { Text(name, fontWeight = if (id == selected) FontWeight.SemiBold else FontWeight.Normal) },
+                DropdownMenuItem(text = { Text(Money.own(name), fontWeight = if (id == selected) FontWeight.SemiBold else FontWeight.Normal) },
                     trailingIcon = if (id == selected) ({ Icon(Icons.Outlined.Check, null, tint = ur.accent) }) else null,
                     onClick = { onChange(id); expanded = false })
             }
@@ -247,7 +247,7 @@ internal fun Choice(label: String, selected: String, choices: List<Pair<String, 
                 itemsIndexed(visible.orEmpty()) { _, option ->
                     Row(Modifier.fillMaxWidth().clickable { onChange(option.first); expanded = false }.padding(horizontal = 20.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically) {
-                        Text(option.second, Modifier.weight(1f), color = ur.text, fontWeight = if (option.first == selected) FontWeight.SemiBold else FontWeight.Normal)
+                        Text(Money.own(option.second), Modifier.weight(1f), color = ur.text, fontWeight = if (option.first == selected) FontWeight.SemiBold else FontWeight.Normal)
                         if (option.first == selected) Icon(Icons.Outlined.Check, null, tint = ur.accent)
                     }
                 }

@@ -113,5 +113,5 @@ internal fun formatSummary(budget: JSONObject): String {
     val saved = budget.optJSONObject("numberFormat")
     val number = numberPresets.firstOrNull { it.second == (saved?.text("decimal", ".") ?: ".") to (saved?.text("group", ",") ?: ",") }?.first ?: "1,234.56"
     val date = dateFormatChoices().firstOrNull { it.first == budget.text("dateFormat", "iso") }?.second ?: "2026-10-15"
-    return "${budget.text("currency")} · $number · $date"
+    return Money.joined(listOf(budget.text("currency"), number, date))
 }

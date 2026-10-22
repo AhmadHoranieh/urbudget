@@ -70,6 +70,26 @@ class StringResourcesTest {
         assertEquals(emptyList<String>(), wrong)
     }
 
+    /**
+     * An Arabic string starts with an Arabic word, so a Latin name or brand at its head can't turn the
+     * line left to right; arguments are isolated and don't count. Arrows point the way Arabic reads.
+     */
+    @Test fun arabicReadsRightToLeft() {
+        val isolated = Regex("[\u2066\u2067\u2068][^\u2069]*\u2069")
+        // Codes and date patterns are read by the app, not shown.
+        val codes = arabic.strings.keys.filter { it == "language_code" || it.startsWith("date_pattern_") }
+        val texts = arabic.strings - codes + arabic.plurals.flatMap { (name, forms) -> forms.map { "$name/${it.key}" to it.value } }
+        val wrong = problems { out ->
+            texts.forEach { (name, text) ->
+                val outside = text.replace(isolated, "")
+                val first = outside.firstOrNull { it.isLetter() } ?: return@forEach
+                if (Character.UnicodeScript.of(first.code) != Character.UnicodeScript.ARABIC) out += "$name starts with “$first”: $text"
+                if ('→' in text) out += "$name points right: $text"
+            }
+        }
+        assertEquals(emptyList<String>(), wrong)
+    }
+
     @Test fun arabicUsesWesternDigits() {
         val eastern = Regex("[٠-٩۰-۹]")
         val wrong = arabic.strings.filterValues { eastern.containsMatchIn(it) }.keys +

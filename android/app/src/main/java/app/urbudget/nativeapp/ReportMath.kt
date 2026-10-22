@@ -749,9 +749,9 @@ fun overTimeView(data: ReportData, ctx: ReportBudget, byGroup: Boolean): OverTim
         average = Words[R.string.report_average] to average.toDouble())
     val rows = data.months.mapIndexed { i, m ->
         FigureRow(m.month, reportMonthName(m.month, short = true), ctx.money(m.spending),
-            if (byGroup) shown.filter { it.values[i] != 0.0 }.joinToString(" · ") { "${it.label} ${ctx.money(it.values[i])}" }.ifEmpty { null } else null)
+            if (byGroup) shown.filter { it.values[i] != 0.0 }.joinToString(" · ") { "${Money.own(it.label)} ${ctx.money(it.values[i])}" }.ifEmpty { null } else null)
     } + FigureRow("__average", Words[R.string.report_average], ctx.money(average),
-        if (byGroup) shown.joinToString(" · ") { s -> "${s.label} ${ctx.money(Math.round(s.values.sum() / max(1, keys.size)))}" }.ifEmpty { null } else null,
+        if (byGroup) shown.joinToString(" · ") { s -> "${Money.own(s.label)} ${ctx.money(Math.round(s.values.sum() / max(1, keys.size)))}" }.ifEmpty { null } else null,
         style = RowStyle.Total)
     return OverTimeView(byGroup, listOf(
         Tile(Words[R.string.report_monthly_average], ctx.money(average)),
@@ -1079,7 +1079,7 @@ fun balanceSheetView(data: ReportData, ctx: ReportBudget, accounts: Set<String>)
         add(FigureRow("__net", netWorth, ctx.money(netEnd), subtitle(netStart, netEnd, null), if (netEnd < 0) Tone.Negative else Tone.None, RowStyle.Net))
         if (apart.isNotEmpty()) {
             add(FigureRow("h:apart", Words[R.string.report_not_counted], style = RowStyle.Section))
-            apart.forEach { l -> add(FigureRow("x:${l.account.id}", "${l.account.name} · ${sectionLabel(l.section).lowercase(Locale.ROOT)}", ctx.money(l.end), subtitle(l.start, l.end, null), style = RowStyle.Child)) }
+            apart.forEach { l -> add(FigureRow("x:${l.account.id}", "${Money.own(l.account.name)} · ${sectionLabel(l.section).lowercase(Locale.ROOT)}", ctx.money(l.end), subtitle(l.start, l.end, null), style = RowStyle.Child)) }
         }
     }
     return BalanceSheetView(listOf(
@@ -1314,8 +1314,8 @@ fun forecastView(data: ForecastData, ctx: ReportBudget, accounts: Set<String>, m
     val rows = plan.events.mapIndexed { i, e ->
         val payee = e.payee.ifEmpty { Words[R.string.payee_none] }
         ForecastRow("$i:${e.date}:${e.scheduleId}:${e.accountId}", if (e.scheduleId == null) Words[R.string.report_entered_suffix, payee] else payee,
-            listOf(Money.date(e.date), ctx.accountName(e.accountId), if (e.peerId != null) Words[R.string.transfer_to_account, ctx.accountName(e.peerId)] else categoryName[e.categoryId].orEmpty())
-                .filter { it.isNotEmpty() }.joinToString(" · "),
+            Money.joined(listOf(Money.date(e.date), ctx.accountName(e.accountId), if (e.peerId != null) Words[R.string.transfer_to_account, ctx.accountName(e.peerId)] else categoryName[e.categoryId].orEmpty())
+                .filter { it.isNotEmpty() }),
             ctx.money(e.amount), e.amount >= 0, ctx.money(plan.balances[i]), plan.balances[i] < 0)
     }
     return ForecastView(listOf(
@@ -1370,7 +1370,7 @@ private fun drillModel(entries: List<DrillEntry>, ctx: ReportBudget, income: Boo
         if (count > 0) ctx.money(Math.round(spentTotal.toDouble() / count)) else "—",
         ordered.map { e ->
             DrillLine("${e.transaction.str("id")}:${e.index}", e.transaction.str("id"), e.payee,
-                listOf(Money.date(e.date), e.account, e.category).filter { it.isNotEmpty() }.joinToString(" · "), ctx.money(e.amount), e.amount > 0)
+                Money.joined(listOf(Money.date(e.date), e.account, e.category).filter { it.isNotEmpty() }), ctx.money(e.amount), e.amount > 0)
         }, records)
 }
 

@@ -126,7 +126,7 @@ internal suspend fun prepareBankReview(
             payee = (rename ?: row.editorText("payee")).ifBlank { noPayee }, bankText = rename?.let { row.editorText("payee") },
             memo = row.editorText("memo"), amount = row.optLong("amount"), amountText = Money.format(row.optLong("amount"), currency),
             duplicate = duplicate, possibleDuplicate = possible, idless = idless,
-            detail = listOf(Money.date(row.editorText("date")), row.editorText("memo")).filter { it.isNotBlank() }.joinToString(" · "))
+            detail = Money.joined(listOf(Money.date(row.editorText("date")), row.editorText("memo")).filter { it.isNotBlank() }))
     }
 }
 

@@ -43,18 +43,18 @@ private suspend fun payeeLines(budget: JSONObject): List<PayeeLine> {
     val context = currentCoroutineContext()
     return payeeIndex(budget).mapIndexed { index, info ->
         if (index % 256 == 0) context.ensureActive()
-        PayeeLine(info.name, info.record, listOfNotNull(
+        PayeeLine(info.name, info.record, Money.joined(listOfNotNull(
             if (info.count > 0) "${counted(R.plurals.payee_transactions, info.count)} · ${Money.date(info.last)}" else Words[R.string.payee_not_used],
-            info.default?.let { Words[R.string.payee_default_named, if (it == Unassigned) Words[R.string.category_unassigned] else categories[it] ?: Words[R.string.category_deleted]] }).joinToString(" · "))
+            info.default?.let { Words[R.string.payee_default_named, if (it == Unassigned) Words[R.string.category_unassigned] else categories[it] ?: Words[R.string.category_deleted]] })))
     }
 }
 
 private fun ruleLines(budget: JSONObject): List<RuleLine> {
     val categories = budget.rows("categories").associate { it.text("id") to it.text("name") }
     return budget.rows("payeeRules").map { rule ->
-        RuleLine(rule, Words[R.string.rule_contains, rule.text("match")], listOfNotNull(rule.text("payee").ifBlank { null }?.let { Words[R.string.rule_rename_to_named, it] },
-            rule.text("categoryId").ifBlank { null }?.let { if (it == Unassigned) Words[R.string.category_unassigned] else categories[it] ?: Words[R.string.category_deleted] })
-            .joinToString(" · ").ifBlank { Words[R.string.rule_keep_name] })
+        RuleLine(rule, Words[R.string.rule_contains, rule.text("match")], Money.joined(listOfNotNull(rule.text("payee").ifBlank { null }?.let { Words[R.string.rule_rename_to_named, it] },
+            rule.text("categoryId").ifBlank { null }?.let { if (it == Unassigned) Words[R.string.category_unassigned] else categories[it] ?: Words[R.string.category_deleted] }))
+            .ifBlank { Words[R.string.rule_keep_name] })
     }
 }
 
@@ -120,7 +120,7 @@ private suspend fun payeeSheet(budget: JSONObject, name: String?): PayeeSheet {
     val detail = name?.let { payeeDetail(budget, it) }
     val recent = detail?.recent.orEmpty().map { t ->
         val category = if (t.splits > 1) Words[R.string.category_split_count, "${t.splits}"] else categories[t.categoryId] ?: Words[R.string.category_unassigned]
-        RecentLine(t.id.ifBlank { "${t.date}:${t.amount}" }, Money.date(t.date), listOfNotNull(accounts[t.accountId], category).joinToString(" · "), money(t.amount, currency), t.amount > 0)
+        RecentLine(t.id.ifBlank { "${t.date}:${t.amount}" }, Money.date(t.date), Money.joined(listOfNotNull(accounts[t.accountId], category)), money(t.amount, currency), t.amount > 0)
     }
     return PayeeSheet(index.firstOrNull { it.name == name }, detail?.count ?: 0, detail?.total ?: 0L, money(detail?.total ?: 0L, currency), recent,
         index.map { it.name }.toSet(), listOf("" to Words[R.string.payee_choose_a]) + index.filter { it.name != name }.map { it.name to it.name })

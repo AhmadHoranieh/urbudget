@@ -80,6 +80,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import app.urbudget.nativeapp.BarRowModel
+import app.urbudget.nativeapp.Money
 import app.urbudget.nativeapp.R
 import app.urbudget.nativeapp.ColumnModel
 import app.urbudget.nativeapp.DivRowModel
@@ -166,7 +167,7 @@ internal fun ChartLegend(items: List<LegendItem>, modifier: Modifier = Modifier)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LegendKey(palette.color(item.color), item.line, item.dashed)
                 Spacer(Modifier.width(6.dp))
-                Text(item.label, color = ur.text2, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(Money.own(item.label), color = ur.text2, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -500,7 +501,7 @@ internal fun BarRowView(row: BarRowModel, defaultColor: Int, onClick: (() -> Uni
         verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (row.color != null) { LegendKey(palette.color(row.color)); Spacer(Modifier.width(8.dp)) }
-            Text(row.label, Modifier.weight(1f), color = ur.text, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(Money.own(row.label), Modifier.weight(1f), color = ur.text, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(row.valueText, Modifier.padding(start = 8.dp), color = ur.text, style = MaterialTheme.typography.bodyMedium.merge(Tabular), fontWeight = FontWeight.SemiBold, maxLines = 1)
             row.detail?.let { Text(it, Modifier.widthIn(min = 52.dp), color = ur.muted, style = MaterialTheme.typography.bodySmall.merge(Tabular), textAlign = TextAlign.End, maxLines = 1) }
         }
@@ -518,7 +519,7 @@ internal fun DivergingRowView(row: DivRowModel) {
     val color = palette.color(row.color)
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 9.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(row.label, Modifier.weight(1f), color = ur.text, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(Money.own(row.label), Modifier.weight(1f), color = ur.text, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(row.valueText, Modifier.padding(start = 8.dp), color = ur.text, style = MaterialTheme.typography.bodyMedium.merge(Tabular), fontWeight = FontWeight.SemiBold, maxLines = 1)
             Text(row.detail, Modifier.padding(start = 8.dp), color = ur.muted, style = MaterialTheme.typography.bodySmall.merge(Tabular), maxLines = 1)
         }
@@ -636,7 +637,7 @@ internal fun Treemap(items: List<TreemapItem>, onSelect: (TreemapItem) -> Unit, 
                 val labelled = t.w > 44.dp.toPx() && t.h > 22.dp.toPx()
                 val roomy = t.w > 76.dp.toPx() && t.h > 40.dp.toPx()
                 val width = Constraints(maxWidth = (t.w - 2 * padX).toInt().coerceAtLeast(1))
-                (if (labelled) measurer.measure(t.item.label, labelStyle, TextOverflow.Ellipsis, maxLines = 1, constraints = width) else null) to
+                (if (labelled) measurer.measure(Money.own(t.item.label), labelStyle, TextOverflow.Ellipsis, maxLines = 1, constraints = width) else null) to
                     (if (roomy) measurer.measure(t.item.valueText, valueStyle, TextOverflow.Ellipsis, maxLines = 1, constraints = width) else null)
             }
             val corner = CornerRadius(3.dp.toPx())

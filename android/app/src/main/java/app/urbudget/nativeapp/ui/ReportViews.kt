@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
 import app.urbudget.nativeapp.AccountChip
+import app.urbudget.nativeapp.Money
 import app.urbudget.nativeapp.R
 import app.urbudget.nativeapp.AgeView
 import app.urbudget.nativeapp.BalanceSheetView
@@ -191,7 +192,7 @@ internal fun FigureRowView(row: FigureRow, onClick: (() -> Unit)?, divider: Bool
                 Spacer(Modifier.width(4.dp))
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(row.title, color = if (row.style == RowStyle.Muted) ur.muted else ur.text, style = MaterialTheme.typography.bodyLarge,
+                Text(Money.own(row.title), color = if (row.style == RowStyle.Muted) ur.muted else ur.text, style = MaterialTheme.typography.bodyLarge,
                     fontWeight = if (strong) FontWeight.Bold else FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 row.subtitle?.let { Text(it, color = ur.muted, style = MaterialTheme.typography.bodySmall.merge(Tabular), maxLines = 3, overflow = TextOverflow.Ellipsis) }
             }
@@ -482,7 +483,7 @@ private fun ForecastRowView(row: ForecastRow, divider: Boolean) {
     Column {
         Row(Modifier.fillMaxWidth().heightIn(min = 54.dp).padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(row.title, color = ur.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(Money.own(row.title), color = ur.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(row.detail, color = ur.muted, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             Column(Modifier.padding(start = 10.dp), horizontalAlignment = Alignment.End) {
@@ -600,7 +601,7 @@ internal fun DrillLineRow(line: DrillLine, onClick: () -> Unit) {
     Column {
         Row(Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 56.dp).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(line.payee, color = ur.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(Money.own(line.payee), color = ur.text, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(line.detail, color = ur.muted, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
             Text(line.amount, Modifier.padding(start = 10.dp), color = if (line.positive) ur.positive else ur.text,

@@ -629,7 +629,7 @@ internal fun CategoryPickerSheet(budget: JSONObject, summary: JSONObject?, month
             shown.forEach { (group, categories) ->
                 item(key = "g:$group", contentType = "group") {
                     Text(groupTitle(group).uppercase(), Modifier.fillMaxWidth().background(ur.surface2).padding(horizontal = 20.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.labelSmall, color = ur.muted, letterSpacing = .6.sp)
+                        style = MaterialTheme.typography.labelSmall, color = ur.muted, letterSpacing = headerTracking)
                 }
                 items(categories, key = { "c:${it.id}" }, contentType = { "category" }) { entry ->
                     PickerRow(entry.name, null, entry.available, currency, selected == entry.id, status = entry.status) { onPick(entry.id) }
@@ -644,7 +644,7 @@ internal fun CategoryPickerSheet(budget: JSONObject, summary: JSONObject?, month
 private fun PickerRow(name: String, detail: String?, available: Long?, currency: String, chosen: Boolean, status: String? = null, pick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = pick).heightIn(min = 54.dp).padding(horizontal = 20.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.bodyLarge, fontWeight = if (chosen) FontWeight.Bold else FontWeight.Medium, color = ur.text)
+            Text(Money.own(name), style = MaterialTheme.typography.bodyLarge, fontWeight = if (chosen) FontWeight.Bold else FontWeight.Medium, color = ur.text)
             detail?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = ur.muted) }
         }
         if (chosen) Icon(Icons.Outlined.Check, null, Modifier.padding(end = 8.dp), tint = ur.accent)
@@ -758,7 +758,7 @@ internal fun UnassignedSheet(budget: JSONObject, summary: JSONObject, month: Str
             }
             SectionTitle(stringResource(R.string.quick_assign))
             quickAssignModes.groupBy { it.group }.forEach { (group, modes) ->
-                Text(stringResource(group).uppercase(), Modifier.padding(start = 4.dp), style = MaterialTheme.typography.labelSmall, color = ur.muted, letterSpacing = .6.sp)
+                Text(stringResource(group).uppercase(), Modifier.padding(start = 4.dp), style = MaterialTheme.typography.labelSmall, color = ur.muted, letterSpacing = headerTracking)
                 ListCard {
                     modes.forEachIndexed { index, mode ->
                         val outcome = outcomes[mode.id]

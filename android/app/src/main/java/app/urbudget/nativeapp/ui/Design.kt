@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import app.urbudget.nativeapp.Money
 import app.urbudget.nativeapp.R
 
 /** The phone's side margin (the desktop's `--gutter` on phones). */
@@ -87,7 +88,7 @@ internal fun SheetHeader(title: String, onCancel: (() -> Unit)?, confirm: String
             onBack != null -> IconButton(onBack, Modifier.align(Alignment.CenterStart)) { Icon(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, stringResource(R.string.common_back), tint = ur.accent) }
             onCancel != null && (confirm != null || cancelFirst) -> TextButton(onCancel, Modifier.align(Alignment.CenterStart)) { Text(stringResource(R.string.common_cancel), color = ur.accent, fontWeight = FontWeight.Normal) }
         }
-        Text(title, Modifier.align(Alignment.Center).padding(horizontal = 96.dp), style = MaterialTheme.typography.titleMedium, color = ur.text,
+        Text(Money.own(title), Modifier.align(Alignment.Center).padding(horizontal = 96.dp), style = MaterialTheme.typography.titleMedium, color = ur.text,
             maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center)
         if (confirm != null && onConfirm != null) TextButton(onConfirm, Modifier.align(Alignment.CenterEnd), enabled = enabled) {
             Text(confirm, color = if (enabled) ur.accent else ur.muted, fontWeight = FontWeight.Bold)
@@ -144,7 +145,7 @@ internal fun PhoneTopBar(title: String? = null, subtitle: String? = null, onBack
             if (onBack != null) RoundIconButton(Icons.AutoMirrored.Outlined.KeyboardArrowLeft, stringResource(R.string.common_back), onBack)
             leading?.invoke()
             if (center == null && title != null) Column(Modifier.padding(start = if (onBack == null && leading == null) 4.dp else 2.dp)) {
-                Text(title, style = if (onBack == null) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineSmall,
+                Text(Money.own(title), style = if (onBack == null) MaterialTheme.typography.headlineLarge else MaterialTheme.typography.headlineSmall,
                     color = ur.text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = ur.muted, maxLines = 1) }
             }
@@ -226,7 +227,8 @@ internal fun ListRow(title: String, modifier: Modifier = Modifier, subtitle: Str
                 Spacer(Modifier.width(14.dp))
             }
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = titleColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                // A name the person gave (an account, a payee) keeps its own direction in Arabic.
+                Text(Money.own(title), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium, color = titleColor, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 subtitle?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = ur.muted, maxLines = 3, overflow = TextOverflow.Ellipsis) }
             }
             if (value != null) Text(value, Modifier.padding(start = 10.dp), style = MaterialTheme.typography.bodyLarge.merge(Tabular), fontWeight = FontWeight.SemiBold, color = valueColor, maxLines = 1)
@@ -276,7 +278,7 @@ internal fun Segmented(options: List<Pair<String, String>>, selected: String, on
 internal fun TagChip(text: String, modifier: Modifier = Modifier, fill: Color = ur.zeroSoft, color: Color = ur.text, icon: ImageVector? = null) {
     Row(modifier.heightIn(min = 26.dp).clip(RoundedCornerShape(8.dp)).background(fill).padding(horizontal = 9.dp), verticalAlignment = Alignment.CenterVertically) {
         if (icon != null) { Icon(icon, null, Modifier.size(14.dp), tint = color); Spacer(Modifier.width(4.dp)) }
-        Text(text, color = color, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(Money.own(text), color = color, fontSize = 14.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -350,7 +352,7 @@ internal fun FlagDot(color: String, modifier: Modifier = Modifier, size: Dp = 12
 @Composable
 internal fun Figure(label: String, value: String, modifier: Modifier = Modifier, color: Color = ur.text, alignEnd: Boolean = false) {
     Column(modifier, horizontalAlignment = if (alignEnd) Alignment.End else Alignment.Start) {
-        Text(label, style = MaterialTheme.typography.bodySmall, color = ur.muted, maxLines = 1)
+        Text(Money.own(label), style = MaterialTheme.typography.bodySmall, color = ur.muted, maxLines = 1)
         Text(value, style = MaterialTheme.typography.titleMedium.merge(Tabular), color = color, maxLines = 1)
     }
 }

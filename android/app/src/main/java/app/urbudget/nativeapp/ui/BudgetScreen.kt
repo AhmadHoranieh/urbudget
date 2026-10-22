@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.urbudget.nativeapp.BudgetViewModel
+import app.urbudget.nativeapp.Money
 import app.urbudget.nativeapp.R
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -347,7 +348,7 @@ private fun GroupBand(name: String, open: Boolean, rows: List<CategoryRowModel>,
             .heightIn(min = 56.dp).padding(start = 8.dp, end = Gutter), verticalAlignment = Alignment.CenterVertically) {
             Icon(if (open) Icons.Outlined.KeyboardArrowDown else Icons.AutoMirrored.Outlined.KeyboardArrowRight, null, Modifier.size(22.dp), tint = ur.text2)
             Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                Text(name, Modifier.weight(1f, fill = false).padding(start = 4.dp), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = ur.text,
+                Text(Money.own(name), Modifier.weight(1f, fill = false).padding(start = 4.dp), fontSize = 17.sp, fontWeight = FontWeight.Bold, color = ur.text,
                     maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 20.sp)
                 if (menu != null) Box {
                     IconButton({ menuOpen = true }, Modifier.size(36.dp)) { Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.group_actions_for, name), Modifier.size(18.dp), tint = ur.muted) }
@@ -387,7 +388,7 @@ private fun CategoryLine(row: CategoryRowModel, assignedWidth: Dp, availableWidt
         Row(Modifier.fillMaxWidth().clickable(onClickLabel = stringResource(R.string.common_open_named, row.name), onClick = open).heightIn(min = 58.dp).padding(start = Gutter, end = Gutter, top = 9.dp, bottom = 9.dp),
             verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f).padding(end = 8.dp), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(row.name, fontSize = 16.sp, fontWeight = FontWeight.Medium, color = ur.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(Money.own(row.name), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = ur.text, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 if (detail != null) Row(verticalAlignment = Alignment.CenterVertically) {
                     if (row.snoozed && row.status != "negative") Icon(Icons.Outlined.Bedtime, null, Modifier.size(12.dp).padding(end = 2.dp), tint = ur.muted)
                     Text(detail, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis, lineHeight = 16.sp,
