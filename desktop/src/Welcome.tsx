@@ -10,13 +10,14 @@ import { demoBudget } from "./demo";
 import { errorText, numberFormatFor } from "./format";
 import { starterCategories } from "./newBudget";
 import { useToast } from "./ui";
-import { t } from "./i18n";
+import { msg, t } from "./i18n";
 import type { Budget, ImportResult, YnabImportRequest } from "./types";
 import "./welcome.css";
 
 /** The currency a first launch's budget is made with (Budget::default in domain.rs). */
 const BUILT_IN_CURRENCY = "SAR";
-const SAMPLE_NAME = "Sample budget";
+/** The sample budget's name: made in the language in use, found by either name. */
+const SAMPLE_NAME = msg("Sample budget");
 
 /** No accounts, categories or transactions: a budget nobody has set up yet. */
 export const isBlank = (b: Budget) => !b.accounts.length && !b.categories.length && !b.transactions.length;
@@ -44,12 +45,12 @@ const writeSetup = (budgetId: string, value: "on" | "off") => {
 
 /** Opens the sample budget, making it (in this budget's currency and formats) the first time. */
 export async function openSample(budget: Budget, budgetId: string, openBudget: (id: string) => Promise<void>) {
-  const existing = (await api.listBudgets()).find((b) => b.name === SAMPLE_NAME && !b.missing);
+  const existing = (await api.listBudgets()).find((b) => (b.name === SAMPLE_NAME || b.name === t(SAMPLE_NAME)) && !b.missing);
   const id =
     existing?.id ??
     (await api.createBudget({
       ...demoBudget(),
-      name: SAMPLE_NAME,
+      name: t(SAMPLE_NAME),
       currency: budget.currency,
       numberFormat: budget.numberFormat,
       dateFormat: budget.dateFormat,

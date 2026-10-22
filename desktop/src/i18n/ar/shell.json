@@ -202,7 +202,7 @@
   "Saving changes…": "جارٍ حفظ التغييرات…",
   "Saving status": "حالة الحفظ",
   "Saving the import…": "جارٍ حفظ الاستيراد…",
-  "Savings (category group)": "الادخار",
+  "Savings (category group)": "المدخرات",
   "Saving…": "جارٍ الحفظ…",
   "Scheduled {amount} to {card} from {account} for {date}.": "جُدولت دفعة {amount} إلى {card} من {account} بتاريخ {date}.",
   "Set a target": "تحديد هدف",
@@ -344,5 +344,6 @@
     "many": "{count} معاملة بانتظار الاعتماد",
     "other": "{count} معاملة بانتظار الاعتماد"
   },
-  "Keep it (budget)": "الإبقاء عليها"
+  "Keep it (budget)": "الإبقاء عليها",
+  "Sample budget": "ميزانية تجريبية"
 }
