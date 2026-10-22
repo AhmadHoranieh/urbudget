@@ -1,3 +1,4 @@
+use crate::t;
 use crate::{domain::*, ledger, workflows};
 use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
@@ -103,7 +104,7 @@ fn code(t: &str) -> Option<(&str, &str)> {
 /// An amount in cents: "1,234.56", "1.234,56", "1 234,56", "(12.34)", "12.34-", "$12.34" or
 /// "12.34 USD". One that could be read two ways, such as "1.234", is refused, never guessed.
 fn money(s: &str, currency: &str) -> Result<i64, String> {
-    let bad = || format!("Invalid amount: {}", s.trim());
+    let bad = || t!("Invalid amount: {amount}", amount = s.trim());
     let mut t = s.trim();
     let mut negative = false;
     if let Some(inner) = t.strip_prefix('(').and_then(|t| t.strip_suffix(')')) {
@@ -129,10 +130,7 @@ fn money(s: &str, currency: &str) -> Result<i64, String> {
         }
         if let Some((c, rest)) = code(t) {
             if c != currency {
-                return Err(format!(
-                    "The amount ‘{}’ is in {c}, but this budget uses {currency}.",
-                    s.trim()
-                ));
+                return Err(t!("The amount ‘{amount}’ is in {code}, but this budget uses {currency}.", amount = s.trim(), code = c, currency));
             }
             t = rest;
         }
@@ -153,10 +151,7 @@ fn money(s: &str, currency: &str) -> Result<i64, String> {
             } else if mark == "," || left.contains(mark) {
                 (t, "", None)
             } else {
-                return Err(format!(
-                    "Cannot tell whether the dot in ‘{}’ separates thousands or cents.",
-                    s.trim()
-                ));
+                return Err(t!("Cannot tell whether the dot in ‘{amount}’ separates thousands or cents.", amount = s.trim()));
             }
         }
     };
@@ -183,13 +178,13 @@ fn money(s: &str, currency: &str) -> Result<i64, String> {
     let whole = groups
         .concat()
         .parse::<i64>()
-        .map_err(|_| "Amount too large")?;
+        .map_err(|_| t!("Amount too large"))?;
     let n = whole
         .checked_mul(100)
         .and_then(|n| n.checked_add(format!("{frac:0<2}").parse::<i64>().ok()?))
-        .ok_or("Amount too large")?;
+        .ok_or_else(|| t!("Amount too large"))?;
     if n > 1_000_000_000_000 {
-        return Err("Amount exceeds supported range".into());
+        return Err(t!("Amount exceeds supported range"));
     }
     Ok(n * sign)
 }
@@ -209,9 +204,7 @@ fn date(s: &str, format: &str) -> Result<String, String> {
             }
         }
     }
-    Err(format!(
-        "Cannot read date ‘{s}’. Select the matching date format."
-    ))
+    Err(t!("Cannot read date ‘{date}’. Select the matching date format.", date = s))
 }
 fn tag(s: &str, name: &str) -> Option<String> {
     let upper = s.to_ascii_uppercase();
@@ -257,15 +250,15 @@ fn parse_file(
 ) -> Result<Vec<BankTransaction>, String> {
     validate(b)?;
     if !b.accounts.iter().any(|a| a.id == account) {
-        return Err("Choose an account.".into());
+        return Err(t!("Choose an account."));
     }
     if content.len() > 20_000_000 {
-        return Err("Import a file smaller than 20 MB.".into());
+        return Err(t!("Import a file smaller than 20 MB."));
     }
     let mut raw = vec![];
     match format {
         "csv" => {
-            let first = content.lines().next().ok_or("Empty file")?;
+            let first = content.lines().next().ok_or_else(|| t!("Empty file"))?;
             let delimiter = if first.contains('\t') {
                 b'\t'
             } else if first.matches(';').count() > first.matches(',').count() {
@@ -310,9 +303,7 @@ fn parse_file(
             // A transaction date beats a posting date, wherever each column is.
             let d = idx(&["date", "transactiondate", "posteddate", "transdate"])
                 .or(idx(&["postingdate", "postdate"]))
-                .ok_or(
-                    "CSV needs Date, Payee/Description, and Amount (or Outflow/Inflow) headers.",
-                )?;
+                .ok_or_else(|| t!("CSV needs Date, Payee/Description, and Amount (or Outflow/Inflow) headers."))?;
             let p = idx(&[
                 "payee",
                 "name",
@@ -337,12 +328,9 @@ fn parse_file(
                     .find(|(s, _)| all.contains(&s.as_str()))
                     .and_then(|(_, c)| c.as_ref())
                 {
-                    return Err(format!(
-                        "The file's amounts are in {code}, but this budget uses {}.",
-                        b.currency
-                    ));
+                    return Err(t!("The file's amounts are in {code}, but this budget uses {currency}.", code, currency = b.currency));
                 }
-                return Err("CSV needs Amount or Outflow/Inflow columns.".into());
+                return Err(t!("CSV needs Amount or Outflow/Inflow columns."));
             }
             for result in reader.records() {
                 let r = result.map_err(|e| e.to_string())?;
@@ -377,20 +365,17 @@ fn parse_file(
         "ofx" | "qfx" => {
             if let Some(currency) = tag(content, "CURDEF") {
                 if currency != b.currency {
-                    return Err(format!(
-                        "File currency {currency} differs from {}.",
-                        b.currency
-                    ));
+                    return Err(t!("File currency {currency} differs from {budget}.", currency, budget = b.currency));
                 }
             }
             let upper = content.to_ascii_uppercase();
             let starts: Vec<_> = upper.match_indices("<STMTTRN>").map(|(i, _)| i).collect();
             for (i, start) in starts.iter().enumerate() {
                 let block = &content[*start..starts.get(i + 1).copied().unwrap_or(content.len())];
-                let d = tag(block, "DTPOSTED").ok_or("Missing OFX posted date")?;
-                let rawdate = d.get(..8).ok_or("Invalid OFX date")?;
+                let d = tag(block, "DTPOSTED").ok_or_else(|| t!("Missing OFX posted date"))?;
+                let rawdate = d.get(..8).ok_or_else(|| t!("Invalid OFX date"))?;
                 let date = NaiveDate::parse_from_str(rawdate, "%Y%m%d")
-                    .map_err(|_| "Invalid OFX posted date")?
+                    .map_err(|_| t!("Invalid OFX posted date"))?
                     .format("%Y-%m-%d")
                     .to_string();
                 raw.push(BankTransaction {
@@ -399,7 +384,7 @@ fn parse_file(
                     payee: tag(block, "NAME").unwrap_or_default(),
                     memo: tag(block, "MEMO").unwrap_or_default(),
                     amount: money(
-                        &tag(block, "TRNAMT").ok_or("Missing OFX amount")?,
+                        &tag(block, "TRNAMT").ok_or_else(|| t!("Missing OFX amount"))?,
                         &b.currency,
                     )?,
                 });
@@ -412,9 +397,7 @@ fn parse_file(
                     if line.starts_with("!Type:")
                         && !matches!(line, "!Type:Bank" | "!Type:CCard" | "!Type:Cash")
                     {
-                        return Err(
-                            "Only bank, cash, and credit-card QIF files are supported.".into()
-                        );
+                        return Err(t!("Only bank, cash, and credit-card QIF files are supported."));
                     }
                     continue;
                 }
@@ -436,13 +419,13 @@ fn parse_file(
                 }
             }
             if !fields.is_empty() {
-                return Err("Incomplete QIF record (missing ^ terminator).".into());
+                return Err(t!("Incomplete QIF record (missing ^ terminator)."));
             }
         }
-        _ => return Err("Choose CSV, OFX, QFX, or QIF.".into()),
+        _ => return Err(t!("Choose CSV, OFX, QFX, or QIF.")),
     }
     if raw.is_empty() || raw.len() > 10000 {
-        return Err("Choose a file containing 1–10,000 transactions.".into());
+        return Err(t!("Choose a file containing 1–10,000 transactions."));
     }
     Ok(raw)
 }
@@ -584,11 +567,11 @@ fn review_each(
     // match index negates transfer amounts or applies its ten-day date window.
     validate(b)?;
     if !b.accounts.iter().any(|a| a.id == account) {
-        return Err("Choose an account.".into());
+        return Err(t!("Choose an account."));
     }
     if raw.iter().any(|t| !valid_date(&t.date)
         || !(-1_000_000_000_000..=1_000_000_000_000).contains(&t.amount)) {
-        return Err("A bank transaction has an invalid date or amount.".into());
+        return Err(t!("A bank transaction has an invalid date or amount."));
     }
     let imported: HashSet<&str> = b
         .transactions
@@ -626,7 +609,7 @@ fn review_each(
         let duplicate = imported.contains(id.as_str());
         let possible_duplicate = !duplicate && (legacy.is_some_and(|id| imported.contains(id.as_str()))
             || group_id.as_ref().is_some_and(|id| imported.contains(id.as_str())));
-        let d = NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|_| "Invalid bank transaction date")?;
+        let d = NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|_| t!("Invalid bank transaction date"))?;
         let mut row = Row {
             id,
             date,
@@ -684,7 +667,7 @@ fn new_transaction(b: &Budget, account: &str, r: &Row) -> Transaction {
 pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budget, String> {
     validate(&b)?;
     if !b.accounts.iter().any(|a| a.id == account) {
-        return Err("Account not found".into());
+        return Err(t!("Account not found"));
     }
     let mut imported = import_ids(&b);
     let matches = Matches::new(&b, account);
@@ -710,7 +693,7 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
         let r = c.row;
         if let Some(id) = &r.import_id {
             if !r.idless || c.action != "new" || !id.starts_with("bank:manual:") || id.len() > 100 || id.len() < 24 {
-                return Err("Preview this file again before importing a separate transaction.".into());
+                return Err(t!("Preview this file again before importing a separate transaction."));
             }
         }
         let identity = r.import_id.as_deref().unwrap_or(&r.id);
@@ -721,35 +704,35 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
             let id = c
                 .match_id
                 .as_ref()
-                .ok_or("Choose the matching transaction")?;
+                .ok_or_else(|| t!("Choose the matching transaction"))?;
             if !used.insert(id.clone()) {
-                return Err("Two imported rows cannot match the same local transaction. Review the selections.".into());
+                return Err(t!("Two imported rows cannot match the same local transaction. Review the selections."));
             }
             let &(index, split) = matches.targets.get(id)
-                .ok_or("Matching transaction changed or was already matched. Preview again.")?;
+                .ok_or_else(|| t!("Matching transaction changed or was already matched. Preview again."))?;
             // A default match from an older preview must not silently consume another
             // payment that was imported meanwhile. Refreshed previews allow explicit matches.
             if matches.previously_matched.contains(id) && !r.previously_matched_candidates.contains(id) {
-                return Err("Matching transaction was imported since this preview. Preview again.".into());
+                return Err(t!("Matching transaction was imported since this preview. Preview again."));
             }
             let t = &mut b.transactions[index];
             let date_a =
-                NaiveDate::parse_from_str(&t.date, "%Y-%m-%d").map_err(|_| "Invalid date")?;
+                NaiveDate::parse_from_str(&t.date, "%Y-%m-%d").map_err(|_| t!("Invalid date"))?;
             let date_b =
-                NaiveDate::parse_from_str(&r.date, "%Y-%m-%d").map_err(|_| "Invalid date")?;
+                NaiveDate::parse_from_str(&r.date, "%Y-%m-%d").map_err(|_| t!("Invalid date"))?;
             if (date_a - date_b).num_days().abs() > 10 {
-                return Err("Matching transaction is more than ten days apart.".into());
+                return Err(t!("Matching transaction is more than ten days apart."));
             }
             if let Some(split) = split {
                 let part = &mut t.splits[split];
                 if ledger::transfer(part) != Some(account) || -part.amount != r.amount {
-                    return Err("Matching account or amount changed. Preview again.".into());
+                    return Err(t!("Matching account or amount changed. Preview again."));
                 }
                 if ledger::status(part) != Cleared::Reconciled {
                     part.extra.insert("transferStatus".into(), json!("cleared"));
                 }
                 part.extra.entry("bankImportIds").or_insert(json!([]))
-                    .as_array_mut().ok_or("Invalid bank identifiers")?.push(json!(r.id));
+                    .as_array_mut().ok_or_else(|| t!("Invalid bank identifiers"))?.push(json!(r.id));
             } else if t.account_id == account && t.amount == r.amount {
                 if t.status != Cleared::Reconciled {
                     t.status = Cleared::Cleared
@@ -759,17 +742,17 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
                     t.transfer_status = Some(Cleared::Cleared)
                 }
             } else {
-                return Err("Matching account or amount changed. Preview again.".into());
+                return Err(t!("Matching account or amount changed. Preview again."));
             }
             if split.is_none() {
                 t.extra.entry("bankImportMatches").or_insert(json!({}))
-                    .as_object_mut().ok_or("Invalid bank matches")?.insert(account.into(), json!(r.id));
+                    .as_object_mut().ok_or_else(|| t!("Invalid bank matches"))?.insert(account.into(), json!(r.id));
             }
             t.extra
                 .entry("bankImportIds")
                 .or_insert(json!([]))
                 .as_array_mut()
-                .ok_or("Invalid bank identifiers")?
+                .ok_or_else(|| t!("Invalid bank identifiers"))?
                 .push(json!(r.id));
             if let Some(group) = &r.group_id {
                 let ids = t.extra.get_mut("bankImportIds").and_then(Value::as_array_mut).expect("checked above");
@@ -809,7 +792,7 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
             }
             b.transactions.push(t);
         } else {
-            return Err("Review every imported row before saving.".into());
+            return Err(t!("Review every imported row before saving."));
         }
         imported.insert(identity.to_owned());
         if let Some(group) = r.group_id { imported.insert(group); }

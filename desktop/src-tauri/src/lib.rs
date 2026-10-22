@@ -18,6 +18,12 @@ use tauri::{Manager, State};
 // draft held here (empty when they match). Commands that change it return a patch.
 pub use urbudget_services::{Database, Library};
 
+/// The language of the engine's messages from now on, "ar" or "en" (docs/LOCALIZATION.md).
+#[tauri::command]
+fn set_language(language: String) {
+    urbudget_services::i18n::set_language(&language);
+}
+
 #[tauri::command(async)]
 fn load_budget(db: State<'_, Database>, legacy_backup_keep: Option<usize>) -> Result<Snapshot, String> {
     let mut store = db.store()?;
@@ -495,6 +501,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            set_language,
             upsert_transaction,
             source_loan_terms,
             preview_bank_file,
