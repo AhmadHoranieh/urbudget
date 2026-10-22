@@ -3,9 +3,10 @@ import UniformTypeIdentifiers
 
 private let bankFormats: [(id: String, label: String)] = [("csv", "CSV"), ("ofx", "OFX"), ("qfx", "QFX"), ("qif", "QIF")]
 private let bankDateOrders: [(id: String, label: String)] = [
-    ("ymd", "Year-month-day (2026-10-31)"), ("dmy", "Day/month/year (31/10/2026)"), ("mdy", "Month/day/year (10/31/2026)"),
+    ("ymd", String(localized: "Year-month-day (2026-10-31)")), ("dmy", String(localized: "Day/month/year (31/10/2026)")),
+    ("mdy", String(localized: "Month/day/year (10/31/2026)")),
 ]
-private let changedAgain = "Your budget changed, so these rows were checked again. Look them over, then import."
+private let changedAgain = String(localized: "Your budget changed, so these rows were checked again. Look them over, then import.")
 
 private enum BankFileRoute: Hashable { case account }
 
@@ -121,7 +122,8 @@ struct BankFileImportView: View {
                     .listRowBackground(Color.clear)
             }
             if accounts.isEmpty {
-                EmptyState(title: "Add an account first", detail: "Imported transactions go into one of your accounts. Add it in Accounts, then import its statement.",
+                EmptyState(title: String(localized: "Add an account first"),
+                           detail: String(localized: "Imported transactions go into one of your accounts. Add it in Accounts, then import its statement."),
                            symbol: "building.columns")
             } else {
                 fileSection
@@ -140,7 +142,7 @@ struct BankFileImportView: View {
     private var fileSection: some View {
         Section {
             NavigationLink(value: BankFileRoute.account) {
-                LabeledContent("Into account", value: accountName.isEmpty ? "Choose" : accountName)
+                LabeledContent("Into account", value: accountName.isEmpty ? String(localized: "Choose") : accountName)
             }
             .disabled(loading)
             Button { picking = true } label: {
@@ -148,9 +150,8 @@ struct BankFileImportView: View {
                     Image(systemName: content == nil ? "doc.badge.plus" : "doc.text")
                         .font(.title3).foregroundStyle(Color.urAccent).frame(width: 30)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(fileName.isEmpty ? "Choose a file" : fileName).foregroundStyle(Color.primary).lineLimit(1)
-                        Text(content == nil ? "CSV, OFX, QFX or QIF" : "\(bankFormats.first { $0.id == format }?.label ?? format) · tap to choose another")
-                            .font(.footnote).foregroundStyle(Color.secondary)
+                        Text(fileName.isEmpty ? String(localized: "Choose a file") : fileName).foregroundStyle(Color.primary).lineLimit(1)
+                        Text(fileDetail).font(.footnote).foregroundStyle(Color.secondary)
                     }
                 }
             }
@@ -159,6 +160,13 @@ struct BankFileImportView: View {
         } footer: {
             Text("CSV files need a header row with Date, Payee (or Description), and either Amount (negative for money out) or Outflow and Inflow. Memo is optional.")
         }
+    }
+
+    /// Under the chosen file: the formats it can be, or the format it's read as.
+    private var fileDetail: String {
+        guard content != nil else { return String(localized: "CSV, OFX, QFX or QIF") }
+        let label = bankFormats.first { $0.id == format }?.label ?? format
+        return String(localized: "\(label) · tap to choose another")
     }
 
     private var readingSection: some View {
@@ -182,10 +190,11 @@ struct BankFileImportView: View {
 
     private func review(_ preview: BankFilePreview) -> some View {
         let counts = BankReview.counts(preview.rows, decisions)
+        let source = fileName.isEmpty ? String(localized: "Statement") : fileName
         return List {
             Section {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(fileName.isEmpty ? "Statement" : fileName) into \(accountName)").font(.headline)
+                    Text("\(source) into \(accountName)").font(.headline)
                     Text(BankReview.countsText(preview.summary)).font(.footnote).foregroundStyle(Color.secondary)
                 }
                 Button("Change file") { leaveReview() }.disabled(saving || loading)
@@ -195,8 +204,8 @@ struct BankFileImportView: View {
             }
             if let error { FormErrorView(message: error) }
             if preview.summary.allIn && signs && !flipSigns {
-                Notice(text: "Every row came out as money in. If these are purchases, the file writes them as positive numbers.",
-                       icon: "arrow.up.arrow.down", action: "Reverse signs") {
+                Notice(text: String(localized: "Every row came out as money in. If these are purchases, the file writes them as positive numbers."),
+                       icon: "arrow.up.arrow.down", action: String(localized: "Reverse signs")) {
                     flipSigns = true
                     runPreview()
                 }
@@ -249,7 +258,7 @@ struct BankFileImportView: View {
         Task {
             do {
                 let file = try await Task.detached(priority: .userInitiated) {
-                    try ImportFiles.read(url, limit: 8 * 1024 * 1024, tooLarge: "Choose a statement smaller than 8 MB.")
+                    try ImportFiles.read(url, limit: 8 * 1024 * 1024, tooLarge: String(localized: "Choose a statement smaller than 8 MB."))
                 }.value
                 let text = await Task.detached(priority: .userInitiated) { ImportFiles.text(file.data) }.value
                 fileName = file.name
@@ -283,8 +292,8 @@ struct BankFileImportView: View {
                                            candidateSets: result["candidateSets"].array)
                 }.value
                 guard current == generation else { return }
-                guard store.revision == revision else { throw AppError("Your budget changed. Preview this statement again.") }
-                guard !rows.isEmpty else { throw AppError("The file has no transactions to import.") }
+                guard store.revision == revision else { throw AppError(String(localized: "Your budget changed. Preview this statement again.")) }
+                guard !rows.isEmpty else { throw AppError(String(localized: "The file has no transactions to import.")) }
                 preview = BankFilePreview(rows: rows, summary: BankReview.summarize(rows), revision: revision)
                 decisions = [:]
                 notice = next
@@ -312,8 +321,8 @@ struct BankFileImportView: View {
                     BankReview.choices(rows, selected, allowIdlessDuplicate: true)
                 }.value
                 try await store.importsCommand("bankApply", ["accountId": .string(accountId), "choices": choices],
-                                               since: preview.revision, stale: "Your budget changed. Preview this statement again.")
-                store.showToast("Imported \(importing) \(importing == 1 ? "transaction" : "transactions"). They're waiting for your approval.", undo: true)
+                                               since: preview.revision, stale: String(localized: "Your budget changed. Preview this statement again."))
+                store.showToast(String(localized: "Imported \(importing) transactions. They're waiting for your approval.", locale: .app), undo: true)
                 dismiss()
             } catch {
                 saving = false

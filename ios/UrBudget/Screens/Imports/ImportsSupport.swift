@@ -15,21 +15,22 @@ enum ImportFiles {
         let size = (try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
         guard size <= limit else { throw AppError(tooLarge) }
         let data: Data
-        do { data = try Data(contentsOf: url) } catch { throw AppError("The selected file could not be opened.") }
+        do { data = try Data(contentsOf: url) } catch { throw AppError(String(localized: "The selected file could not be opened.")) }
         guard data.count <= limit else { throw AppError(tooLarge) }
         return ImportPickedFile(name: url.lastPathComponent, data: data)
     }
 
     /// YNAB's export: at most eight files, 8 MB each and 16 MB together (ynab_files.rs).
     static func readYnab(_ urls: [URL]) throws -> [ImportPickedFile] {
-        guard urls.count <= 8 else { throw AppError("Choose at most 8 export files at once.") }
+        guard urls.count <= 8 else { throw AppError(String(localized: "Choose at most 8 export files at once.")) }
         var total = 0
         return try urls.map { url in
+            let name = url.lastPathComponent
             let file = try read(url, limit: 8 * 1024 * 1024,
-                                tooLarge: "\(url.lastPathComponent) is larger than 8 MB. Use YNAB's token import for larger budgets.")
+                                tooLarge: String(localized: "\(name) is larger than 8 MB. Use YNAB's token import for larger budgets."))
             total += file.data.count
             guard total <= 16 * 1024 * 1024 else {
-                throw AppError("These export files total more than 16 MB. Use YNAB's token import for larger budgets.")
+                throw AppError(String(localized: "These export files total more than 16 MB. Use YNAB's token import for larger budgets."))
             }
             return file
         }
@@ -40,6 +41,16 @@ enum ImportFiles {
         let bom = Data([0xEF, 0xBB, 0xBF])
         let body = data.starts(with: bom) ? data.dropFirst(3) : data
         return String(data: body, encoding: .utf8) ?? String(data: body, encoding: .windowsCP1252) ?? String(decoding: body, as: UTF8.self)
+    }
+}
+
+/// Text the import and sync screens put together.
+enum ImportsText {
+    /// Parts of a detail line, joined with " · ". In Arabic the line reads right to left and each
+    /// part keeps its own direction (a date, a payee in Latin letters); English is joined as it is.
+    static func line(_ parts: [String]) -> String {
+        guard AppLanguage.isRightToLeft else { return parts.joined(separator: " · ") }
+        return "\u{200F}" + parts.map { "\u{2068}" + $0 + "\u{2069}" }.joined(separator: " · ")
     }
 }
 
@@ -81,7 +92,7 @@ enum ImportsEngine {
             }
         }
         let value = try JSON.parse(reply)
-        guard value["ok"].bool else { throw AppError(value.text("error", "The shared engine couldn't read these files.")) }
+        guard value["ok"].bool else { throw AppError(value.text("error", String(localized: "The shared engine couldn't read these files."))) }
         return value["value"]
     }
 }
