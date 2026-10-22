@@ -22,7 +22,30 @@ anything open; a restart is acceptable only where the platform requires one.
 
 Arabic lays the whole interface out right to left. Amounts, dates, account numbers, emails, URLs
 and user-entered names keep their own direction inside it (bidi isolation), so `-1,234.56`
-or `john@example.com` never come out scrambled.
+or `john@example.com` never come out scrambled. The three apps also agree on these:
+
+- **Digits:** always Western 0–9, including counts the interface formats itself (on Android, an
+  `ar` locale with the `latn` numbering system).
+- **Month and weekday names:** shown in Arabic in the app's own headers, pickers and sentences.
+  The budget's chosen date format (`dd/MM/yyyy`, `15 Oct 2026`…) stays as configured, because it
+  is a setting that is also read back when typed.
+- **Charts:** report and loan charts, the spending calendar and small bars run left to right,
+  time included. Amount columns stay right-aligned so decimals line up.
+- **Keypad and icons:** the amount keypad keeps its 7-8-9 order. Directional icons (chevrons,
+  arrows, back, undo/redo) mirror.
+- **Unknown counts:** where a number arrives already formatted and can't pick a plural form,
+  write "label: number" («المعاملات: 1,005»), never a noun after the number.
+
+Where the catalogs are:
+
+- desktop: `desktop/src/i18n/ar.ts`, with `t()` and `tn()` in `desktop/src/i18n/index.ts`;
+- Android: `android/app/src/main/res/values-ar/strings.xml`;
+- iOS: `ios/UrBudget/Localizable.xcstrings`, `InfoPlist.xcstrings` and `AppShortcuts.xcstrings`,
+  checked by `ios/scripts/check-translations.mjs`;
+- engine: `crates/urbudget-core/src/i18n/arabic.rs`, which also covers `desktop/src-tauri`.
+
+Each has a test that fails when an English string lacks its Arabic, placeholders differ, or a
+plural misses one of Arabic's forms.
 
 ## The shared engine
 
@@ -155,3 +178,47 @@ Use these everywhere. If a term you need isn't here, choose one, use it consiste
 | retry; continue; open; search | إعادة المحاولة؛ متابعة؛ فتح؛ بحث | |
 | month; previous month; next month | الشهر؛ الشهر السابق؛ الشهر التالي | |
 | language; System | اللغة؛ لغة النظام | |
+
+### Terms the apps settled on
+
+| English | Arabic | Notes |
+| --- | --- | --- |
+| set aside | تجنيب؛ المُجنَّب | |
+| carried over | المُرحَّل | |
+| refill up to | إعادة التعبئة حتى | target type |
+| balance target | الرصيد المستهدف | |
+| funded; fully spent | مموَّلة؛ أُنفقت بالكامل | |
+| expected income | الدخل المتوقع | |
+| month note | ملاحظة الشهر | |
+| money move | عملية نقل | the log: حركات المال |
+| views (budget filters) | طرق العرض | |
+| getting started | البدء | |
+| sample budget; starter categories | ميزانية تجريبية؛ فئات جاهزة | |
+| calculation; calculate | الاحتساب؛ احتساب | never حساب, which is an account |
+| conflict | تعارض | |
+| recovery draft | مسودة الاستعادة | |
+| cloud copy | النسخة السحابية | |
+| sync states | في السحابة، هذا الجهاز فقط، بحاجة إلى مراجعة، متزامنة، رُفعت، نُزّلت، دُمجت | |
+| due; paused; finished (schedules) | مستحقة؛ متوقفة مؤقتًا؛ منتهية | |
+| owed (still to pay) | المتبقي | |
+| principal; escrow; fees | أصل الدين؛ حساب الضمان؛ الرسوم | |
+| loan planner; payoff planner | مخطط القروض؛ مخطط السداد | |
+| line of credit; mortgage; receivable | خط ائتمان؛ رهن عقاري؛ مستحقات | |
+| working balance | الرصيد الإجمالي | |
+| duplicate | إنشاء نسخة | |
+| filters | عوامل التصفية | |
+| import rule | قاعدة استيراد | |
+| split line | بند | |
+| balance sheet; statement (report view) | المركز المالي؛ القائمة المالية | |
+| net flow; running total; trend | صافي التدفق؛ المجموع التراكمي؛ الاتجاه | |
+| cash on hand | النقد المتاح | |
+| custom range | فترة مخصّصة | |
+| match; preview; row | مطابقة؛ معاينة؛ صف | |
+| YNAB plan | خطة | |
+| setup token; access token | رمز الإعداد؛ رمز الوصول | |
+| credential store; Keychain | مخزن بيانات الاعتماد؛ سلسلة المفاتيح | |
+| proposal; conversation; attachment | الاقتراح؛ المحادثة؛ المرفق | assistant |
+| provider; model; API key | المزوّد؛ النموذج؛ مفتاح API | |
+| report a reply | الإبلاغ | |
+| theme; light; dark; System (theme) | السمة؛ فاتح؛ داكن؛ النظام | |
+| inspector | لوحة التفاصيل | desktop |

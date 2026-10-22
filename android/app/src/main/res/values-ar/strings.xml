@@ -382,7 +382,7 @@
     </plurals>
     <string name="bulk_change">التغيير</string>
     <string name="bulk_cleared_status">حالة المقاصّة</string>
-    <string name="bulk_duplicate">نسخ</string>
+    <string name="bulk_duplicate">إنشاء نسخة</string>
     <string name="bulk_duplicate_help">ينشئ نسخة من كل معاملة محددة.</string>
     <string name="bulk_delete_confirm">حذف المعاملات المحددة وطرفي كل تحويل</string>
 
@@ -496,7 +496,7 @@
     <string name="move_to_title">النقل إلى</string>
     <string name="cover_overspending">تغطية الإنفاق الزائد</string>
     <string name="target_kind_set_aside">تجنيب</string>
-    <string name="target_kind_refill">إكمال حتى</string>
+    <string name="target_kind_refill">إعادة التعبئة حتى</string>
     <string name="target_kind_balance">هدف رصيد</string>
     <string name="target_kind_debt">هدف سداد قرض</string>
     <string name="target_kind_monthly_funding">تمويل شهري</string>
@@ -581,7 +581,7 @@
     <string name="target_remove">حذف الهدف</string>
     <string name="target_behaviour_set">تجنيب مبلغ كل فترة</string>
     <string name="target_behaviour_set_hint">خصِّص المبلغ كاملًا كل فترة، مهما تبقّى من قبل.</string>
-    <string name="target_behaviour_refill">الإكمال حتى المبلغ كل فترة</string>
+    <string name="target_behaviour_refill">إعادة التعبئة حتى المبلغ كل فترة</string>
     <string name="target_behaviour_refill_hint">أكمِل حتى المبلغ؛ ويُحتسب المال المُرحَّل.</string>
     <string name="target_behaviour_balance">الحفاظ على رصيد للفئة</string>
     <string name="target_behaviour_balance_hint">أبقِ هذا المبلغ على الأقل متاحًا.</string>
@@ -1282,7 +1282,7 @@
         <item quantity="many">جدول الدفعات مع التغييرات · \u2068%1$s\u2069 دفعة</item>
         <item quantity="other">جدول الدفعات مع التغييرات · \u2068%1$s\u2069 دفعة</item>
     </plurals>
-    <string name="loan_fee_escrow">الضمان</string>
+    <string name="loan_fee_escrow">حساب الضمان</string>
     <string name="loan_fee_fees">الرسوم</string>
     <string name="loan_title_named">القرض · \u2068%1$s\u2069</string>
     <string name="loan_title">مخطط سداد القرض</string>

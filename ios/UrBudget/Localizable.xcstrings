@@ -16321,7 +16321,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "التعبئة حتى المبلغ كل شهر"
+            "value" : "إعادة التعبئة حتى المبلغ كل شهر"
           }
         }
       }
@@ -16331,7 +16331,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "التعبئة حتى المبلغ في كل فترة"
+            "value" : "إعادة التعبئة حتى المبلغ في كل فترة"
           }
         }
       }
@@ -16341,7 +16341,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "التعبئة حتى المبلغ كل أسبوع"
+            "value" : "إعادة التعبئة حتى المبلغ كل أسبوع"
           }
         }
       }
@@ -16351,7 +16351,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "التعبئة حتى المبلغ كل سنة"
+            "value" : "إعادة التعبئة حتى المبلغ كل سنة"
           }
         }
       }
@@ -16364,37 +16364,37 @@
               "zero" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld شهر"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld شهر"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل شهر"
+                  "value" : "إعادة التعبئة حتى المبلغ كل شهر"
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل شهرين"
+                  "value" : "إعادة التعبئة حتى المبلغ كل شهرين"
                 }
               },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld أشهر"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld أشهر"
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld شهرًا"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld شهرًا"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld شهر"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld شهر"
                 }
               }
             }
@@ -16428,37 +16428,37 @@
               "zero" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld أسبوع"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld أسبوع"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل أسبوع"
+                  "value" : "إعادة التعبئة حتى المبلغ كل أسبوع"
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل أسبوعين"
+                  "value" : "إعادة التعبئة حتى المبلغ كل أسبوعين"
                 }
               },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld أسابيع"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld أسابيع"
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld أسبوعًا"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld أسبوعًا"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld أسبوع"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld أسبوع"
                 }
               }
             }
@@ -16492,37 +16492,37 @@
               "zero" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld سنة"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld سنة"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل سنة"
+                  "value" : "إعادة التعبئة حتى المبلغ كل سنة"
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل سنتين"
+                  "value" : "إعادة التعبئة حتى المبلغ كل سنتين"
                 }
               },
               "few" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld سنوات"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld سنوات"
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld سنة"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld سنة"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "التعبئة حتى المبلغ كل %lld سنة"
+                  "value" : "إعادة التعبئة حتى المبلغ كل %lld سنة"
                 }
               }
             }
@@ -16553,7 +16553,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "التعبئة حتى المبلغ كل سنتين"
+            "value" : "إعادة التعبئة حتى المبلغ كل سنتين"
           }
         }
       }
@@ -16563,7 +16563,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "التعبئة حتى المبلغ مرة واحدة بحلول ⁨%@⁩"
+            "value" : "إعادة التعبئة حتى المبلغ مرة واحدة بحلول ⁨%@⁩"
           }
         }
       }
