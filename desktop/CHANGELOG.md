@@ -138,5 +138,5 @@ Also
 - Quick Assign's Underfunded now funds "maintain a balance" targets.
 - Notifications are easier to read in dark mode.
 
-[Unreleased]: https://github.com/AhmadHoranieh/urbudget/compare/desktop-v1.0.8...HEAD
-[1.0.8]: https://github.com/AhmadHoranieh/urbudget/releases/tag/desktop-v1.0.8
+[Unreleased]: https://github.com/urbudget/urbudget/compare/desktop-v1.0.8...HEAD
+[1.0.8]: https://github.com/urbudget/urbudget/releases/tag/desktop-v1.0.8

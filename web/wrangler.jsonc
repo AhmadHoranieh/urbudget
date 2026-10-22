@@ -46,7 +46,7 @@
     // Who may use it is the ADMIN_EMAILS secret (below), not a var, so no address is in the repository.
     // Whose GitHub releases' download counts the admin page shows. The repository is public; the
     // optional GITHUB_TOKEN secret keeps GitHub's shared per-address rate limit out of the way.
-    "GITHUB_REPO": "AhmadHoranieh/urbudget"
+    "GITHUB_REPO": "urbudget/urbudget"
   }
   // Secrets (npx wrangler secret put NAME, or wrangler secret bulk):
   //   POLAR_ACCESS_TOKEN      Polar organization access token
