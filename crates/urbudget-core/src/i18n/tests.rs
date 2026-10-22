@@ -133,6 +133,11 @@ fn sources() -> Vec<PathBuf> {
             walk(&src, &mut out);
         }
     }
+    // The desktop app's own commands use the same table.
+    let desktop = crates.parent().unwrap().join("desktop").join("src-tauri").join("src");
+    if desktop.is_dir() {
+        walk(&desktop, &mut out);
+    }
     out
 }
 

@@ -45,8 +45,9 @@ fn packaged() -> Result<bool, String> {
     match unsafe { GetCurrentPackageFullName(&mut length, std::ptr::null_mut()) } {
         APPMODEL_ERROR_NO_PACKAGE => Ok(false),
         ERROR_INSUFFICIENT_BUFFER | ERROR_SUCCESS => Ok(true),
-        code => Err(format!(
-            "Couldn't identify this app's update channel (Windows error {code})."
+        code => Err(urbudget_services::t!(
+            "Couldn't identify this app's update channel (Windows error {code}).",
+            code
         )),
     }
 }
@@ -64,7 +65,7 @@ pub async fn check_store_update(window: tauri::WebviewWindow) -> Result<bool, St
     #[cfg(not(windows))]
     {
         let _ = window;
-        Err("Microsoft Store updates are only available on Windows.".into())
+        Err(urbudget_services::i18n::tr("Microsoft Store updates are only available on Windows.").into())
     }
 }
 
@@ -77,7 +78,7 @@ pub async fn install_store_update(window: tauri::WebviewWindow) -> Result<bool, 
     #[cfg(not(windows))]
     {
         let _ = window;
-        Err("Microsoft Store updates are only available on Windows.".into())
+        Err(urbudget_services::i18n::tr("Microsoft Store updates are only available on Windows.").into())
     }
 }
 
@@ -93,7 +94,7 @@ pub async fn download_store_update(window: tauri::WebviewWindow) -> Result<&'sta
     #[cfg(not(windows))]
     {
         let _ = window;
-        Err("Microsoft Store updates are only available on Windows.".into())
+        Err(urbudget_services::i18n::tr("Microsoft Store updates are only available on Windows.").into())
     }
 }
 
@@ -108,7 +109,7 @@ pub async fn apply_store_update(window: tauri::WebviewWindow, relaunch: bool) ->
     #[cfg(not(windows))]
     {
         let _ = (window, relaunch);
-        Err("Microsoft Store updates are only available on Windows.".into())
+        Err(urbudget_services::i18n::tr("Microsoft Store updates are only available on Windows.").into())
     }
 }
 
@@ -132,7 +133,7 @@ pub fn open_update_store() -> Result<(), String> {
         };
         if result.0 as isize <= 32 {
             return Err(
-                "Couldn't open Microsoft Store. Open it from the Start menu and find UrBudget."
+                urbudget_services::i18n::tr("Couldn't open Microsoft Store. Open it from the Start menu and find UrBudget.")
                     .into(),
             );
         }
@@ -140,7 +141,7 @@ pub fn open_update_store() -> Result<(), String> {
     }
     #[cfg(not(windows))]
     {
-        Err("Microsoft Store is only available on Windows.".into())
+        Err(urbudget_services::i18n::tr("Microsoft Store is only available on Windows.").into())
     }
 }
 
@@ -162,11 +163,11 @@ mod microsoft {
     impl Operation {
         fn start() -> Result<Self, String> {
             if !packaged()? {
-                return Err("This copy wasn't installed through Microsoft Store.".into());
+                return Err(urbudget_services::i18n::tr("This copy wasn't installed through Microsoft Store.").into());
             }
             BUSY.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
                 .map_err(|_| {
-                    "A Microsoft Store update operation is already running.".to_string()
+                    urbudget_services::i18n::tr("A Microsoft Store update operation is already running.").to_string()
                 })?;
             Ok(Self)
         }
@@ -177,7 +178,10 @@ mod microsoft {
         }
     }
     fn store_error(error: impl std::fmt::Display) -> String {
-        format!("Microsoft Store couldn't complete the update request: {error}. Try again, or open Microsoft Store.")
+        urbudget_services::t!(
+            "Microsoft Store couldn't complete the update request: {error}. Try again, or open Microsoft Store.",
+            error
+        )
     }
 
     // Store APIs must be started on the UI thread, with an owner HWND. Awaiting the
@@ -202,7 +206,7 @@ mod microsoft {
             })
             .map_err(store_error)?;
         receive.await.map_err(|_| {
-            "The app window closed before Microsoft Store could respond.".to_string()
+            urbudget_services::i18n::tr("The app window closed before Microsoft Store could respond.").to_string()
         })?
     }
 
@@ -217,7 +221,7 @@ mod microsoft {
             Err(_) => {
                 let _ = request.Cancel();
                 Err(
-                    "Microsoft Store took too long to check. Try again, or open Microsoft Store."
+                    urbudget_services::i18n::tr("Microsoft Store took too long to check. Try again, or open Microsoft Store.")
                         .into(),
                 )
             }
@@ -243,7 +247,7 @@ mod microsoft {
             Err(_) => {
                 let _ = request.Cancel();
                 Err(
-                    "Microsoft Store took too long to check. Try again, or open Microsoft Store."
+                    urbudget_services::i18n::tr("Microsoft Store took too long to check. Try again, or open Microsoft Store.")
                         .into(),
                 )
             }
@@ -313,7 +317,7 @@ mod microsoft {
         .await?;
         let Some(request) = request else {
             reopen_after_update(false);
-            return Err("Windows needs your permission to install this update. Use Install Store update in Settings.".into());
+            return Err(urbudget_services::i18n::tr("Windows needs your permission to install this update. Use Install Store update in Settings.").into());
         };
         let result = request.await.map_err(store_error);
         let state = result.and_then(|result| result.OverallState().map_err(store_error));
@@ -354,17 +358,17 @@ mod microsoft {
         match state {
             StorePackageUpdateState::Completed => Ok(()),
             StorePackageUpdateState::Canceled => {
-                Err("The Microsoft Store update was canceled. You can try again.".into())
+                Err(urbudget_services::i18n::tr("The Microsoft Store update was canceled. You can try again.").into())
             }
             StorePackageUpdateState::ErrorLowBattery => {
-                Err("Connect this computer to power, then try the update again.".into())
+                Err(urbudget_services::i18n::tr("Connect this computer to power, then try the update again.").into())
             }
             StorePackageUpdateState::ErrorWiFiRecommended
             | StorePackageUpdateState::ErrorWiFiRequired => {
-                Err("Connect to Wi-Fi, then try the update again, or open Microsoft Store.".into())
+                Err(urbudget_services::i18n::tr("Connect to Wi-Fi, then try the update again, or open Microsoft Store.").into())
             }
             _ => Err(
-                "Microsoft Store hasn't installed the update. Try again, or open Microsoft Store."
+                urbudget_services::i18n::tr("Microsoft Store hasn't installed the update. Try again, or open Microsoft Store.")
                     .into(),
             ),
         }

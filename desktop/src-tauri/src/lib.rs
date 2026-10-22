@@ -133,7 +133,7 @@ fn prepare_captured_ynab(db: State<'_, Database>, path: String) -> Result<Budget
         .canonicalize()
         .map_err(|e| e.to_string())?;
     if !path.starts_with(directory) {
-        return Err("Choose a downloaded YNAB export.".into());
+        return Err(urbudget_services::t!("Choose a downloaded YNAB export."));
     }
     ynab::import_export(
         &serde_json::from_slice(&std::fs::read(path).map_err(|e| e.to_string())?)
@@ -192,7 +192,7 @@ fn write_export(db: State<'_, Database>, name: String, contents: String) -> Resu
         && !name.starts_with('.')
         && name.chars().all(|c| c.is_ascii_alphanumeric() || " ._-".contains(c));
     if !plain {
-        return Err("Choose a plain .csv file name.".into());
+        return Err(urbudget_services::t!("Choose a plain .csv file name."));
     }
     let directory = db.store()?.folder().join("exports");
     std::fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
@@ -456,9 +456,9 @@ fn reveal_path(library: State<'_, Library>, path: String) -> Result<(), String> 
         .map_err(|e| e.to_string())?;
     let target = std::path::PathBuf::from(&path)
         .canonicalize()
-        .map_err(|_| "That file no longer exists.".to_string())?;
+        .map_err(|_| urbudget_services::t!("That file no longer exists."))?;
     if !target.starts_with(&root) {
-        return Err("Only files in the app's data folder can be shown.".into());
+        return Err(urbudget_services::t!("Only files in the app's data folder can be shown."));
     }
     let shown = if cfg!(target_os = "windows") {
         // canonicalize returns a verbatim `\\?\` path, which Explorer does not accept.
