@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Check, Eye, FileDown, FileSpreadsheet, LoaderCircle, RefreshCw, TriangleAlert, Undo2 } from "lucide-react";
 import { money } from "../format";
 import type { CardRow, Proposal } from "./api";
+import { ltr, t, tn } from "../i18n";
 
-const signed = (n: number) => (n > 0 ? `+${money(n)}` : money(n));
+// The sign stays with the amount in Arabic too.
+const signed = (n: number) => (n > 0 ? ltr(`+${money(n)}`) : money(n));
 
 function Row({ row, budget }: { row: CardRow; budget: boolean }) {
   return (
@@ -20,7 +22,7 @@ function Row({ row, budget }: { row: CardRow; budget: boolean }) {
       )}
       {row.before !== undefined && row.after !== undefined && (
         <span className="num muted proposal-change">
-          {money(row.before)} → {money(row.after)}
+          {ltr(`${money(row.before)} → ${money(row.after)}`)}
         </span>
       )}
     </div>
@@ -67,21 +69,24 @@ export function ProposalCard({
   };
   const c = p.card;
   if (p.status === "applied" || p.status === "discarded" || p.status === "undone") {
-    const label = p.status === "applied" ? "Applied" : p.status === "undone" ? "Undone" : "Discarded";
+    const label =
+      p.status === "applied"
+        ? t("Applied: {title}", { title: p.title })
+        : p.status === "undone"
+          ? t("Undone: {title}", { title: p.title })
+          : t("Discarded: {title}", { title: p.title });
     return (
       <div className={`proposal done ${p.status}`}>
         {p.status === "applied" ? <Check size={14} aria-hidden /> : <Undo2 size={14} aria-hidden />}
-        <span>
-          {label}: {p.title}
-        </span>
+        <span>{label}</span>
         {p.status === "applied" && canUndo && (
           <button className="secondary small" disabled={busy} onClick={run(onUndo)}>
-            Undo
+            {t("Undo")}
           </button>
         )}
         {p.status === "undone" && (
           <button className="secondary small" disabled={busy} onClick={run(onApply)}>
-            Apply again
+            {t("Apply again")}
           </button>
         )}
       </div>
@@ -90,7 +95,7 @@ export function ProposalCard({
   const isImport = p.kind === "import";
   const isBudget = p.kind === "budget";
   return (
-    <div className={`proposal${p.status === "failed" ? " failed" : ""}`} aria-label={`Proposal: ${p.title}`}>
+    <div className={`proposal${p.status === "failed" ? " failed" : ""}`} aria-label={t("Proposal: {title}", { title: p.title })}>
       <div className="proposal-head">
         <span className="proposal-kicker">{c.kicker}</span>
         <strong>{p.title}</strong>
@@ -108,7 +113,7 @@ export function ProposalCard({
       {c.rows.map((row, i) => (
         <Row key={i} row={row} budget={isBudget} />
       ))}
-      {c.more > 0 && <div className="proposal-more">and {c.more} more</div>}
+      {c.more > 0 && <div className="proposal-more">{tn(c.more, "and {count} more", "and {count} more")}</div>}
       {c.total && (
         <div className="proposal-total">
           <Row row={c.total} budget={isBudget} />
@@ -130,64 +135,64 @@ export function ProposalCard({
       <div className="proposal-actions">
         {p.status === "failed" ? (
           <button className="secondary small" disabled={busy} onClick={run(onDiscard)}>
-            Dismiss
+            {t("Dismiss")}
           </button>
         ) : p.kind === "report" ? (
           <>
             <button className="primary small" disabled={busy} onClick={onPreview}>
-              <Eye size={13} aria-hidden /> Preview
+              <Eye size={13} aria-hidden /> {t("Preview")}
             </button>
             <button className="secondary small" disabled={busy} onClick={onPrint && run(onPrint)}>
-              <FileDown size={13} aria-hidden /> Save as PDF
+              <FileDown size={13} aria-hidden /> {t("Save as PDF")}
             </button>
             {p.sheets > 0 && onSheet && (
               <button
                 className="secondary small"
                 disabled={busy}
-                title={`Each table on its own sheet (${p.sheets})`}
+                title={t("Each table on its own sheet ({count})", { count: p.sheets })}
                 onClick={run(() => onSheet(false))}
               >
                 <FileSpreadsheet size={13} aria-hidden /> Excel
               </button>
             )}
             <button className="link-button" disabled={busy} onClick={run(onDiscard)}>
-              Discard
+              {t("Discard")}
             </button>
           </>
         ) : p.kind === "spreadsheet" ? (
           <>
             <button className="primary small" disabled={busy || !onSheet} onClick={onSheet && run(() => onSheet(true))}>
-              {busy ? <LoaderCircle size={13} className="spin" aria-hidden /> : <FileSpreadsheet size={13} aria-hidden />} Open
+              {busy ? <LoaderCircle size={13} className="spin" aria-hidden /> : <FileSpreadsheet size={13} aria-hidden />} {t("Open")}
             </button>
             <button className="secondary small" disabled={busy || !onSheet} onClick={onSheet && run(() => onSheet(false))}>
-              <FileDown size={13} aria-hidden /> Save
+              <FileDown size={13} aria-hidden /> {t("Save")}
             </button>
             <button className="link-button" disabled={busy} onClick={run(onDiscard)}>
-              Discard
+              {t("Discard")}
             </button>
           </>
         ) : isImport ? (
           <>
             <button className="primary small" disabled={busy} onClick={onReview}>
-              Review import
+              {t("Review import")}
             </button>
             <button className="secondary small" disabled={busy} onClick={run(onSave)}>
-              <FileDown size={13} aria-hidden /> Save as CSV
+              <FileDown size={13} aria-hidden /> {t("Save as CSV")}
             </button>
             <button className="link-button" disabled={busy} onClick={run(onDiscard)}>
-              Discard
+              {t("Discard")}
             </button>
           </>
         ) : (
           <>
             <button className="primary small" disabled={busy} onClick={run(onApply)}>
               {busy ? <LoaderCircle size={13} className="spin" aria-hidden /> : p.problem ? <RefreshCw size={13} aria-hidden /> : null}
-              Apply
+              {t("Apply")}
             </button>
             <button className="secondary small" disabled={busy} onClick={run(onDiscard)}>
-              Discard
+              {t("Discard")}
             </button>
-            <span className="proposal-hint">One undo step</span>
+            <span className="proposal-hint">{t("One undo step")}</span>
           </>
         )}
       </div>

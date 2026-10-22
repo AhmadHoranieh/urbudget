@@ -1,19 +1,21 @@
 import { Download, LoaderCircle, RefreshCw } from "lucide-react";
 import type { Updates } from "./updates";
+import { t } from "./i18n";
 
-const percent = (share: number | null) =>
-  share === null ? "" : ` ${Math.round(share * 100)}%`;
+/** "Downloading 42%", or just "Downloading" before the size is known. */
+const downloading = (share: number | null) =>
+  share === null ? t("Downloading") : t("Downloading {percent}%", { percent: Math.round(share * 100) });
 
 /** What's waiting: a version from the update server, or the Store's update (no version known). */
 function headline({ available, ready }: Updates) {
   if (!available) return "";
   if (available.version)
     return ready
-      ? `Version ${available.version} is ready to install`
-      : `Update available: version ${available.version}`;
+      ? t("Version {version} is ready to install", { version: available.version })
+      : t("Update available: version {version}", { version: available.version });
   return ready
-    ? "Update ready from Microsoft Store"
-    : "Update available from Microsoft Store";
+    ? t("Update ready from Microsoft Store")
+    : t("Update available from Microsoft Store");
 }
 
 /** In the title bar while a newer version is waiting; opens Settings › General. */
@@ -40,8 +42,8 @@ export function UpdateChip({
       )}
       <span className="header-label">
         {updates.phase === "downloading"
-          ? `Downloading${percent(updates.progress)}`
-          : "Update"}
+          ? downloading(updates.progress)
+          : t("Update")}
       </span>
     </button>
   );
@@ -61,27 +63,39 @@ export function UpdateSetting({
   return (
     <div className="setting-row update-setting">
       <span>
-        <strong>{available ? headline(updates) : "Updates"}</strong>
+        <strong>{available ? headline(updates) : t("Updates")}</strong>
         {available ? (
           <>
             <small className="update-notes">
-              {available.notes ||
-                "Installing saves your budget first, then UrBudget restarts."}
+              {/* The Store's own notes are the app's words (updates.ts); a release's notes stay as written. */}
+              {available.notes
+                ? t(available.notes)
+                : t("Installing saves your budget first, then UrBudget restarts.")}
             </small>
             {updates.ready && (
               <small>
                 {updates.channel === "microsoftStore"
-                  ? "UrBudget installs it when you close it, or after it sits unused for a while, and reopens. Your budget is saved first."
-                  : "UrBudget installs it after it sits unused for a while, and reopens. Your budget is saved first."}
+                  ? t("UrBudget installs it when you close it, or after it sits unused for a while, and reopens. Your budget is saved first.")
+                  : t("UrBudget installs it after it sits unused for a while, and reopens. Your budget is saved first.")}
               </small>
             )}
           </>
         ) : (
           <small>
-            {version && `You have version ${version}. `}
-            {updates.channel === "microsoftStore"
-              ? `${updates.current ? "Microsoft Store reports no updates available for this copy. " : ""}UrBudget checks the Store at launch and daily, downloads updates in the background, and installs them when you close it or leave it unused.`
-              : `${updates.current ? "You're up to date. " : ""}UrBudget looks for updates when it starts and once a day, downloads them in the background, and installs them after it sits unused for a while.`}
+            {[
+              version && t("You have version {version}.", { version }),
+              ...(updates.channel === "microsoftStore"
+                ? [
+                    updates.current && t("Microsoft Store reports no updates available for this copy."),
+                    t("UrBudget checks the Store at launch and daily, downloads updates in the background, and installs them when you close it or leave it unused."),
+                  ]
+                : [
+                    updates.current && t("You're up to date."),
+                    t("UrBudget looks for updates when it starts and once a day, downloads them in the background, and installs them after it sits unused for a while."),
+                  ]),
+            ]
+              .filter(Boolean)
+              .join(" ")}
           </small>
         )}
         {updates.error && <small className="form-error">{updates.error}</small>}
@@ -99,14 +113,14 @@ export function UpdateSetting({
               <LoaderCircle size={14} className="spin" />
             )}
             {phase === "downloading"
-              ? `Downloading${percent(updates.progress)}`
+              ? downloading(updates.progress)
               : phase === "installing"
-                ? "Installing…"
+                ? t("Installing…")
                 : updates.ready
-                  ? "Restart to update"
+                  ? t("Restart to update")
                   : updates.channel === "microsoftStore"
-                    ? "Install Store update"
-                    : "Install & restart"}
+                    ? t("Install Store update")
+                    : t("Install & restart")}
           </button>
         ) : (
           <button
@@ -119,7 +133,7 @@ export function UpdateSetting({
             ) : (
               <RefreshCw size={14} />
             )}
-            {phase === "checking" ? "Checking…" : "Check now"}
+            {phase === "checking" ? t("Checking…") : t("Check now")}
           </button>
         )}
         {updates.channel === "microsoftStore" && (
@@ -128,7 +142,7 @@ export function UpdateSetting({
             disabled={phase !== "idle"}
             onClick={() => void updates.openStore()}
           >
-            Open Microsoft Store
+            {t("Open Microsoft Store")}
           </button>
         )}
       </div>

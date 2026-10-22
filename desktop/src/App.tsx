@@ -46,6 +46,7 @@ import { CardPaymentForm } from "./CardPayment";
 import { getPref, resetLayout } from "./prefs";
 import { TitleBar, customTitleBar } from "./WindowControls";
 import { keyLabel } from "./platform";
+import { getDirection, list, msg, t, tn, useLanguage } from "./i18n";
 import { id, today, type Account, type Budget, type Category, type Transaction } from "./types";
 import type { RegisterFilter } from "./Register";
 import "./shell.css";
@@ -72,24 +73,24 @@ type Dialog =
     }
   | null;
 const syncLabels: Record<SyncState, string> = {
-  loading: "Opening…",
-  saved: "Saved",
-  pending: "Unsaved",
-  saving: "Saving…",
-  conflict: "Changed elsewhere",
-  error: "Couldn't save",
+  loading: msg("Opening…"),
+  saved: msg("Saved"),
+  pending: msg("Unsaved"),
+  saving: msg("Saving…"),
+  conflict: msg("Changed elsewhere"),
+  error: msg("Couldn't save"),
 };
 const titles: Record<Page, string> = {
-  budget: "Budget",
-  transactions: "Transactions",
+  budget: msg("Budget"),
+  transactions: msg("Transactions"),
   // The old Loan planner page, which now opens a loan's register (App).
-  loans: "Loan details",
-  reports: "Reports",
-  payees: "Payees & rules",
-  settings: "Settings & data",
+  loans: msg("Loan details"),
+  reports: msg("Reports"),
+  payees: msg("Payees & rules"),
+  settings: msg("Settings & data"),
 };
 const kindLabel = (a: Account) =>
-  a.kind === "credit" ? "Credit card" : a.kind === "tracking" ? "Tracking account" : "Cash account";
+  a.kind === "credit" ? t("Credit card") : a.kind === "tracking" ? t("Tracking account") : t("Cash account");
 
 /** Recovery must remain reachable when a month or draft cannot be calculated. */
 function CalculationRecovery({ month, currentMonth, changeMonth, model, exportDraft, openBudget, closeEditor }: {
@@ -103,25 +104,25 @@ function CalculationRecovery({ month, currentMonth, changeMonth, model, exportDr
   const navigate = (next: string) => { closeEditor(); changeMonth(next); };
   const fetch = async () => { closeEditor(); await model.fetchDatabase(); setReload(false); };
   return (
-    <section className="calculation-recovery" aria-label="Calculation recovery">
+    <section className="calculation-recovery" aria-label={t("Calculation recovery")}>
       <div className="modal-actions">
-        <button className="secondary" aria-label="Previous month" onClick={() => navigate(shiftMonth(month, -1))}><ChevronLeft size={15} /></button>
-        <MonthPicker value={month} onChange={navigate} text={monthName(month, "short")} label="Choose budget month" />
-        <button className="secondary" aria-label="Next month" onClick={() => navigate(shiftMonth(month, 1))}><ChevronRight size={15} /></button>
-        <button className="secondary" onClick={() => navigate(currentMonth)} disabled={month === currentMonth}>Current month</button>
+        <button className="secondary" aria-label={t("Previous month")} onClick={() => navigate(shiftMonth(month, -1))}><ChevronLeft size={15} /></button>
+        <MonthPicker value={month} onChange={navigate} text={monthName(month, "short")} label={t("Choose budget month")} />
+        <button className="secondary" aria-label={t("Next month")} onClick={() => navigate(shiftMonth(month, 1))}><ChevronRight size={15} /></button>
+        <button className="secondary" onClick={() => navigate(currentMonth)} disabled={month === currentMonth}>{t("Current month")}</button>
       </div>
       <div className="modal-actions">
-        <button className="secondary" disabled={!model.canUndo || busy || model.sync === "conflict"} onClick={() => { closeEditor(); model.undo(); }}>Undo</button>
-        <button className="secondary" disabled={!model.canRedo || busy || model.sync === "conflict"} onClick={() => { closeEditor(); model.redo(); }}>Redo</button>
-        <button className="secondary" onClick={() => void exportDraft()}>Export draft</button>
-        <button className="secondary" disabled={busy} onClick={() => model.dirty() ? setReload(true) : void fetch()}>Reload saved budget</button>
-        <button className="secondary" disabled={busy} onClick={() => setBudgets(true)}>Open another budget</button>
+        <button className="secondary" disabled={!model.canUndo || busy || model.sync === "conflict"} onClick={() => { closeEditor(); model.undo(); }}>{t("Undo")}</button>
+        <button className="secondary" disabled={!model.canRedo || busy || model.sync === "conflict"} onClick={() => { closeEditor(); model.redo(); }}>{t("Redo")}</button>
+        <button className="secondary" onClick={() => void exportDraft()}>{t("Export draft")}</button>
+        <button className="secondary" disabled={busy} onClick={() => model.dirty() ? setReload(true) : void fetch()}>{t("Reload saved budget")}</button>
+        <button className="secondary" disabled={busy} onClick={() => setBudgets(true)}>{t("Open another budget")}</button>
       </div>
-      {reload && <Modal title="Reload from disk?" close={() => setReload(false)}>
-        <p>This replaces your unsaved changes with the saved budget. Export them first if you want to keep both.</p>
+      {reload && <Modal title={t("Reload from disk?")} close={() => setReload(false)}>
+        <p>{t("This replaces your unsaved changes with the saved budget. Export them first if you want to keep both.")}</p>
         <div className="modal-actions">
-          <button className="secondary" onClick={() => setReload(false)}>Cancel</button>
-          <button className="primary" onClick={() => void fetch()}>Discard changes &amp; reload</button>
+          <button className="secondary" onClick={() => setReload(false)}>{t("Cancel")}</button>
+          <button className="primary" onClick={() => void fetch()}>{t("Discard changes & reload")}</button>
         </div>
       </Modal>}
       {budgets && <ManageBudgetsDialog close={() => setBudgets(false)} open={openBudget} />}
@@ -162,23 +163,23 @@ function SyncStatus({
         ref={button}
         className={`sync-status ${sync}`}
         aria-expanded={open}
-        title="Saving status"
+        title={t("Saving status")}
         onClick={() => setOpen(!open)}
       >
         {sync === "saving" ? <LoaderCircle size={13} className="spin" /> : <span className="dot" />}
-        <span className="header-label">{syncLabels[sync]}</span>
+        <span className="header-label">{t(syncLabels[sync])}</span>
       </button>
       <Menu
         open={open}
         onClose={() => setOpen(false)}
         anchor={button}
         placement="bottom-end"
-        label="Saving"
+        label={t("Saving")}
         items={[
-          { label: "Save now", icon: <Check size={14} />, hint: keyLabel("Ctrl+S"), disabled: sync === "conflict", onSelect: onSave },
-          { label: "Reload from disk", icon: <RefreshCw size={14} />, onSelect: onReload },
+          { label: t("Save now"), icon: <Check size={14} />, hint: keyLabel("Ctrl+S"), disabled: sync === "conflict", onSelect: onSave },
+          { label: t("Reload from disk"), icon: <RefreshCw size={14} />, onSelect: onReload },
           "separator",
-          { label: "Settings & data", icon: <Settings2 size={14} />, onSelect: onSettings },
+          { label: t("Settings & data"), icon: <Settings2 size={14} />, onSelect: onSettings },
         ]}
       />
     </>
@@ -186,6 +187,8 @@ function SyncStatus({
 }
 
 export default function App() {
+  // The whole window renders again in a newly chosen language, keeping everything open.
+  useLanguage();
   const [month, setMonth] = useState(today().slice(0, 7));
   const [dialog, setDialog] = useState<Dialog>(null);
   const [planningEditor, setPlanningEditor] = useState(false);
@@ -329,8 +332,8 @@ export default function App() {
     try {
       const path = recovery ? await api.exportRecoveryDraft(value) : await api.export(value);
       toast({
-        message: recovery ? "Recovery draft exported." : "Full backup exported.",
-        action: { label: "Show in folder", onClick: () => void api.reveal(path).catch(fail) },
+        message: recovery ? t("Recovery draft exported.") : t("Full backup exported."),
+        action: { label: t("Show in folder"), onClick: () => void api.reveal(path).catch(fail) },
       });
     } catch (e) {
       fail(e);
@@ -342,8 +345,8 @@ export default function App() {
       .exportTransactions(budget, account.id, null)
       .then((path) =>
         toast({
-          message: `Exported ${account.name}.`,
-          action: { label: "Show in folder", onClick: () => void api.reveal(path).catch(fail) },
+          message: t("Exported {account}.", { account: account.name }),
+          action: { label: t("Show in folder"), onClick: () => void api.reveal(path).catch(fail) },
         }),
       )
       .catch((e) => fail(e));
@@ -351,9 +354,9 @@ export default function App() {
   const reload = () => {
     if (model.dirty())
       confirm(
-        "Reload from disk?",
-        "This replaces your unsaved changes with the saved budget. Export them first if you want to keep both.",
-        "Discard changes & reload",
+        t("Reload from disk?"),
+        t("This replaces your unsaved changes with the saved budget. Export them first if you want to keep both."),
+        t("Discard changes & reload"),
         model.fetchDatabase,
       );
     else void model.fetchDatabase();
@@ -362,7 +365,7 @@ export default function App() {
   const installUpdate = () =>
     void updates
       .install(model.installUpdate)
-      .catch((e) => fail(e, "Couldn't install the update: "));
+      .catch((e) => fail(e, t("Couldn't install the update: ")));
   // A downloaded Store update installs when the window closes, after the budget is saved.
   const { ready: updateReady, channel: updateChannel, installOnExit } = updates;
   useEffect(() => {
@@ -381,10 +384,10 @@ export default function App() {
       !document.activeElement?.matches("input, textarea, select, [contenteditable]"),
     installUpdate,
   );
-  useUpdatedNotice((version) => toast({ message: `UrBudget was updated to version ${version}.` }));
+  useUpdatedNotice((version) => toast({ message: t("UrBudget was updated to version {version}.", { version }) }));
   const switchBudget = (id: string) =>
     model.switchBudget(id).catch((e) => {
-      fail(e, "Couldn't open that budget: ");
+      fail(e, t("Couldn't open that budget: "));
       throw e;
     });
   const loadImport = async (file: File) => {
@@ -393,13 +396,18 @@ export default function App() {
       const imported = raw.data?.plan || raw.data?.budget ? await api.importYnab(raw) : (raw as Budget);
       await api.validate(imported);
       confirm(
-        "Restore from this backup?",
-        `Replace “${budget?.name}” with “${imported.name}” (${imported.accounts.length} accounts, ${imported.transactions.length} transactions)? A backup of the current budget is made first.`,
-        "Back up & restore",
+        t("Restore from this backup?"),
+        t("Replace “{current}” with “{backup}” ({accounts}, {transactions})? A backup of the current budget is made first.", {
+          current: String(budget?.name),
+          backup: imported.name,
+          accounts: tn(imported.accounts.length, "{count} accounts", "{count} accounts"),
+          transactions: tn(imported.transactions.length, "{count} transactions", "{count} transactions"),
+        }),
+        t("Back up & restore"),
         () => model.restoreBackup(imported),
       );
     } catch (e) {
-      fail(e, "Couldn't read that file: ");
+      fail(e, t("Couldn't read that file: "));
     }
   };
 
@@ -412,12 +420,12 @@ export default function App() {
           </div>
         )}
         <h1>UrBudget</h1>
-        <p>{model.calculationError ? `Could not calculate ${monthName(month)}: ${model.calculationError}` : model.error || (budget ? `Updating ${monthName(month)} totals…` : "Opening your budget…")}</p>
+        <p>{model.calculationError ? t("Could not calculate {month}: {error}", { month: monthName(month), error: model.calculationError }) : model.error || (budget ? t("Updating {month} totals…", { month: monthName(month) }) : t("Opening your budget…"))}</p>
         {model.calculationError ? (
-          <button className="primary" onClick={model.retryCalculation}>Retry calculation</button>
+          <button className="primary" onClick={model.retryCalculation}>{t("Retry calculation")}</button>
         ) : model.error ? (
           <button className="primary" onClick={() => location.reload()}>
-            Try again
+            {t("Try again")}
           </button>
         ) : (
           <LoaderCircle className="spin" />
@@ -438,7 +446,7 @@ export default function App() {
   const thisMonth = model.calculationMonth ?? today().slice(0, 7);
   const editCalculated: typeof edit = (update) => { if (currentSummary) edit(update); };
   const transformCalculated: typeof model.transform = (work) => currentSummary
-    ? model.transform(work) : Promise.reject(new Error("Wait for the budget calculation to finish before changing these amounts."));
+    ? model.transform(work) : Promise.reject(new Error(t("Wait for the budget calculation to finish before changing these amounts.")));
   // A loan's actions, from its register, its payment category and its account menus. Without
   // details saved, each opens the account form at them.
   const loanActions: LoanActions = {
@@ -457,7 +465,7 @@ export default function App() {
 
   /** Applies an assistant proposal as one undoable change; a refreshed card comes back when the budget moved. */
   const applyProposal = async (threadId: string, p: Proposal): Promise<Proposal> => {
-    if (!currentSummary) throw new Error("Wait for the budget calculation to finish before applying these changes.");
+    if (!currentSummary) throw new Error(t("Wait for the budget calculation to finish before applying these changes."));
     let outcome = null as { patch: Patch | null; proposal: Proposal } | null;
     let after: Budget | null = null;
     try {
@@ -473,7 +481,7 @@ export default function App() {
       throw e;
     }
     if (after) lastApplied.current = { id: p.id, budget: after };
-    toast({ message: `Applied: ${p.title}`, action: { label: "Undo", onClick: () => void undoProposal(threadId, p) } });
+    toast({ message: t("Applied: {proposal}", { proposal: p.title }), action: { label: t("Undo"), onClick: () => void undoProposal(threadId, p) } });
     return outcome!.proposal;
   };
   const undoProposal = async (threadId: string, p: Proposal): Promise<Proposal> => {
@@ -490,7 +498,7 @@ export default function App() {
     try {
       const file = await assistant.importFile(threadId, p.id);
       const account = budget.accounts.find((a) => a.id === file.account);
-      if (!account) throw new Error("That account no longer exists.");
+      if (!account) throw new Error(t("That account no longer exists."));
       setDialog({
         type: "import",
         account,
@@ -511,41 +519,43 @@ export default function App() {
       ...(page === "transactions" ? highlight.transactions.map((t) => `[id="reg-${esc(t)}"]`) : []),
     ];
     return selectors.length
-      ? `${selectors.join(",")}{background:var(--accent-soft)!important;box-shadow:inset 3px 0 0 var(--accent)}`
+      ? `${selectors.join(",")}{background:var(--accent-soft)!important;box-shadow:inset ${getDirection() === "rtl" ? -3 : 3}px 0 0 var(--accent)}`
       : "";
   })();
 
   const title =
     page === "budget" ? (
       <div className="month-nav">
-        <button className="icon-button" aria-label="Previous month" onClick={() => setMonth(shiftMonth(month, -1))}>
+        <button className="icon-button" aria-label={t("Previous month")} onClick={() => setMonth(shiftMonth(month, -1))}>
           <ChevronLeft size={16} />
         </button>
         <h1>
           <span className="month-long">{monthName(month)}</span>
           <span className="month-short">{monthName(month, "short")}</span>
         </h1>
-        <button className="icon-button" aria-label="Next month" onClick={() => setMonth(shiftMonth(month, 1))}>
+        <button className="icon-button" aria-label={t("Next month")} onClick={() => setMonth(shiftMonth(month, 1))}>
           <ChevronRight size={16} />
         </button>
-        <MonthPicker value={month} onChange={setMonth} label="Choose budget month" />
+        <MonthPicker value={month} onChange={setMonth} label={t("Choose budget month")} />
         {month !== thisMonth && (
           <button className="link-button" onClick={() => setMonth(thisMonth)}>
-            Today
+            {t("Today")}
           </button>
         )}
       </div>
     ) : page === "transactions" ? (
       <div className="title-stack">
-        <h1>{currentAccount?.name ?? "All transactions"}</h1>
+        <h1>{currentAccount?.name ?? t("All transactions")}</h1>
         <span>
           {currentAccount
-            ? `${kindLabel(currentAccount)}${currentAccount.archived ? " · Closed" : ""}`
-            : `${budget.accounts.length} accounts`}
+            ? currentAccount.archived
+              ? t("{kind} · Closed", { kind: kindLabel(currentAccount) })
+              : kindLabel(currentAccount)
+            : tn(budget.accounts.length, "{count} accounts", "{count} accounts")}
         </span>
       </div>
     ) : (
-      <h1>{titles[page]}</h1>
+      <h1>{t(titles[page])}</h1>
     );
 
   // On Windows these sit in the title bar beside the window buttons; elsewhere, in the header.
@@ -556,11 +566,11 @@ export default function App() {
     <button
       className="assistant-toggle"
       aria-pressed={assistantOpen}
-      title={keyLabel("Assistant (Ctrl+J)")}
+      title={keyLabel(t("Assistant (Ctrl+J)"))}
       onClick={() => showAssistant(!assistantOpen)}
     >
       <MessageSquareText size={15} />
-      <span className="header-label">Assistant</span>
+      <span className="header-label">{t("Assistant")}</span>
     </button>
   );
 
@@ -617,8 +627,8 @@ export default function App() {
             {!customTitleBar && saveStatus}
             <button
               className="icon-button"
-              aria-label="Undo"
-              title={keyLabel("Undo (Ctrl+Z)")}
+              aria-label={t("Undo")}
+              title={keyLabel(t("Undo (Ctrl+Z)"))}
               disabled={!model.canUndo || !!operation || sync === "conflict"}
               onClick={model.undo}
             >
@@ -626,8 +636,8 @@ export default function App() {
             </button>
             <button
               className="icon-button"
-              aria-label="Redo"
-              title={keyLabel("Redo (Ctrl+Shift+Z)")}
+              aria-label={t("Redo")}
+              title={keyLabel(t("Redo (Ctrl+Shift+Z)"))}
               disabled={!model.canRedo || !!operation || sync === "conflict"}
               onClick={model.redo}
             >
@@ -649,25 +659,25 @@ export default function App() {
             {sync === "conflict" ? (
               <>
                 <button className="secondary" onClick={() => void exportDraft()}>
-                  Export unsaved changes
+                  {t("Export unsaved changes")}
                 </button>
                 <button className="secondary" onClick={reload}>
-                  Reload from disk
+                  {t("Reload from disk")}
                 </button>
               </>
             ) : sync === "error" ? (
               <button className="secondary" onClick={() => void model.flush()}>
-                Retry
+                {t("Retry")}
               </button>
             ) : (
               <button className="secondary" onClick={model.dismissError}>
-                Dismiss
+                {t("Dismiss")}
               </button>
             )}
           </div>
         )}
         {calculating && (
-          <div className="calculating" role="status"><span><LoaderCircle size={12} className="spin" />Updating {monthName(month)} totals…</span></div>
+          <div className="calculating" role="status"><span><LoaderCircle size={12} className="spin" />{t("Updating {month} totals…", { month: monthName(month) })}</span></div>
         )}
         <div key={formatKey} inert={!currentSummary && ["budget", "transactions"].includes(page)} aria-busy={!currentSummary} className={`page-scroll${page === "transactions" || page === "budget" || page === "reports" ? " fill" : ""}`}>
           {page === "budget" && isBlank(budget) && (
@@ -697,7 +707,7 @@ export default function App() {
               onEditorChange={setPlanningEditor}
               onEditCategory={editCategory}
               onAsk={(names) =>
-                ask({ text: names.length === 1 ? `Help me with ${names[0]} this month.` : `Help me with ${names.join(", ")} this month.` })
+                ask({ text: t("Help me with {categories} this month.", { categories: names.length === 1 ? names[0] : list(names) }) })
               }
               onNewCategory={() => setDialog({ type: "category" })}
               onAddAccount={() => setDialog({ type: "account" })}
@@ -759,7 +769,7 @@ export default function App() {
               initialTab={settingsTab?.tab}
               budget={budget}
               sync={sync}
-              syncLabel={syncLabels[sync]}
+              syncLabel={t(syncLabels[sync])}
               metadata={metadata}
               edit={edit}
               transform={model.transform}
@@ -814,34 +824,33 @@ export default function App() {
       {/* Clicks wait while anything is saving; the dialog shows only if it takes a while. */}
       {model.operation && !operation && updates.phase !== "installing" && <div className="operation-guard" aria-hidden />}
       {operation && updates.phase !== "installing" && (
-        <Blocking title={operation}>
-          <p role="status">Please keep this window open; this only takes a moment.</p>
+        <Blocking title={t(operation)}>
+          <p role="status">{t("Please keep this window open; this only takes a moment.")}</p>
           <LoaderCircle className="spin" />
         </Blocking>
       )}
       {updates.phase === "installing" && (
-        <Blocking title="Installing the update">
+        <Blocking title={t("Installing the update")}>
           <p role="status">{updates.channel === "microsoftStore"
-            ? "Your budget is saved first, then Windows installs the update, which closes UrBudget and opens it again. Windows may ask for permission first."
-            : "Your budget is saved first, then UrBudget restarts on the new version."}</p>
+            ? t("Your budget is saved first, then Windows installs the update, which closes UrBudget and opens it again. Windows may ask for permission first.")
+            : t("Your budget is saved first, then UrBudget restarts on the new version.")}</p>
           <LoaderCircle className="spin" />
         </Blocking>
       )}
       {model.recovery && (
-        <Blocking title="Restore unsaved changes?">
+        <Blocking title={t("Restore unsaved changes?")}>
           <p>
-            UrBudget closed before some changes were saved. Restore them to continue where
-            you left off, or keep the saved budget.
+            {t("UrBudget closed before some changes were saved. Restore them to continue where you left off, or keep the saved budget.")}
           </p>
           <div className="modal-actions">
             <button className="secondary" onClick={() => void exportDraft(model.recovery!.budget)}>
-              Export them
+              {t("Export them")}
             </button>
             <button className="secondary" onClick={() => void model.fetchDatabase()}>
-              Keep saved budget
+              {t("Keep saved budget")}
             </button>
             <button className="primary" onClick={() => void model.restoreRecovery().catch((e) => fail(e))}>
-              Restore changes
+              {t("Restore changes")}
             </button>
           </div>
         </Blocking>
@@ -924,13 +933,13 @@ export default function App() {
             close();
             if (before) learn(before, transaction);
             const message = scheduledMessage(transaction, repeat);
-            if (message) toast({ message, action: { label: "Undo", onClick: model.undo } });
+            if (message) toast({ message, action: { label: t("Undo"), onClick: model.undo } });
           }}
         />
       )}
       {newCategory.dialog}
       {dialog?.type === "import" && (
-        <Modal title={`Import into ${dialog.account.name}`} close={close} wide>
+        <Modal title={t("Import into {account}", { account: dialog.account.name })} close={close} wide>
           <BankImport
             budget={budget}
             transform={model.transform}
@@ -942,10 +951,10 @@ export default function App() {
               if (from) void assistant.mark(from.threadId, from.id, "applied").catch(() => {});
               close();
               toast({
-                message: count === 1 ? "Imported 1 transaction for review." : `Imported ${count} transactions for review.`,
-                action: { label: "Undo", onClick: model.undo },
+                message: tn(count, "Imported {count} transaction for review.", "Imported {count} transactions for review."),
+                action: { label: t("Undo"), onClick: model.undo },
                 offer: uncategorized.ids.length
-                  ? { label: "Categorize with the assistant", onClick: () => categorize(uncategorized) }
+                  ? { label: t("Categorize with the assistant"), onClick: () => categorize(uncategorized) }
                   : undefined,
               });
             }}
@@ -962,7 +971,7 @@ export default function App() {
         </Modal>
       )}
       {dialog?.type === "bankSync" && (
-        <Modal title="Sync with your bank" close={close} wide>
+        <Modal title={t("Sync with your bank")} close={close} wide>
           <BankSync
             budget={budget}
             balances={balances}
@@ -978,7 +987,7 @@ export default function App() {
         </Modal>
       )}
       {dialog?.type === "bankSyncDetails" && (
-        <Modal title={`Bank sync · ${dialog.account.name}`} close={close}>
+        <Modal title={t("Bank sync · {account}", { account: dialog.account.name })} close={close}>
           <BankSyncDetails
             budget={budget}
             account={budget.accounts.find((a) => a.id === dialog.account.id) ?? dialog.account}
@@ -1022,11 +1031,13 @@ export default function App() {
             await transformCalculated((b) => saveTransaction(b, payment));
             close();
             const from = budget.accounts.find((a) => a.id === payment.accountId)?.name ?? "";
-            const paid = `${money(-payment.amount)} to ${dialog.account.name} from ${from}`;
+            const paid = { amount: money(-payment.amount), card: dialog.account.name, account: from };
             toast({
               // Dated ahead, it's a scheduled payment.
-              message: payment.date > today() ? `Scheduled ${paid} for ${formatDate(payment.date)}.` : `Paid ${paid}.`,
-              action: { label: "Undo", onClick: model.undo },
+              message: payment.date > today()
+                ? t("Scheduled {amount} to {card} from {account} for {date}.", { ...paid, date: formatDate(payment.date) })
+                : t("Paid {amount} to {card} from {account}.", paid),
+              action: { label: t("Undo"), onClick: model.undo },
             });
           }}
         />
@@ -1051,8 +1062,10 @@ export default function App() {
             });
             close();
             toast({
-              message: `Recorded a ${money(p.amount)} payment to ${dialog.account.name}${p.date > today() ? ` for ${formatDate(p.date)}` : ""}.`,
-              action: { label: "Undo", onClick: model.undo },
+              message: p.date > today()
+                ? t("Recorded a {amount} payment to {account} for {date}.", { amount: money(p.amount), account: dialog.account.name, date: formatDate(p.date) })
+                : t("Recorded a {amount} payment to {account}.", { amount: money(p.amount), account: dialog.account.name }),
+              action: { label: t("Undo"), onClick: model.undo },
             });
           }}
         />
@@ -1072,7 +1085,7 @@ export default function App() {
           <p>{dialog.text}</p>
           <div className="modal-actions">
             <button className="secondary" onClick={close}>
-              Cancel
+              {t("Cancel")}
             </button>
             <button
               className="primary"
