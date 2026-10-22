@@ -116,7 +116,14 @@ admin.get("/overview", async (c) => {
       )
       .bind(since(30))
       .all<{ kind: string; n: number }>(),
-    db.prepare("SELECT status, COUNT(*) AS n FROM subscriptions GROUP BY status").all<{ status: string; n: number }>(),
+    // Which store a subscription came from is in its id's prefix (Polar's ids have none).
+    db
+      .prepare(
+        `SELECT status, CASE WHEN id LIKE 'google:%' THEN 'google' WHEN id LIKE 'apple:%' THEN 'apple'
+           WHEN id LIKE 'comp:%' THEN 'comp' ELSE 'polar' END AS provider, COUNT(*) AS n
+         FROM subscriptions GROUP BY status, provider`,
+      )
+      .all<{ status: string; provider: string; n: number }>(),
     db
       .prepare("SELECT COUNT(*) AS budgets, COUNT(DISTINCT user_id) AS users, COALESCE(SUM(size), 0) AS bytes FROM sync_budgets")
       .first<{ budgets: number; users: number; bytes: number }>(),
@@ -164,6 +171,8 @@ admin.get("/overview", async (c) => {
   const sum = <T>(rows: T[], pick: (row: T) => number, where: (row: T) => boolean = () => true) =>
     rows.filter(where).reduce((total, row) => total + (pick(row) ?? 0), 0);
   const live = subscriptions.results.filter((s) => SYNC_STATUSES.includes(s.status));
+  const tally = <T extends { n: number }>(rows: T[], key: (row: T) => string) =>
+    rows.reduce<Record<string, number>>((counts, row) => ({ ...counts, [key(row)]: (counts[key(row)] ?? 0) + row.n }), {});
 
   // Every 30-day number, the 30 days before it and each week come from these, so they agree.
   const series = {
@@ -210,7 +219,9 @@ admin.get("/overview", async (c) => {
     },
     sync: {
       subscribers: sum(live, (s) => s.n),
-      byStatus: Object.fromEntries(subscriptions.results.map((s) => [s.status, s.n])),
+      byStatus: tally(subscriptions.results, (s) => s.status),
+      // Live subscriptions per store: polar, google (Play), apple (App Store) and comp (given by UrBudget).
+      byProvider: tally(live, (s) => s.provider),
       budgets: sync?.budgets ?? 0,
       users: sync?.users ?? 0,
       bytes: sync?.bytes ?? 0,

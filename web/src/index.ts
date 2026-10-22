@@ -8,6 +8,7 @@ import { auth, requireUser } from "./auth";
 import type { AppEnv, Env } from "./env";
 import { billing, cancelSubscriptions } from "./billing";
 import { COMPLIMENTARY } from "./billing/provider";
+import { appleBilling, appleNotifications, settleAppleSubscriptions } from "./billing/apple";
 import { googleBilling, refreshGooglePurchases } from "./billing/google";
 import { googleNotifications } from "./billing/google-rtdn";
 import { downloads, files, releases, TEAM_COOKIE } from "./releases";
@@ -33,6 +34,7 @@ api.get("/config", (c) => {
 api.get("/me", requireUser, async (c) => {
   const user = c.get("user");
   await refreshGooglePurchases(c.env, user.id);
+  await settleAppleSubscriptions(c.env, user.id);
   const [subscription, synced] = await Promise.all([
     c.env.DB.prepare(
       `SELECT id, status, current_period_end, cancel_at FROM subscriptions
@@ -47,7 +49,8 @@ api.get("/me", requireUser, async (c) => {
   return c.json({
     user: { id: user.id, email: user.email, createdAt: user.created_at },
     subscription: subscription && {
-      provider: subscription.id.startsWith("google:") ? "google" : subscription.id.startsWith(COMPLIMENTARY) ? "comp" : "polar",
+      provider: subscription.id.startsWith("google:") ? "google" : subscription.id.startsWith("apple:") ? "apple"
+        : subscription.id.startsWith(COMPLIMENTARY) ? "comp" : "polar",
       status: subscription.status,
       renewsAt: subscription.cancel_at || subscription.status === "canceled" ? null : subscription.current_period_end,
       endsAt: subscription.cancel_at ?? (subscription.status === "canceled" ? subscription.current_period_end : null),
@@ -85,7 +88,8 @@ api.delete("/me", requireUser, async (c) => {
       c.env.DB.prepare(`INSERT OR IGNORE INTO deleted_billing_customers (customer_id, deleted_at)
         SELECT billing_customer_id, ?2 FROM users WHERE id = ?1 AND billing_customer_id IS NOT NULL
           AND EXISTS (SELECT 1 FROM account_deletions WHERE user_id = ?1 AND token = ?3)
-        UNION SELECT customer_id, ?2 FROM subscriptions WHERE user_id = ?1 AND id NOT LIKE 'google:%' AND id NOT LIKE 'comp:%'
+        UNION SELECT customer_id, ?2 FROM subscriptions WHERE user_id = ?1 AND id NOT LIKE 'google:%' AND id NOT LIKE 'apple:%'
+          AND id NOT LIKE 'comp:%'
           AND EXISTS (SELECT 1 FROM account_deletions WHERE user_id = ?1 AND token = ?3)`)
         .bind(user.id, now(), token),
       c.env.DB.prepare(`DELETE FROM users WHERE id = ?1
@@ -108,6 +112,8 @@ api.route("/auth", auth);
 api.route("/billing", billing);
 api.route("/billing/google/notifications", googleNotifications);
 api.route("/billing/google", googleBilling);
+api.route("/billing/apple/notifications", appleNotifications);
+api.route("/billing/apple", appleBilling);
 api.route("/sync", sync);
 api.route("/releases", releases);
 api.route("/visits", visits);
@@ -156,9 +162,13 @@ app.route("/releases", files);
 
 export default {
   fetch: app.fetch,
-  /** Hourly: refresh older Play receipts and forget expired sessions, rate limits, problems and reports. */
+  /**
+   * Hourly: refresh older Play receipts, end lapsed App Store subscriptions, and forget expired
+   * sessions, rate limits, problems and reports.
+   */
   async scheduled(_controller: ScheduledController, env: Env) {
     await refreshGooglePurchases(env);
+    await settleAppleSubscriptions(env);
     await cleanupSyncObjects(env);
     const at = now();
     const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
