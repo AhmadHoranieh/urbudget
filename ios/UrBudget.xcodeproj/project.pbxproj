@@ -12,6 +12,8 @@
 		0B6F04EA55F482A342931D00 /* RegisterIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6F8E93B276C4CF835D8517A /* RegisterIndex.swift */; };
 		0D9EA9A732041B56306F5BD9 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57202CAEE0F4B1005880269E /* SettingsView.swift */; };
 		0ED7F7DDC4792231B8AC43D1 /* AccountSyncView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A686E95293DE07AC64D133A /* AccountSyncView.swift */; };
+		17DDE4C42D36D5855B7AD69A /* SyncSubscriptionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F3FAAF93FD76420095FCD8B /* SyncSubscriptionSection.swift */; };
+		60DB769187A619DA88E1241D /* AppStoreSubscription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 472FCAAC6103C2C264BADD54 /* AppStoreSubscription.swift */; };
 		0F1124315058DA3EF9B62949 /* BudgetForms.swift in Sources */ = {isa = PBXBuildFile; fileRef = 392AD846D80626C36AA6507F /* BudgetForms.swift */; };
 		12A2974B0E98133AEE59F257 /* Dates.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC23CE105498672BB7B6AA01 /* Dates.swift */; };
 		26FB573D40675D0DA40DD24E /* LibrarySupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CC82F96FC0C0E073EBA636A /* LibrarySupport.swift */; };
@@ -109,6 +111,8 @@
 		2829849C07E14A9F51E1977A /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
 		2948BAC86CF00A05191F5463 /* JSON.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSON.swift; sourceTree = "<group>"; };
 		2A686E95293DE07AC64D133A /* AccountSyncView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSyncView.swift; sourceTree = "<group>"; };
+		7F3FAAF93FD76420095FCD8B /* SyncSubscriptionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncSubscriptionSection.swift; sourceTree = "<group>"; };
+		472FCAAC6103C2C264BADD54 /* AppStoreSubscription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStoreSubscription.swift; sourceTree = "<group>"; };
 		2ED4404FF2DB2790E903783B /* BankReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankReview.swift; sourceTree = "<group>"; };
 		30854B4FCBCC5B844A9017E1 /* BankFileImportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankFileImportView.swift; sourceTree = "<group>"; };
 		309767A28B8AC630FC13B729 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
@@ -227,6 +231,7 @@
 			isa = PBXGroup;
 			children = (
 				2A686E95293DE07AC64D133A /* AccountSyncView.swift */,
+				7F3FAAF93FD76420095FCD8B /* SyncSubscriptionSection.swift */,
 			);
 			path = Sync;
 			sourceTree = "<group>";
@@ -236,6 +241,7 @@
 			children = (
 				1A4206489464FD1DEF185A1A /* AccountTypes.swift */,
 				9DE9E591DFF9E261331301F1 /* AmountPad.swift */,
+				472FCAAC6103C2C264BADD54 /* AppStoreSubscription.swift */,
 				2381B29DB1FB8DF428D699D9 /* BankNames.swift */,
 				376E302779D401DFE622957F /* BudgetModel.swift */,
 				0CB70081738D8673A81F8866 /* BudgetStore.swift */,
@@ -558,6 +564,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				0ED7F7DDC4792231B8AC43D1 /* AccountSyncView.swift in Sources */,
+				17DDE4C42D36D5855B7AD69A /* SyncSubscriptionSection.swift in Sources */,
+				60DB769187A619DA88E1241D /* AppStoreSubscription.swift in Sources */,
 				B77086CA620B069A36F8C53F /* AccountTypes.swift in Sources */,
 				4BF85E03BF62E33F9A850FCD /* AccountsView.swift in Sources */,
 				6B4BD0746FF232AF327CD7E5 /* AmountPad.swift in Sources */,

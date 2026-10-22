@@ -5,6 +5,7 @@ struct UrBudgetApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var store = BudgetStore()
     @State private var sync = SyncCoordinator()
+    @State private var appStore = AppStoreSubscription()
     @AppStorage("theme") private var theme = "system"
     /// Unit tests open their own temporary library; the app's must stay closed.
     private let testing = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
@@ -14,11 +15,13 @@ struct UrBudgetApp: App {
             RootView()
                 .environment(store)
                 .environment(sync)
+                .environment(appStore)
                 .tint(.urAccent)
                 .preferredColorScheme(theme == "dark" ? .dark : theme == "light" ? .light : nil)
                 .task {
                     guard !testing else { return }
                     sync.attach(store)
+                    appStore.attach(store)
                     store.start()
                 }
         }
@@ -29,6 +32,7 @@ struct UrBudgetApp: App {
 struct RootView: View {
     @Environment(BudgetStore.self) private var store
     @Environment(SyncCoordinator.self) private var sync
+    @Environment(AppStoreSubscription.self) private var appStore
     @Environment(\.scenePhase) private var phase
     @Environment(\.undoManager) private var undoManager
 
@@ -169,6 +173,7 @@ struct RootView: View {
         guard !store.loading else { return }
         HostEvents.shared.start()
         sync.start()
+        appStore.start()
     }
 }
 

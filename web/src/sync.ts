@@ -17,7 +17,7 @@ export async function syncActive(db: D1Database, userId: string): Promise<boolea
   const row = await db
     .prepare(
       `SELECT 1 FROM subscriptions WHERE user_id = ?1 AND status IN (${SYNC_STATUSES.map((s) => `'${s}'`).join(",")})
-       AND (id NOT LIKE 'google:%' OR current_period_end > ?2) LIMIT 1`,
+       AND ((id NOT LIKE 'google:%' AND id NOT LIKE 'apple:%') OR current_period_end > ?2) LIMIT 1`,
     )
     .bind(userId, now())
     .first();

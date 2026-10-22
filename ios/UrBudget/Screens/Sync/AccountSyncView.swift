@@ -5,6 +5,7 @@ import SwiftUI
 struct AccountSyncView: View {
     @Environment(BudgetStore.self) private var store
     @Environment(SyncCoordinator.self) private var sync
+    @Environment(AppStoreSubscription.self) private var appStore
     @AppStorage(SyncCoordinator.automaticKey) private var automatic = true
 
     @State private var overview: JSON?
@@ -35,6 +36,7 @@ struct AccountSyncView: View {
             if let error { FormErrorView(message: error) }
             accountSection
             if !signedIn.isEmpty {
+                SyncSubscriptionSection(overview: overview, reload: loadOverview)
                 syncSection
                 budgetsSection
                 Section {
@@ -59,9 +61,12 @@ struct AccountSyncView: View {
         }
         .task(id: signedIn) {
             guard !signedIn.isEmpty else { overview = nil; return }
-            // Optional subscription details: a slow request mustn't hold up the local controls.
-            overview = try? await store.service("account_overview")
+            // An App Store purchase made while signed out or offline reaches the account now.
+            await appStore.deliverUnfinished()
+            await loadOverview()
         }
+        // A renewal, refund or approved purchase arrived while the screen is open.
+        .onChange(of: appStore.deliveries) { Task { await loadOverview() } }
         .sheet(item: $passphrase) { request in
             // A wrong passphrase stays in the sheet; the first sync after it shows here.
             PassphraseSheet(request: request) { phrase in
@@ -76,7 +81,7 @@ struct AccountSyncView: View {
                 await sync.refreshStatus()
             }
         }
-        .sheet(isPresented: $deletingAccount) { DeleteAccountSheet(email: signedIn) { confirm in
+        .sheet(isPresented: $deletingAccount) { DeleteAccountSheet(email: signedIn, appStore: overview?["subscription"].text("provider") == "apple") { confirm in
             _ = try await store.service("account_delete", ["confirm": .string(confirm)])
             await sync.refreshStatus()
         } }
@@ -146,6 +151,12 @@ struct AccountSyncView: View {
         }
     }
 
+    /// Optional subscription details: a slow request mustn't hold up the local controls.
+    private func loadOverview() async {
+        guard !signedIn.isEmpty else { return }
+        overview = try? await store.service("account_overview")
+    }
+
     private func sendCode() {
         run {
             _ = try await store.service("account_start", ["email": .string(email.trimmingCharacters(in: .whitespaces))])
@@ -158,11 +169,6 @@ struct AccountSyncView: View {
     @ViewBuilder private var syncSection: some View {
         let report = sync.lastReport
         Section {
-            if let plan = overview?["sync"], plan.isObject {
-                Label(plan["active"].bool ? "Sync subscription active" : "Sync needs an active subscription",
-                      systemImage: plan["active"].bool ? "checkmark.icloud.fill" : "exclamationmark.icloud")
-                    .foregroundStyle(plan["active"].bool ? Color.urPositive : Color.urWarning)
-            }
             Toggle(isOn: $automatic) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Sync automatically")
@@ -390,6 +396,8 @@ private extension JSON {
 /// Deleting the account needs its email typed, as on Android.
 private struct DeleteAccountSheet: View {
     var email: String
+    /// Sync is an App Store subscription, which only its subscriber can cancel.
+    var appStore: Bool
     var delete: (String) async throws -> Void
     @State private var confirmation = ""
 
@@ -401,7 +409,9 @@ private struct DeleteAccountSheet: View {
             Section {
                 TextField("Type \(email) to confirm", text: $confirmation).emailKeyboard().autocorrectionDisabled()
             } footer: {
-                Text("This deletes your account and cloud budgets and stops subscription renewals. Budgets on your devices stay. Purchase records may be kept as the privacy policy describes.")
+                Text(appStore
+                     ? "This deletes your account and cloud budgets. Budgets on your devices stay. Your App Store subscription keeps renewing until you cancel it in your Apple Account settings (Manage subscription, above). Purchase records may be kept as the privacy policy describes."
+                     : "This deletes your account and cloud budgets and stops subscription renewals. Budgets on your devices stay. Purchase records may be kept as the privacy policy describes.")
             }
         }
         .presentationDetents([.medium])

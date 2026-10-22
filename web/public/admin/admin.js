@@ -54,6 +54,13 @@ const money = (cents) =>
   }).format((Number(cents) || 0) / 100);
 const percent = (ratio) => `${(ratio * 100).toFixed(ratio > 0 && ratio < 0.1 ? 1 : 0)}%`;
 const plural = (n, one, many = `${one}s`) => `${num(n)} ${n === 1 ? one : many}`;
+const STORES = { polar: "Polar", google: "Google Play", apple: "App Store", comp: "given" };
+/** "3 Polar, 1 App Store" from live subscriptions per store; empty when there are none. */
+const storeCounts = (counts = {}) =>
+  Object.entries(STORES)
+    .filter(([key]) => counts[key])
+    .map(([key, name]) => `${num(counts[key])} ${name}`)
+    .join(", ");
 
 const thisYear = new Date().getFullYear();
 /** "Oct 17, 2:05 PM" (with the year when it isn't this one), in this computer's time zone. */
@@ -395,7 +402,9 @@ loaders.overview = async () => {
     {
       label: "Sync subscribers",
       value: num(o.sync.subscribers),
-      sub: `${plural(o.sync.budgets, "budget")} · ${formatBytes(o.sync.bytes)} stored`,
+      sub: [storeCounts(o.sync.byProvider), `${plural(o.sync.budgets, "budget")} · ${formatBytes(o.sync.bytes)} stored`]
+        .filter(Boolean)
+        .join(" · "),
     },
     {
       label: "Sync checkouts, 30 days",

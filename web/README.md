@@ -24,9 +24,9 @@ workflow applies pending migrations before publishing the Worker.
 | --- | --- |
 | **The app** | Free and open source, with every feature. Nothing online is needed to use it. |
 | **Accounts** | Optional and passwordless: an emailed six-digit code signs in a browser (cookie) or the app (token in the app's encrypted vault; its key is protected by the platform). Needed only for Sync. |
-| **Sync ($3/month)** | A Polar subscription (or a Google Play one on Android), bought signed in on `/account/`. Each device encrypts whole budgets (Argon2id key from a sync passphrase, XChaCha20-Poly1305) before upload; the server keeps ciphertext and a revision per budget in R2 and never sees a key. Independent edits merge automatically; competing edits to the same field are shown in the app to settle. |
+| **Sync ($3/month)** | A Polar subscription bought signed in on `/account/`, or a Google Play or App Store one bought in the Android or iOS app. Each device encrypts whole budgets (Argon2id key from a sync passphrase, XChaCha20-Poly1305) before upload; the server keeps ciphertext and a revision per budget in R2 and never sees a key. Independent edits merge automatically; competing edits to the same field are shown in the app to settle. |
 | **Admin** | `/admin/`, behind Cloudflare Access: look up an account for support, and see Sync subscribers and revenue, downloads, page views, link tags, the funnel from a visit to a Sync checkout, each week's numbers for the weekly log, and problems (failed emails and webhooks, rate limits). Everything counted is a daily total, nothing about who: downloads per installer and linking page, page views, update checks, and sign-ins, emails, checkouts and sync uploads (`events`, migration 0006). |
-| **Payments** | Polar is the merchant of record for Sync: checkout, tax and VAT, receipts, refunds, cancellations (its customer portal). The website loads no payment scripts; checkout happens on Polar's site. |
+| **Payments** | Polar is the merchant of record for Sync: checkout, tax and VAT, receipts, refunds, cancellations (its customer portal). The website loads no payment scripts; checkout happens on Polar's site. In the Android and iOS apps, Google Play and the App Store sell it instead. |
 
 The `licenses` table and its columns (migrations 0001–0006) are no longer read or written; they
 stay in the schema because migrations are never edited or rolled back.
@@ -120,6 +120,60 @@ it again once the account signs in afresh. Verify the full reviewer journey,
 including any synthetic Sync passphrase, and maintain access while review is needed. When
 retiring the credential, remove/rotate the configuration and revoke that account's existing
 sessions; changing the credential alone does not invalidate sessions already issued.
+
+## App Store purchases
+
+On iPhone and iPad, Sync is an auto-renewable App Store subscription bought with StoreKit 2 and
+checked on the server; the app's word never grants it. This code doesn't set anything up in App
+Store Connect, and the Worker needs no Apple key or secret: it never calls Apple, it only checks
+what Apple signed.
+
+Before releasing the iOS purchase flow:
+
+1. In App Store Connect → UrBudget → Monetization → Subscriptions, make the subscription group
+   **UrBudget Sync** and, in it, the auto-renewable subscription `app.urbudget.sync.monthly`
+   with a one-month duration. Give it a price, an English display name and description, and a
+   review screenshot of Account & sync's subscribe section. Leave Family Sharing off: one
+   subscription belongs to one account, and the server refuses shared copies and any other product.
+2. In App Information → App Store Server Notifications, set both the Production and the Sandbox
+   server URL to `https://urbudget.app/api/v1/billing/apple/notifications`, Version 2.
+3. Apply migration `0010_app_store.sql` before deploying the Worker.
+4. Try a TestFlight build, which buys in Sandbox: subscribe, restore on another device, turn off
+   renewal and let it lapse, and delete the account. Sandbox renews a monthly subscription every
+   few minutes, so renewals and expiry show up quickly. The Worker answers notifications with 200;
+   App Store Connect lists recent notifications and their responses for each environment.
+
+How it works: the app asks `GET /billing/apple/context` for the account's `appAccountToken`
+(a UUID derived from the account id) and buys with it. It posts each transaction's JWS to
+`POST /billing/apple/verify` after a purchase or a restore, and whatever `Transaction.updates`
+delivers (renewals, Ask to Buy approvals, refunds), finishing a transaction only once the server
+has answered. The Worker checks the `x5c` chain up to Apple Root CA - G3, pinned by its SHA-256
+fingerprint in `src/billing/apple-jws.ts`; Apple's marker extensions on the intermediate and
+leaf; each certificate's validity when Apple signed the data; the ES256 signature; and the bundle
+id `app.urbudget`, the product and the environment: `Production`, or `Sandbox` for TestFlight and
+App Review. Xcode's local StoreKit testing signs with a local certificate, so the server refuses
+those purchases. Subscriptions are kept in `apple_subscriptions` by original transaction id, and
+the subscription row's id is `apple:<originalTransactionId>`.
+
+Notifications (renewals, billing retry and grace periods, auto-renew changes, expiry, refunds and
+their reversals, revocation) are verified the same way and update only subscriptions an account
+claimed from the app. What they carry decides, not their type: a newer purchase replaces an older
+one, a later signature of the same transaction (a refund, or its reversal) replaces an earlier one,
+and renewal info goes by its own signing time, so late or repeated deliveries change nothing. Sync
+access also checks the end of the paid period or grace period, and the hourly job and `/me` settle
+lapsed subscriptions even if no notification arrives. The App Store Server API could look a
+subscription up when a notification is missed; that would need an In-App Purchase key (not the
+App Store Connect API key) as a Worker secret, and isn't used today.
+
+The server can't cancel an App Store subscription. Account deletion leaves it to the subscriber's
+Apple Account settings, and the app's delete-account sheet says it keeps renewing until cancelled
+there. The record stays without an account, so no other account can claim it; renewals keep it
+current. A later purchase on the same Apple Account made for another account (with that
+account's token) moves the subscription to it.
+
+The review account's complimentary Sync keeps working. The app still offers the subscription to an
+account with complimentary Sync, so App Review can buy it in Sandbox with that account; the
+purchase then shows as the App Store's.
 
 ## Local setup
 

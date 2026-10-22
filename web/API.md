@@ -33,14 +33,15 @@ Two kinds of session:
 | `POST /auth/verify` | `{ email, code, client: "web" \| "desktop", deviceName? }` | web: `{ user }` and the cookie; desktop: `{ user, token }`. Errors: `invalid_code`, `expired_code`, `too_many_attempts` |
 | `POST /auth/logout` | | `{ ok: true }` |
 | `POST /auth/web-link` (desktop) | `{ next }` | `{ url }`: opening it in a browser signs that browser in and goes to `next` (a path on the site). Valid 5 minutes, once |
-| `GET /me` | | `{ user: { id, email, createdAt }, subscription: null \| { provider: "polar" \| "google" \| "comp", status, renewsAt, endsAt }, sync: { active, budgets, bytes } }` |
-| `DELETE /me` | `{ confirm: "<the account's email>" }` | `{ ok: true }`. Cancels any Sync subscription, then deletes the account and its synced data |
+| `GET /me` | | `{ user: { id, email, createdAt }, subscription: null \| { provider: "polar" \| "google" \| "apple" \| "comp", status, renewsAt, endsAt }, sync: { active, budgets, bytes } }` |
+| `DELETE /me` | `{ confirm: "<the account's email>" }` | `{ ok: true }`. Cancels any Polar or Google Play Sync subscription, then deletes the account and its synced data. Only the subscriber can cancel an App Store subscription, so it keeps renewing until they do |
 | `POST /billing/checkout` | `{ plan?: "sync" }` | `{ url }` of Polar's hosted checkout for Sync, tied to the signed-in account (401 signed out); the browser goes there. Polar returns the subscriber to `/account/?checkout_id=…`. Any other `plan` is 400 `invalid_plan`. Error `not_configured` until Polar is set up |
-| `POST /billing/portal` | | `{ url }` of Polar's customer portal (update card, cancel), or Google Play's subscriptions page for a Play subscriber. Error `no_customer` |
+| `POST /billing/portal` | | `{ url }` of Polar's customer portal (update card, cancel), Google Play's subscriptions page for a Play subscriber, or Apple's (`https://apps.apple.com/account/subscriptions`) for an App Store one. Error `no_customer` |
 
 `subscription.status` is Polar's: `active`, `trialing`, `past_due`, `unpaid`, `paused`,
-`incomplete` or `canceled` (Play subscriptions are `active` or `canceled`). Sync works while it
-is `active`, `trialing` or `past_due`.
+`incomplete` or `canceled` (Play subscriptions are `active` or `canceled`; App Store ones are
+`active`, `past_due` in a billing grace period, `unpaid` in billing retry after it, or `canceled`).
+Sync works while it is `active`, `trialing` or `past_due`.
 
 ## Google Play (Android)
 
@@ -57,6 +58,28 @@ Known purchase tokens are rechecked with Google. Successful, test and unknown-to
 return 204. Invalid authentication returns 401, invalid payloads 400, oversized bodies 413,
 and temporary provider/configuration failures 503 so Pub/Sub can retry. Notifications are
 bounded to 32 KiB and never logged with purchase tokens. See README for deployment setup.
+
+## App Store (iOS)
+
+`GET /billing/apple/context` and `POST /billing/apple/verify` require the signed-in app account.
+Context returns `{ appAccountToken, productId: "app.urbudget.sync.monthly" }`; the app passes the
+token, a UUID derived from the account id, to StoreKit's purchase as `appAccountToken`.
+Verification accepts `{ transaction }`, a StoreKit 2 transaction's JWS (`jwsRepresentation`),
+after a purchase, a restore or a `Transaction.updates` delivery, and returns `{ active }`. The JWS
+must be signed through a chain to Apple Root CA - G3 for the bundle `app.urbudget`, the Sync
+product and the `Production` or `Sandbox` environment, else 400 `invalid_purchase`. A transaction
+made with another account's token, or for a subscription another account holds, is also 400
+`invalid_purchase`, with a message that says so; the app finishes the transaction either way. One
+without a token (Apple sends none for some purchases started outside the app) goes to the first
+account that posts it. Verification is limited to 240 requests per account per hour and bodies to
+32 KiB.
+
+`POST /billing/apple/notifications` takes App Store Server Notifications V2 (`{ signedPayload }`),
+verified the same way, with the bundle id and, in Production, the app's Apple ID (6825535486).
+They update only subscriptions an account already claimed, by the signed transaction and renewal
+info they carry rather than by their type, so late, repeated or out-of-order deliveries change
+nothing. Handled, test, summary and unknown-subscription deliveries return 200; an invalid one
+400; a temporary failure 5xx, so Apple retries. Bodies are bounded to 128 KiB.
 
 ## Assistant reports
 

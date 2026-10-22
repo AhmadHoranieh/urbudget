@@ -7,6 +7,7 @@ import { ApiError, countEvent, jsonBody, now, randomId, recordProblem } from "..
 import { polar } from "./polar";
 import { COMPLIMENTARY, type BillingEvent } from "./provider";
 import { cancelGoogleSubscriptions, PLAY_PACKAGE } from "./google";
+import { APP_STORE_MANAGE_URL } from "./apple";
 
 export { SYNC_STATUSES } from "./provider";
 export const provider = polar;
@@ -94,7 +95,11 @@ async function apply(env: Env, event: BillingEvent) {
     throw new ApiError(503, "account_deleting", "Account deletion is in progress. Retry this billing update.");
 }
 
-/** Ends a user's live sync subscriptions right away (their account is being deleted). */
+/**
+ * Ends a user's live sync subscriptions right away (their account is being deleted). Only the
+ * subscriber can cancel an App Store subscription, in their Apple Account settings, so the app
+ * says so before deletion.
+ */
 export async function cancelSubscriptions(env: Env, userId: string) {
   await cancelGoogleSubscriptions(env, userId);
   const live = await env.DB.prepare(
@@ -103,7 +108,8 @@ export async function cancelSubscriptions(env: Env, userId: string) {
     .bind(userId)
     .all<{ id: string }>();
   for (const { id } of live.results)
-    if (!id.startsWith("google:") && !id.startsWith(COMPLIMENTARY)) await provider.cancelSubscription(env, id);
+    if (!id.startsWith("google:") && !id.startsWith("apple:") && !id.startsWith(COMPLIMENTARY))
+      await provider.cancelSubscription(env, id);
 }
 
 export const billing = new Hono<AppEnv>();
@@ -134,6 +140,7 @@ billing.post("/portal", requireUser, async (c) => {
   ).bind(user.id).first<{ id: string; customer_id: string }>();
   if (subscription?.id.startsWith("google:"))
     return c.json({ url: `https://play.google.com/store/account/subscriptions?package=${PLAY_PACKAGE}` });
+  if (subscription?.id.startsWith("apple:")) return c.json({ url: APP_STORE_MANAGE_URL });
   if (subscription?.id.startsWith(COMPLIMENTARY))
     throw new ApiError(404, "no_customer", "This account's Sync was given by UrBudget, so there's nothing to manage.");
   const customerId =
