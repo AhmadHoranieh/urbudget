@@ -33,6 +33,8 @@ and imports all happen in that Rust library (the shared crates); Swift draws the
 | `UrBudget/Bridge` | The C header for the Rust library, and the bridging header that shows it to Swift |
 | `UrBudgetTests` | Unit tests, run on the Simulator |
 | `scripts/build-rust.sh` | Builds the Rust library for the Simulator or a device |
+| `UrBudget/*.xcstrings` | English and Arabic text: the app's (`Localizable`), the Home Screen and Files names (`InfoPlist`) and Siri's phrases (`AppShortcuts`), as [the languages guide](../docs/LOCALIZATION.md) describes |
+| `scripts/check-translations.mjs` | `node ios/scripts/check-translations.mjs` checks every string has its Arabic, with the same placeholders and all plural forms |
 | `ExportOptions.plist` | How the release workflow signs and uploads to App Store Connect |
 | [`../crates/urbudget-ios`](../crates/urbudget-ios) | The Rust side of the C bridge |
 
