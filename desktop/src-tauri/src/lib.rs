@@ -554,6 +554,8 @@ pub fn run() {
             updates::update_channel,
             updates::check_store_update,
             updates::install_store_update,
+            updates::download_store_update,
+            updates::apply_store_update,
             updates::open_update_store,
             cloud::cloud_status,
             cloud::account_overview,

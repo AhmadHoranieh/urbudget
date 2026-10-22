@@ -647,6 +647,29 @@ it("allows installer shutdown only after saving and resets the normal close poli
   expect(mocked.destroy).not.toHaveBeenCalled();
 });
 
+it("runs a waiting update on close only after saving, and closes even if it fails", async () => {
+  const { result } = await start();
+  const close = () => mocked.onCloseRequested.mock.calls.at(-1)![0] as (event: { preventDefault: () => void }) => Promise<void>;
+  const steps: string[] = [];
+  mocked.commit.mockImplementation(async () => {
+    steps.push("save");
+    return { ...status, token: "saved-on-close" };
+  });
+  mocked.destroy.mockImplementation(async () => { steps.push("close"); });
+  act(() => result.current.edit((b) => { b.name = "Unsaved at close"; }));
+  act(() => result.current.setExitTask(async () => { steps.push("update"); }));
+  const event = { preventDefault: vi.fn() };
+  await act(async () => { await close()(event); });
+  expect(event.preventDefault).toHaveBeenCalledOnce();
+  expect(steps).toEqual(["save", "update", "close"]);
+
+  steps.length = 0;
+  mocked.status.mockResolvedValue({ ...status, token: "saved-on-close" });
+  act(() => result.current.setExitTask(async () => { throw new Error("Windows declined"); }));
+  await act(async () => { await close()({ preventDefault: vi.fn() }); });
+  expect(steps).toEqual(["close"]);
+});
+
 it("switching budgets saves first, then starts the other budget with fresh history", async () => {
   const other = { ...status, token: "other:3:1", budget: { ...budget, name: "Other" } };
   mocked.openBudget.mockResolvedValue(other);
