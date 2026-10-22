@@ -1,6 +1,27 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "0" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "0"
+          }
+        }
+      }
+    },
+    " → " : {
+      "comment" : "Between an amount before and after a change; the pair stays left to right.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " → "
+          }
+        }
+      }
+    },
     "%@ %@ available." : {
       "localizations" : {
         "ar" : {
@@ -158,7 +179,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "⁨%@⁩ عن اليوم"
+            "value" : "⁨%@⁩ مقارنةً باليوم"
           }
         }
       }
@@ -459,6 +480,16 @@
         }
       }
     },
+    "%@ · %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⁨%1$@⁩ · ⁨%2$@⁩"
+          }
+        }
+      }
+    },
     "%@ · %@ · Stored on this device. Envelope math, targets, reports and imports use the same engine as the desktop app." : {
       "localizations" : {
         "ar" : {
@@ -551,6 +582,16 @@
         }
       }
     },
+    "%@, %@, %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⁨%1$@⁩، ⁨%2$@⁩، ⁨%3$@⁩"
+          }
+        }
+      }
+    },
     "%@, %@, activity: %@" : {
       "localizations" : {
         "ar" : {
@@ -631,6 +672,16 @@
         }
       }
     },
+    "%@: %@" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⁨%1$@⁩: ⁨%2$@⁩"
+          }
+        }
+      }
+    },
     "%@: a %@ subscription for %@ a %@. Payment is charged to your Apple Account when you confirm the purchase. It renews automatically at the same price unless you turn off auto-renew at least 24 hours before the end of the current period. Manage or cancel it anytime in your Apple Account settings." : {
       "localizations" : {
         "ar" : {
@@ -692,6 +743,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "‏⁨%@⁩ ي"
+          }
+        }
+      }
+    },
+    "%lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld"
+          }
+        }
+      }
+    },
+    "%lld / %lld" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "%lld / 4,000" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld / 4,000"
           }
         }
       }
@@ -3154,6 +3235,16 @@
         }
       }
     },
+    "99+" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "99+"
+          }
+        }
+      }
+    },
     "A JSON backup from desktop or Android" : {
       "localizations" : {
         "ar" : {
@@ -4369,7 +4460,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "طُبِّق: ⁨%@⁩"
+            "value" : "تم التطبيق: ⁨%@⁩"
           }
         }
       }
@@ -5038,13 +5129,13 @@
         }
       }
     },
-    "Attachment: %@ (%lld bytes)" : {
+    "Attachment: %@ (%@ bytes)" : {
       "comment" : "Exported conversation: an attached file's name and size",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "المرفق: ⁨%@⁩ (%lld بايت)"
+            "value" : "المرفق: ⁨%1$@⁩ (⁨%2$@⁩ بايت)"
           }
         }
       }
@@ -5715,7 +5806,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اجعل كل متاح 0.00."
+            "value" : "اجعل كل مبلغ متاح 0.00."
           }
         }
       }
@@ -6704,7 +6795,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اختر ملفًا أصغر من 25 MiB."
+            "value" : "اختر ملفًا أصغر من 25 ميغابايت."
           }
         }
       }
@@ -6744,7 +6835,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "اختر صورة أصغر من 50 MiB."
+            "value" : "اختر صورة أصغر من 50 ميغابايت."
           }
         }
       }
@@ -7896,7 +7987,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "البت في %lld صفًا"
+                  "value" : "البت في %lld صفًّا"
                 }
               },
               "other" : {
@@ -8445,7 +8536,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تم الاستبعاد"
+            "value" : "تم التجاهل"
           }
         }
       }
@@ -8455,7 +8546,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "استُبعد: ⁨%@⁩"
+            "value" : "تم التجاهل: ⁨%@⁩"
           }
         }
       }
@@ -11789,7 +11880,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "الإبقاء على"
+            "value" : "النسخة المحتفَظ بها"
           }
         }
       }
@@ -11799,7 +11890,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "الإبقاء على كل ما في هذه الميزانية"
+            "value" : "الإبقاء على قيم هذه الميزانية كلها"
           }
         }
       }
@@ -11849,7 +11940,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "النسخة المُبقاة لـ ⁨%@⁩"
+            "value" : "النسخة المحتفَظ بها لـ ⁨%@⁩"
           }
         }
       }
@@ -20178,7 +20269,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "أخذ كل ما في YNAB"
+            "value" : "اعتماد قيم YNAB كلها"
           }
         }
       }
@@ -23321,7 +23412,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "مستبعَد"
+            "value" : "تم تجاهله"
           }
         }
       }
@@ -24732,6 +24823,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "«⁨%1$@⁩» هو بالفعل أحد أسماء البنك للمستفيد ⁨%2$@⁩."
+          }
+        }
+      }
+    },
+    "••••%@" : {
+      "comment" : "The last digits of a saved token; kept left to right.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⁦••••⁨%@⁩⁩"
           }
         }
       }

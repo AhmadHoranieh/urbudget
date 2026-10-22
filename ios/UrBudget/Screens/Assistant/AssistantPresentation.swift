@@ -100,7 +100,9 @@ enum AssistantExport {
             } else {
                 out += "## \(heading(entry.text("kind")))\n\n\(entry.text("text"))\n\n"
                 for file in entry.rows("attachments") {
-                    out += String(localized: "Attachment: \(file.text("name")) (\(file.long("size")) bytes)", locale: .app) + "\n"
+                    // The size as a plain number ("2048"): a localized count would group its digits.
+                    let name = file.text("name"), size = String(file.long("size"))
+                    out += String(localized: "Attachment: \(name) (\(size) bytes)", comment: "Exported conversation: an attached file's name and size") + "\n"
                 }
             }
         }

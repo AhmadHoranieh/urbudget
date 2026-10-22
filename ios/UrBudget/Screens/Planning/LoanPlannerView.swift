@@ -656,6 +656,8 @@ struct LoanEditor: View {
                     AxisValueLabel(format: .dateTime.year().locale(.app))
                 }
             }
+            // Time runs left to right in every language, as the reports' charts do.
+            .environment(\.layoutDirection, .leftToRight)
             .frame(height: 200)
             .padding(.vertical, 6)
             .accessibilityLabel("Balance owed after each payment")
