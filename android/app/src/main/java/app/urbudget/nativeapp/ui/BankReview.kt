@@ -12,31 +12,34 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.urbudget.nativeapp.BankReviewRow
 import app.urbudget.nativeapp.BankReviewSummary
+import app.urbudget.nativeapp.R
+import app.urbudget.nativeapp.Words
 
 /** "12 rows · 3 already imported · 2 renamed by your payee rules" (BankImport.tsx's summary). */
-internal fun reviewCounts(summary: BankReviewSummary) = buildString {
-    append(summary.rows).append(if (summary.rows == 1) " row" else " rows")
-    if (summary.duplicates > 0) append(" · ").append(summary.duplicates).append(" already imported")
-    if (summary.renamed > 0) append(" · ").append(summary.renamed).append(" renamed by your payee rules")
-}
+internal fun reviewCounts(summary: BankReviewSummary) = listOfNotNull(
+    Words.count(R.plurals.bank_rows, summary.rows.toLong()),
+    if (summary.duplicates > 0) Words.count(R.plurals.bank_already_imported_count, summary.duplicates.toLong()) else null,
+    if (summary.renamed > 0) Words.count(R.plurals.bank_renamed_count, summary.renamed.toLong()) else null,
+).joinToString(" · ")
 
 /** What the review says before its rows: how matching works, files without bank IDs, and rows still to decide. */
 internal fun LazyListScope.bankReviewNotes(summary: BankReviewSummary, undecided: Int) {
     item(key = "review:matching") {
-        Text("Matching keeps your category and memo and marks the transaction cleared. Imported transactions wait for your approval.",
+        Text(stringResource(R.string.bank_matching_note),
             style = MaterialTheme.typography.bodySmall, color = ur.muted)
     }
     if (summary.idless) item(key = "review:idless") {
-        Notice("This file has no bank transaction IDs. A row may already be imported; compare its memo and amount. Skip it if it's the same payment, or add it separately if it's a different one.",
+        Notice(stringResource(R.string.bank_idless_note),
             tone = "info", icon = Icons.Outlined.Info)
     }
     if (undecided > 0) item(key = "review:undecided") {
-        Notice(if (undecided == 1) "1 row needs a choice before importing." else "$undecided rows need a choice before importing.", icon = Icons.Outlined.WarningAmber)
+        Notice(countText(R.plurals.bank_rows_need_choice, undecided), icon = Icons.Outlined.WarningAmber)
     }
 }
 
@@ -58,13 +61,13 @@ private fun BankReviewItem(row: BankReviewRow, decision: String, enabled: Boolea
                 Text(row.amountText, Modifier.padding(start = 10.dp), style = MaterialTheme.typography.bodyLarge.merge(Tabular), fontWeight = FontWeight.SemiBold,
                     color = if (row.locked) ur.muted else if (row.amount > 0) ur.positive else ur.text, maxLines = 1)
             }
-            row.bankText?.let { Text("Bank: $it", style = MaterialTheme.typography.bodySmall, color = ur.muted, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            row.bankText?.let { Text(stringResource(R.string.bank_row_bank, it), style = MaterialTheme.typography.bodySmall, color = ur.muted, maxLines = 1, overflow = TextOverflow.Ellipsis) }
             if (row.detail.isNotEmpty()) Text(row.detail, style = MaterialTheme.typography.bodySmall, color = ur.muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (row.locked) Text("Already imported · skipped", style = MaterialTheme.typography.bodySmall, color = ur.muted, fontWeight = FontWeight.SemiBold)
+            if (row.locked) Text(stringResource(R.string.bank_already_imported_skipped), style = MaterialTheme.typography.bodySmall, color = ur.muted, fontWeight = FontWeight.SemiBold)
             else {
-                if (decision == "review") Text(if (row.possibleDuplicate) "May already be imported: compare the memo and amount, then choose" else "Choose the matching transaction, or add it as new",
+                if (decision == "review") Text(stringResource(if (row.possibleDuplicate) R.string.bank_may_be_imported else R.string.bank_choose_matching),
                     style = MaterialTheme.typography.bodySmall, color = ur.warning, fontWeight = FontWeight.SemiBold)
-                Box(Modifier.padding(top = 4.dp)) { Choice("What to do", decision, row.options) { if (enabled) choose(it) } }
+                Box(Modifier.padding(top = 4.dp)) { Choice(stringResource(R.string.bank_what_to_do), decision, row.options) { if (enabled) choose(it) } }
             }
         }
         if (divider) Hairline(start = 16.dp)

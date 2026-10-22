@@ -47,7 +47,7 @@ internal fun defaultBankChoice(duplicate: Boolean, possibleDuplicate: Boolean, c
     else -> "review"
 }
 
-private val alreadyImportedOptions = listOf("skip" to "Already imported — skip", "new" to "Add as a separate transaction")
+private fun alreadyImportedOptions() = listOf("skip" to Words[R.string.bank_option_already_imported], "new" to Words[R.string.bank_option_add_separate])
 
 private fun JSONObject.editorText(key: String) = if (isNull(key)) "" else optString(key)
 
@@ -66,8 +66,8 @@ internal suspend fun encodeFileBytes(bytes: ByteArray): JSONArray {
 /** One candidate pool's choices, built once and shared by every row that uses the pool. */
 private class CandidateOptions(val matches: List<Pair<String, String>>, val candidates: List<String>, val previouslyMatched: Set<String>) {
     /** Choose, add, skip, then each match: the label of the undecided choice says why it's undecided. */
-    val choose by lazy { listOf("review" to "Choose a match or add it", "new" to "Add as a new transaction", "skip" to "Skip") + matches }
-    val possible by lazy { listOf("review" to "May already be imported — choose", "new" to "Add as a new transaction", "skip" to "Skip") + matches }
+    val choose by lazy { listOf("review" to Words[R.string.bank_option_choose], "new" to Words[R.string.bank_option_add_new], "skip" to Words[R.string.bank_option_skip]) + matches }
+    val possible by lazy { listOf("review" to Words[R.string.bank_option_possible], "new" to Words[R.string.bank_option_add_new], "skip" to Words[R.string.bank_option_skip]) + matches }
 }
 
 /** Candidates are a shared pool on Android; do not expand them once per bank row. */
@@ -79,6 +79,8 @@ internal suspend fun prepareBankReview(
     val currency = budget.editorText("currency").ifBlank { "SAR" }
     val transactions = budget.records("transactions").associateBy { it.editorText("id") }
     val preparedSets = mutableMapOf<Int, CandidateOptions>()
+    val alreadyImported by lazy { alreadyImportedOptions() }
+    val noPayee = Words[R.string.payee_none]
     fun prepareOptions(source: JSONObject): CandidateOptions {
         val details = source.records("candidateDetails").associateBy { it.editorText("id") }
         val previous = source.optJSONArray("previouslyMatchedCandidates")
@@ -104,7 +106,7 @@ internal suspend fun prepareBankReview(
         if (index % 128 == 0) context.ensureActive()
         val set = if (row.has("candidateSet")) {
             val setIndex = row.optInt("candidateSet", -1)
-            preparedSets.getOrPut(setIndex) { prepareOptions(requireNotNull(candidateSets?.optJSONObject(setIndex)) { "Bank match details are missing. Preview again." }) }
+            preparedSets.getOrPut(setIndex) { prepareOptions(requireNotNull(candidateSets?.optJSONObject(setIndex)) { Words[R.string.bank_match_details_missing] }) }
         } else prepareOptions(row)
         val duplicate = row.optBoolean("duplicate")
         val possible = row.optBoolean("possibleDuplicate")
@@ -112,7 +114,7 @@ internal suspend fun prepareBankReview(
         // An already-imported row can only be added again when it has no bank ID and that's allowed.
         val separate = duplicate && allowIdlessDuplicate && idless
         val options = when {
-            separate -> alreadyImportedOptions
+            separate -> alreadyImported
             duplicate -> emptyList()
             possible -> set.possible
             else -> set.choose
@@ -121,24 +123,29 @@ internal suspend fun prepareBankReview(
         val rename = row.editorText("rename").takeIf { it.isNotBlank() && it != row.editorText("payee") }
         BankReviewRow(smallBankRow(row), options, defaultBankChoice(duplicate, possible, set.candidates, set.previouslyMatched), manual, set.previouslyMatched,
             key = "$index:${row.editorText("id")}", locked = duplicate && !separate, date = Money.date(row.editorText("date")),
-            payee = (rename ?: row.editorText("payee")).ifBlank { "No payee" }, bankText = rename?.let { row.editorText("payee") },
+            payee = (rename ?: row.editorText("payee")).ifBlank { noPayee }, bankText = rename?.let { row.editorText("payee") },
             memo = row.editorText("memo"), amount = row.optLong("amount"), amountText = Money.format(row.optLong("amount"), currency),
             duplicate = duplicate, possibleDuplicate = possible, idless = idless,
-            detail = listOf(Money.date(row.editorText("date")), row.editorText("memo")).filter { it.isNotBlank() }.joinToString(" · "))
+            detail = Money.joined(listOf(Money.date(row.editorText("date")), row.editorText("memo")).filter { it.isNotBlank() }))
     }
 }
 
-/** "Match: 3 Oct 2026 · Shop · Split 2 · memo · Previously imported", as the desktop labels a match. */
+/**
+ * "Match: 3 Oct 2026 · Shop · Split 2 · memo · Previously imported", as the desktop labels a match.
+ * The payee and memo keep their own direction inside a right-to-left label.
+ */
 private fun matchLabel(id: String, saved: JSONObject?, detail: JSONObject?, previously: Boolean): String {
-    if (saved == null) return "Match: $id${if (previously) " · Previously imported" else ""}"
+    val previous = if (previously) Words[R.string.bank_previously_imported] else null
+    if (saved == null) return Words[R.string.bank_match, listOfNotNull(Money.own(id), previous).joinToString(" · ")]
     val part = detail?.let { saved.records("splits").getOrNull(it.optInt("splitIndex")) }
     val memo = part?.editorText("memo")?.ifBlank { null } ?: saved.editorText("memo")
-    return buildString {
-        append("Match: ").append(Money.date(saved.editorText("date"))).append(" · ").append(saved.editorText("payee").ifBlank { "Transfer" })
-        if (detail != null) append(" · Split ").append(detail.optInt("splitIndex") + 1)
-        if (memo.isNotBlank()) append(" · ").append(memo)
-        if (previously) append(" · Previously imported")
-    }
+    return Words[R.string.bank_match, listOfNotNull(
+        Money.date(saved.editorText("date")),
+        saved.editorText("payee").ifBlank { null }?.let(Money::own) ?: Words[R.string.transfer_label],
+        detail?.let { Words[R.string.bank_match_split, (it.optInt("splitIndex") + 1).toString()] },
+        memo.ifBlank { null }?.let(Money::own),
+        previous,
+    ).joinToString(" · ")]
 }
 
 /** Matching revalidates against the current ledger; only the selected prior match is needed. */
