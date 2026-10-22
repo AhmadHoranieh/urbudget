@@ -504,6 +504,8 @@ impl Runtime {
             "sync_lock" => { cloud::sync::sync_lock(&self.cloud).await?; Ok(Value::Null) }
             "billing_context" => crate::billing::context(&self.cloud).await,
             "billing_verify" => crate::billing::verify(&self.cloud, p).await,
+            "billing_apple_context" => crate::billing::apple_context(&self.cloud).await,
+            "billing_apple_verify" => crate::billing::apple_verify(&self.cloud, text("transaction")?).await,
             "simplefin_import" => {
                 let token = optional::<String>(&p, "expectedToken")?.unwrap_or(self.db.store()?.status()?.token);
                 if self.db.store()?.status()?.token != token { return Err("CONFLICT: The budget changed. Refresh the bank review before importing.".into()); }

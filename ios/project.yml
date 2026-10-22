@@ -114,6 +114,9 @@ schemes:
     build:
       targets:
         UrBudget: all
+    # Running from Xcode sells Sync from this local StoreKit configuration, not the App Store.
+    run:
+      storeKitConfiguration: UrBudget.storekit
     test:
       targets:
         - UrBudgetTests

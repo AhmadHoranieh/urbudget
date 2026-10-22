@@ -1,0 +1,57 @@
+{
+  "identifier" : "8F4A6C2E",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "8F4A6C2F",
+      "localizations" : [
+
+      ],
+      "name" : "UrBudget Sync",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "3.00",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "8F4A6C30",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Encrypted sync between your devices",
+              "displayName" : "UrBudget Sync",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "app.urbudget.sync.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Sync monthly",
+          "subscriptionGroupID" : "8F4A6C2F",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

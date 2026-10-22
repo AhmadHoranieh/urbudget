@@ -16,6 +16,23 @@ pub async fn verify(cloud: &Cloud, result: Value) -> Result<Value, String> {
     }).await
 }
 
+/// The App Store's equivalent of `context`: the appAccountToken StoreKit binds a purchase with.
+pub async fn apple_context(cloud: &Cloud) -> Result<Value, String> {
+    Ok(cloud.call(reqwest::Method::GET, "/billing/apple/context", None, true).await?)
+}
+
+/// One StoreKit 2 signed transaction for the signed-in account. The server checks Apple's
+/// signature, the app, the product and the account the purchase was made for.
+pub async fn apple_verify(cloud: &Cloud, transaction: String) -> Result<Value, String> {
+    match cloud.call(reqwest::Method::POST, "/billing/apple/verify", Some(json!({ "transaction": transaction })), true).await {
+        Ok(answer) => Ok(answer),
+        // A definite refusal, such as another account's purchase: the app finishes the
+        // transaction instead of offering it again on every launch, and shows why.
+        Err(failure) if failure.code == "invalid_purchase" => Ok(json!({ "active": false, "refused": failure.message })),
+        Err(failure) => Err(failure.into()),
+    }
+}
+
 pub(crate) async fn verify_for_session<F, Fut>(cloud: &Cloud, session: &Session, result: Value, mut send: F) -> Result<Value, String>
 where F: FnMut(Value) -> Fut, Fut: std::future::Future<Output = Result<Value, String>> {
     let mut restored = 0;
