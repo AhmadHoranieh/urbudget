@@ -841,4 +841,17 @@ pub(super) const MESSAGES: &[(&str, &str)] = &[
     ("Open it in your spreadsheet app, or save it in the budget's exports folder.",
      "افتحه في تطبيق جداول البيانات، أو احفظه في مجلد التصدير الخاص بالميزانية."),
     ("Couldn't write the spreadsheet: {e}", "تعذّرت كتابة جدول البيانات: {e}"),
+    // The mobile adapters and the sample budget they make (urbudget-android, urbudget-ios). A sample budget's names are created in the language in use and are its data afterwards.
+    ("The engine could not complete this request", "تعذّر على المحرّك إكمال هذا الطلب"),
+    ("The service could not complete this request.", "تعذّر على الخدمة إكمال هذا الطلب."),
+    ("Invalid sample budget month", "شهر الميزانية التجريبية غير صالح"),
+    ("Sample budget", "ميزانية تجريبية"),
+    ("Checking", "الحساب الجاري"),
+    ("Everyday", "المصروفات اليومية"),
+    ("Groceries", "البقالة"),
+    ("Transport", "المواصلات"),
+    ("Emergency fund", "صندوق الطوارئ"),
+    ("Savings", "المدخرات"),
+    ("Neighborhood market", "بقالة الحي"),
+    ("Sample purchase", "عملية شراء تجريبية"),
 ];
