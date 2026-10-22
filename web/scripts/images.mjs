@@ -198,7 +198,10 @@ async function ogImage() {
 async function stampImageVersions() {
   const versions = new Map();
   for (const file of await readdir(out)) {
-    versions.set(file, createHash("sha256").update(await readFile(join(out, file))).digest("hex").slice(0, 8));
+    // An SVG is text, so a Windows checkout has CRLF where CI (and the deployed copy) has LF.
+    let data = await readFile(join(out, file));
+    if (file.endsWith(".svg")) data = Buffer.from(data.toString("utf8").replace(/\r\n/g, "\n"));
+    versions.set(file, createHash("sha256").update(data).digest("hex").slice(0, 8));
   }
   const link = /((?:https:\/\/urbudget\.app)?\/img\/)([\w.-]+)(\?v=[0-9a-f]+)?/g;
   const pages = (await readdir(join(root, "public"), { recursive: true })).filter((f) => f.endsWith(".html"));

@@ -76,7 +76,10 @@ describe("site", () => {
     const stale: string[] = [];
     for (const file of htmlFiles) {
       for (const [link, name, version] of read(file).matchAll(/\/img\/([\w.-]+)(?:\?v=([0-9a-f]+))?/g)) {
-        const hash = createHash("sha256").update(readFileSync(join(pub, "img", name))).digest("hex").slice(0, 8);
+        // As scripts/images.mjs hashes it: an SVG with LF line endings, whatever the checkout has.
+        let data = readFileSync(join(pub, "img", name));
+        if (name.endsWith(".svg")) data = Buffer.from(data.toString("utf8").replace(/\r\n/g, "\n"));
+        const hash = createHash("sha256").update(data).digest("hex").slice(0, 8);
         if (version !== hash) stale.push(`${file}: ${link}`);
       }
     }
