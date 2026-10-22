@@ -97,15 +97,25 @@ SwiftUI screens -> BudgetStore (@Observable) -> BudgetRepository (actor) --+-> u
 | Planning | Scheduled transactions (due, coming up, paused, finished; enter, skip, pause, edit), credit card payments, the loan planner (rates, payments, extra and lump-sum comparisons, payoff by a date, amortization chart and schedule), payees and import rules with previews of what they change, each payee's bank names, and an offer to remember a renamed bank payee as a rule, as the desktop makes |
 | Reports | Overview cards and all twelve Android reports (spending by category, payee, over time and calendar; income vs. expense, income breakdown, money in and out; net worth, balance sheet, balance over time, forecast, cash age), with range presets and custom months, account and category filters, drill-downs to transactions, and CSV export, drawn with Swift Charts; drag across a chart to read each month |
 | Bring in data | Bank files (CSV, OFX, QFX, QIF) with review, SimpleFIN bank connections with per-account review, YNAB import from its API (delta sync, conflicts) or export files |
-| Account & sync | Email-code sign-in, the Sync subscription's status, end-to-end encrypted sync with desktop and Android (set up, unlock, reset, track, download, conflicts, remove), automatic sync after changes, on returning and every minute |
+| Account & sync | Email-code sign-in, the Sync subscription (its status, and subscribing, restoring and managing it through the App Store), end-to-end encrypted sync with desktop and Android (set up, unlock, reset, track, download, conflicts, remove), automatic sync after changes, on returning and every minute |
 | Around the app | A New transaction quick action on the app icon, an Add a transaction shortcut for Siri, Spotlight and the Action button, and on iPad (iOS 18 and later) tabs that open as a sidebar, with lists kept to a readable width |
 | Undo | Undo and redo in the ⋯ menu on every tab, Undo on each change's message, and shaking the phone |
 | Assistant | Streamed conversations with history, attachments and transaction context, proposals with review, apply and undo, reports with sharing and printing, workbooks, ChatGPT sign-in or OpenAI/Anthropic keys |
 | Library & settings | Multiple budgets (create in the device's formats with starter categories, sample, open, delete, fresh start), opening backups, statements and YNAB exports shared from Files, Mail or AirDrop, backups (now, retention, restore, prune), unsaved-change recovery, JSON backups compatible with desktop and Android, number and date formats, flag names, CSV exports, theme |
 
-Everything in the app works without an account or payment. Sync is the only paid part. You
-can't subscribe in the iOS app yet: App Store purchases need StoreKit and server-side receipt
-checks. A subscription from urbudget.app works here after signing in with the same email.
+Everything in the app works without an account or payment. Sync is the only paid part: the
+auto-renewable App Store subscription `app.urbudget.sync.monthly`, bought in Account & sync with
+StoreKit 2. A purchase carries the signed-in account's `appAccountToken`, and Sync turns on only
+once the server has checked the transaction Apple signed
+([web/README.md › App Store purchases](../web/README.md#app-store-purchases)). `AppStoreSubscription`
+also passes on whatever `Transaction.updates` delivers (renewals, Ask to Buy approvals, refunds)
+and finishes a transaction only after the server has answered. A subscription from urbudget.app or
+Google Play works here too after signing in with the same email.
+
+Running from Xcode sells Sync from `UrBudget.storekit`, a local StoreKit configuration, so the
+subscribe, restore and manage screens work without App Store Connect. Those purchases are signed
+by Xcode, not Apple, so the server refuses them; try the whole flow with a TestFlight build, which
+buys in Sandbox.
 
 Web pages the services open (account pages, SimpleFIN setup, ChatGPT sign-in) show in an in-app
 Safari view over whatever is on screen, so the app stays in the foreground and a sign-in's local

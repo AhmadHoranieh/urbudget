@@ -93,4 +93,8 @@ gh secret set APP_STORE_CONNECT_ISSUER_ID --env app-store
 gh secret set APP_STORE_CONNECT_KEY --env app-store < AuthKey_XXXXXXXXXX.p8
 ```
 
+The first iOS version that sells Sync in the app goes to App Review with the subscription: set
+it up as [web/README.md › App Store purchases](web/README.md#app-store-purchases) describes, then
+add it on the version's page in App Store Connect before submitting.
+
 Current published versions are in [release status](docs/RELEASE-STATUS.md).

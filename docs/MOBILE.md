@@ -57,7 +57,7 @@ first, and the first build takes a few minutes. Each README covers its own comma
 | Folder | What's in it |
 | --- | --- |
 | `ios/UrBudget/App` | The app's entry point, tabs, quick actions and Shortcuts |
-| `ios/UrBudget/Core` | `BudgetStore` (state for the screens), the engine bridge (`NativeCore.swift`), money, dates and JSON helpers, sync |
+| `ios/UrBudget/Core` | `BudgetStore` (state for the screens), the engine bridge (`NativeCore.swift`), money, dates and JSON helpers, sync, App Store purchases |
 | `ios/UrBudget/Screens` | One folder per area: Budget, Transactions, Accounts, Reports, Planning, Imports, Assistant, Sync, Library, More |
 | `ios/UrBudget/UI` | Shared controls: keypad, pickers, theme, components |
 | `ios/UrBudget/Bridge` | The C header for the Rust library |
@@ -144,8 +144,10 @@ How to tag and build a release, and the secrets each workflow needs, are in
 - An App Store Connect API key for builds from GitHub. Xcode's automatic signing then makes the
   distribution certificate and profile.
 - Screenshots for a 6.9" iPhone, and for a 13" iPad since the app runs on iPad.
-- In-app purchases: the iOS app has no App Store purchase integration yet, which needs its own
-  work and policy review before a store release.
+- In-app purchases: the Sync subscription `app.urbudget.sync.monthly` and the App Store Server
+  Notifications URLs, set up in App Store Connect as
+  [web/README.md › App Store purchases](../web/README.md#app-store-purchases) lists. The first
+  version that sells it goes to App Review together with the subscription.
 
 ### Google Play
 
@@ -169,6 +171,13 @@ and its obfuscated account identity before granting access. Pending payments gra
 verified grants are saved before acknowledgement. Restore, foreground retry and authenticated Play
 notifications recover interrupted or delayed payments. Expiry and refunds are checked on the
 server.
+
+iOS sells the same monthly subscription through the App Store with StoreKit 2, and never links to
+the website to buy: prices come from the App Store, purchases carry the account's
+`appAccountToken`, and the server checks each transaction Apple signed, and App Store Server
+Notifications for renewals, billing retry, expiry and refunds, before granting or ending access.
+Only the subscriber can cancel an App Store subscription, in their Apple Account settings, so
+deleting an account says so instead of cancelling it.
 
 ### Android launch configuration
 
