@@ -6,7 +6,8 @@ use super::workbook;
 use super::proposals::{self, Change, Edit, Move, NewTransaction, Proposal, Rename, Rule};
 use super::{money, new_id, parse_money};
 use crate::domain::*;
-use crate::{engine, ledger, loans, reports, schedules};
+use crate::i18n::{comma, language, tr, Language};
+use crate::{engine, ledger, loans, reports, schedules, t};
 use chrono::Datelike;
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashMap};
@@ -392,6 +393,13 @@ impl<'a> Names<'a> {
             Some(id) => self.categories.get(id).map_or_else(|| id.to_owned(), |c| c.name.clone()),
         }
     }
+    /// `category` as the app shows it on a card, in its language. The model reads `category`.
+    pub fn category_shown(&self, id: Option<&str>) -> String {
+        match id {
+            None => t!("Ready to assign"),
+            Some(_) => self.category(id),
+        }
+    }
     fn on_budget(&self, account: &str) -> bool {
         self.accounts.get(account).is_some_and(|a| a.on_budget())
     }
@@ -419,6 +427,30 @@ impl<'a> Names<'a> {
             Some(id) => self.category(Some(id)),
             None if s.amount < 0 => "Uncategorized".into(),
             None => "Ready to assign".into(),
+        }
+    }
+    /// `category_label` as the app shows it on a card, in its language. The model reads `category_label`.
+    pub fn category_label_shown(&self, t: &Transaction) -> String {
+        if language() == Language::English {
+            return self.category_label(t);
+        }
+        if let Some(other) = &t.transfer_account_id {
+            return t!("Transfer: {account}", account = self.account(other));
+        }
+        if t.splits.len() > 1 {
+            return t!("Split");
+        }
+        let Some(s) = t.splits.first() else { return String::new() };
+        if let Some(other) = ledger::transfer(s) {
+            return t!("Transfer: {account}", account = self.account(other));
+        }
+        if !self.on_budget(&t.account_id) {
+            return t!("Tracking");
+        }
+        match s.category_id.as_deref() {
+            Some(id) => self.category(Some(id)),
+            None if s.amount < 0 => t!("Uncategorized"),
+            None => t!("Ready to assign"),
         }
     }
     pub fn row(&self, t: &Transaction, share_memos: bool) -> Value {
@@ -462,9 +494,10 @@ pub fn truncate(text: &str, max: usize) -> String {
 pub(super) fn hidden(c: &Category) -> bool {
     c.extra.get("hidden") == Some(&json!(true))
 }
+/// A month as the panel and cards name it: "October 2026", in the app's language.
 pub(super) fn month_label(month: &str) -> String {
     chrono::NaiveDate::parse_from_str(&format!("{month}-01"), "%Y-%m-%d")
-        .map(|d| d.format("%B %Y").to_string())
+        .map(crate::i18n::month_year)
         .unwrap_or_else(|_| month.to_owned())
 }
 pub(super) fn arg<'v>(args: &'v Value, key: &str) -> Option<&'v str> {
@@ -514,19 +547,24 @@ pub fn call(name: &str, args: &Value, ctx: &Context) -> Outcome {
         "create_spreadsheet" => create_spreadsheet(args, ctx),
         _ => Err(format!("There is no tool named {name}.")),
     };
-    result.unwrap_or_else(|error| Outcome {
-        output: json!({ "error": error }),
-        step: format!("{}: {}", failed_step(name), truncate(&error, 90)),
-        proposal: None,
+    result.unwrap_or_else(|error| {
+        // The reason is written for the model. The panel shows it when it's in the app's
+        // language: in Arabic, only the engine's own (translated) reasons are.
+        let shown = language() == Language::English || error.chars().any(|c| ('\u{0600}'..='\u{06FF}').contains(&c));
+        Outcome {
+            step: if shown { format!("{}: {}", failed_step(name), truncate(&error, 90)) } else { failed_step(name).to_owned() },
+            output: json!({ "error": error }),
+            proposal: None,
+        }
     })
 }
 fn failed_step(name: &str) -> &'static str {
     if name.starts_with("propose") || name == "prepare_import" {
-        "Couldn't prepare that change"
+        tr("Couldn't prepare that change")
     } else if name == "create_spreadsheet" {
-        "Couldn't make that spreadsheet"
+        tr("Couldn't make that spreadsheet")
     } else {
-        "Couldn't look that up"
+        tr("Couldn't look that up")
     }
 }
 fn read(output: Value, step: String) -> Result<Outcome, String> {
@@ -611,26 +649,18 @@ fn get_month(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         "groups": groups.into_iter().map(|(group, categories)| json!({ "group": group, "categories": categories })).collect::<Vec<_>>(),
         "accounts": accounts,
     });
-    let mut step = format!("Checked {}", month_label(&month));
+    let mut step = t!("Checked {month}", month = month_label(&month));
     if !overspent.is_empty() || underfunded > 0 {
         let mut parts = vec![];
         if !overspent.is_empty() {
-            parts.push(plural(overspent.len(), "category is overspent", "categories are overspent"));
+            parts.push(t!("{n|# category is overspent|# categories are overspent}", n = overspent.len()));
         }
         if underfunded > 0 {
-            parts.push(plural(underfunded, "target needs money", "targets need money"));
+            parts.push(t!("{n|# target needs money|# targets need money}", n = underfunded));
         }
-        step = format!("{step}: {}", parts.join(", "));
+        step = format!("{step}: {}", parts.join(comma()));
     }
     read(output, step)
-}
-
-pub fn plural(n: usize, one: &str, many: &str) -> String {
-    if n == 1 {
-        format!("1 {one}")
-    } else {
-        format!("{n} {many}")
-    }
 }
 
 fn find_transactions(args: &Value, ctx: &Context) -> Result<Outcome, String> {
@@ -687,25 +717,25 @@ fn find_transactions(args: &Value, ctx: &Context) -> Result<Outcome, String> {
     let rows: Vec<Value> = found.iter().take(limit).map(|t| names.row(t, ctx.share_memos)).collect();
     let mut what = vec![];
     if let Some(q) = arg(args, "text").or(arg(args, "payee")) {
-        what.push(format!("\"{}\"", truncate(q, 30)));
+        what.push(t!("\"{text}\"", text = truncate(q, 30)));
     }
     if uncategorized {
-        what.push("uncategorized".into());
+        what.push(t!("uncategorized"));
     }
     if unapproved {
-        what.push("waiting for approval".into());
+        what.push(t!("waiting for approval"));
     }
     if let Some(a) = account {
         what.push(names.account(a));
     }
     if let Some(c) = category {
-        what.push(names.category(Some(c)));
+        what.push(names.category_shown(Some(c)));
     }
-    let step = format!(
-        "Searched transactions{}: {}",
-        if what.is_empty() { String::new() } else { format!(" ({})", what.join(", ")) },
-        plural(total, "found", "found")
-    );
+    let step = if what.is_empty() {
+        t!("Searched transactions: {count} found", count = total)
+    } else {
+        t!("Searched transactions ({filters}): {count} found", filters = what.join(comma()), count = total)
+    };
     read(json!({ "total": total, "shown": rows.len(), "transactions": rows }), step)
 }
 
@@ -759,7 +789,7 @@ fn payee_history(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         }
         out.push(row);
     }
-    let step = format!("Looked up how you categorized {} before", plural(wanted.len(), "payee", "payees"));
+    let step = t!("Looked up how you categorized {n|# payee|# payees} before", n = wanted.len());
     read(json!({ "payees": out }), step)
 }
 
@@ -812,16 +842,14 @@ fn get_report(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         "incomeSources": r.income_sources.iter().map(|(name, v)| json!({ "source": name, "amount": money(*v) })).collect::<Vec<_>>(),
         "ageOfMoneyDays": r.age_of_money,
     });
-    let range = if from == to { month_label(&from) } else { format!("{} to {}", month_label(&from), month_label(&to)) };
-    let focus = if filter.category_ids.is_empty() {
-        String::new()
+    let range = if from == to { month_label(&from) } else { t!("{from} to {to}", from = month_label(&from), to = month_label(&to)) };
+    let step = if filter.category_ids.is_empty() {
+        t!("Ran a spending report: {range}", range)
     } else {
-        format!(
-            " for {}",
-            filter.category_ids.iter().map(|id| names.category(Some(id))).collect::<Vec<_>>().join(", ")
-        )
+        let categories = filter.category_ids.iter().map(|id| names.category_shown(Some(id))).collect::<Vec<_>>().join(comma());
+        t!("Ran a spending report for {categories}: {range}", categories, range)
     };
-    read(output, format!("Ran a spending report{focus}: {range}"))
+    read(output, step)
 }
 
 fn get_forecast(args: &Value, ctx: &Context) -> Result<Outcome, String> {
@@ -866,7 +894,7 @@ fn get_forecast(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         "moreEvents": f.events.len().saturating_sub(80),
         "averageMonthlySpending": money(f.recent_spending),
     });
-    read(output, format!("Ran the forecast through {through}"))
+    read(output, t!("Ran the forecast through {through}", through))
 }
 
 fn get_bank_sync(ctx: &Context) -> Result<Outcome, String> {
@@ -922,9 +950,8 @@ fn get_bank_sync(ctx: &Context) -> Result<Outcome, String> {
         "messages": sync["messages"],
     });
     let step = match linked.len() {
-        0 => "Checked bank sync: no linked accounts".to_string(),
-        1 => "Checked bank sync for 1 account".to_string(),
-        n => format!("Checked bank sync for {n} accounts"),
+        0 => t!("Checked bank sync: no linked accounts"),
+        n => t!("Checked bank sync for {n|# account|# accounts}", n),
     };
     read(output, step)
 }
@@ -988,7 +1015,7 @@ fn get_setup(ctx: &Context) -> Result<Outcome, String> {
             "monthlyPayment": l["monthlyPayment"].as_i64().map(money),
         })).collect::<Vec<_>>()).unwrap_or_default(),
     });
-    read(output, "Looked at your accounts and categories".into())
+    read(output, t!("Looked at your accounts and categories"))
 }
 
 fn project_loan(args: &Value, ctx: &Context) -> Result<Outcome, String> {
@@ -1039,9 +1066,9 @@ fn project_loan(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         "interestSaved": money(base.total_interest - faster.total_interest),
     });
     let step = if extra > 0 {
-        format!("Ran the payoff planner for {} with {} extra a month", names.account(account), money(extra))
+        t!("Ran the payoff planner for {account} with {amount} extra a month", account = names.account(account), amount = money(extra))
     } else {
-        format!("Ran the payoff planner for {}", names.account(account))
+        t!("Ran the payoff planner for {account}", account = names.account(account))
     };
     read(output, step)
 }
@@ -1052,7 +1079,7 @@ fn read_attachment(args: &Value, ctx: &Context) -> Result<Outcome, String> {
     if !file.is_table() {
         return read(
             json!({ "name": file.name, "note": "This file was given to you directly with the user's message. Read it from there." }),
-            format!("Opened {}", file.name),
+            t!("Opened {name}", name = file.name),
         );
     }
     let table = attachments::read_table(ctx.files, id, arg(args, "sheet"))?;
@@ -1080,7 +1107,7 @@ fn read_attachment(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         "rows": rows,
         "more": table.rows.iter().filter(|r| r.number >= start).count() > count,
     });
-    read(output, format!("Read {} rows from \"{}\" in {}", rows.len(), table.sheet, file.name))
+    read(output, t!("Read {n} rows from \"{sheet}\" in {file}", n = rows.len(), sheet = table.sheet, file = file.name))
 }
 
 // ---------- Proposals ----------
@@ -1129,13 +1156,13 @@ fn propose_budget_moves(args: &Value, ctx: &Context) -> Result<Outcome, String> 
         }
         moves.push(Move { from, to, amount });
     }
-    let default = format!("Move money in {}", month_label(&month));
+    let default = t!("Move money in {month}", month = month_label(&month));
     let n = moves.len();
     propose(
         Change::Moves { month, moves },
         title(args, default),
         ctx,
-        format!("Prepared {}", plural(n, "budget move", "budget moves")),
+        t!("Prepared {n|# budget move|# budget moves}", n),
     )
 }
 
@@ -1151,22 +1178,22 @@ fn propose_auto_assign(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         categories = ctx.budget.categories.iter().filter(|c| !hidden(c)).map(|c| c.id.clone()).collect();
     }
     let label = match method.as_str() {
-        "underfunded" => "Fund what targets need",
-        "assignedLastMonth" => "Assign what you assigned last month",
-        "spentLastMonth" => "Assign what you spent last month",
-        "averageAssigned" => "Assign your average assigned",
-        "averageSpent" => "Assign your average spending",
-        "reduceOverfunding" => "Reduce overfunding",
-        "resetAvailable" => "Reset available amounts",
-        "resetAssigned" => "Reset assigned amounts",
+        "underfunded" => tr("Fund what targets need"),
+        "assignedLastMonth" => tr("Assign what you assigned last month"),
+        "spentLastMonth" => tr("Assign what you spent last month"),
+        "averageAssigned" => tr("Assign your average assigned"),
+        "averageSpent" => tr("Assign your average spending"),
+        "reduceOverfunding" => tr("Reduce overfunding"),
+        "resetAvailable" => tr("Reset available amounts"),
+        "resetAssigned" => tr("Reset assigned amounts"),
         _ => return Err("Unknown auto-assign method.".into()),
     };
-    let default = format!("{label} in {}", month_label(&month));
+    let default = t!("{label} in {month}", label, month = month_label(&month));
     propose(
         Change::AutoAssign { month, method, categories },
         title(args, default),
         ctx,
-        format!("Prepared auto-assign: {}", label.to_lowercase()),
+        t!("Prepared auto-assign: {label}", label = label.to_lowercase()),
     )
 }
 
@@ -1230,15 +1257,15 @@ fn propose_transaction_edits(args: &Value, ctx: &Context) -> Result<Outcome, Str
     }
     let n = edits.len();
     let default = if rules.is_empty() {
-        format!("Change {}", plural(n, "transaction", "transactions"))
+        t!("Change {n|# transaction|# transactions}", n)
     } else {
-        format!("Change {}, add {}", plural(n, "transaction", "transactions"), plural(rules.len(), "rule", "rules"))
+        t!("Change {n|# transaction|# transactions}, add {r|# rule|# rules}", n, r = rules.len())
     };
     propose(
         Change::Edits { edits, rules },
         title(args, default),
         ctx,
-        format!("Prepared changes to {}", plural(n, "transaction", "transactions")),
+        t!("Prepared changes to {n|# transaction|# transactions}", n),
     )
 }
 
@@ -1295,15 +1322,15 @@ fn propose_transactions(args: &Value, ctx: &Context) -> Result<Outcome, String> 
     let n = transactions.len();
     let from_file = args["fromFile"] == json!(true);
     let default = if n == 1 {
-        format!("Add {} · {}", transactions[0].payee, money(transactions[0].amount.abs()))
+        t!("Add {payee} · {amount}", payee = transactions[0].payee, amount = money(transactions[0].amount.abs()))
     } else {
-        format!("Add {n} transactions to {}", a.name)
+        t!("Add {n} transactions to {account}", n, account = a.name)
     };
     propose(
         Change::Add { account: account.to_owned(), transactions, from_file },
         title(args, default),
         ctx,
-        format!("Prepared {}", plural(n, "new transaction", "new transactions")),
+        t!("Prepared {n|# new transaction|# new transactions}", n),
     )
 }
 
@@ -1324,11 +1351,11 @@ fn propose_payee_changes(args: &Value, ctx: &Context) -> Result<Outcome, String>
         return Err("Give at least one rename or rule.".into());
     }
     let default = match (renames.len(), rules.len()) {
-        (0, r) => format!("Add {}", plural(r, "payee rule", "payee rules")),
-        (n, 0) => format!("Rename {}", plural(n, "payee", "payees")),
-        (n, r) => format!("Rename {}, add {}", plural(n, "payee", "payees"), plural(r, "rule", "rules")),
+        (0, r) => t!("Add {r|# payee rule|# payee rules}", r),
+        (n, 0) => t!("Rename {n|# payee|# payees}", n),
+        (n, r) => t!("Rename {n|# payee|# payees}, add {r|# rule|# rules}", n, r),
     };
-    propose(Change::Payees { renames, rules }, title(args, default), ctx, "Prepared payee changes".into())
+    propose(Change::Payees { renames, rules }, title(args, default), ctx, t!("Prepared payee changes"))
 }
 
 fn create_report(args: &Value) -> Result<Outcome, String> {
@@ -1346,7 +1373,7 @@ fn create_report(args: &Value) -> Result<Outcome, String> {
         "summary": proposal.summary,
         "note": "The user can preview the report and save it as a PDF from its card. Don't repeat it in chat.",
     });
-    Ok(Outcome { output, step: format!("Wrote a report: {title}"), proposal: Some(proposal) })
+    Ok(Outcome { output, step: t!("Wrote a report: {title}", title), proposal: Some(proposal) })
 }
 
 fn create_spreadsheet(args: &Value, ctx: &Context) -> Result<Outcome, String> {
@@ -1359,7 +1386,7 @@ fn create_spreadsheet(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         "summary": proposal.summary,
         "note": "The user can open it in their spreadsheet app or save it from its card. Don't repeat the data in chat.",
     });
-    Ok(Outcome { output, step: format!("Made a spreadsheet: {title}"), proposal: Some(proposal) })
+    Ok(Outcome { output, step: t!("Made a spreadsheet: {title}", title), proposal: Some(proposal) })
 }
 
 fn prepare_import(args: &Value, ctx: &Context) -> Result<Outcome, String> {
@@ -1407,7 +1434,7 @@ fn prepare_import(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         "summary": proposal.summary,
         "note": "The user can open the import review from the card. Nothing has been imported.",
     });
-    let step = format!("Converted {} for {}", plural(proposal.import.as_ref().map_or(0, |i| i.rows.len()), "transaction", "transactions"), a.name);
+    let step = t!("Converted {n|# transaction|# transactions} for {account}", n = proposal.import.as_ref().map_or(0, |i| i.rows.len()), account = a.name);
     Ok(Outcome { output, step, proposal: Some(proposal) })
 }
 

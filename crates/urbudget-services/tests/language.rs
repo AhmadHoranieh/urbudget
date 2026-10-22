@@ -44,3 +44,17 @@ fn messages_from_urbudget_app_follow_the_language() {
     assert_eq!(i18n::translate("Something new from the server."), "Something new from the server.");
     i18n::set_language("en");
 }
+
+#[test]
+fn the_assistant_is_asked_to_reply_in_arabic() {
+    let _turn = TURN.lock().unwrap_or_else(|e| e.into_inner());
+    use urbudget_services::assistant::prompt;
+    assert_eq!(prompt::in_language(prompt::INSTRUCTIONS), prompt::INSTRUCTIONS);
+    i18n::set_language("ar");
+    // The instructions stay English and ask for Arabic replies, unless the person writes in
+    // another language.
+    let instructions = prompt::in_language(prompt::INSTRUCTIONS);
+    assert!(instructions.starts_with(prompt::INSTRUCTIONS) && instructions.ends_with(prompt::ARABIC));
+    assert!(prompt::ARABIC.contains("Reply in Modern Standard Arabic unless the user writes to you in another language"));
+    i18n::set_language("en");
+}

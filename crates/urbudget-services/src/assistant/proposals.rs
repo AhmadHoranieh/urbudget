@@ -3,12 +3,13 @@
 //! patch it made when proposed. Applying runs the change again: if the patch is the same, it is
 //! applied; if the budget moved underneath it, the card is refreshed for another look instead.
 use super::attachments::{Expected, ImportRow};
-use super::tools::{plural, Names};
+use super::tools::Names;
 use super::workbook::WorkbookDoc;
 use super::{money, new_id};
 use crate::domain::*;
+use crate::i18n::{comma, list_separator};
 use crate::patch::Patch;
-use crate::{bank_import, engine, ledger, loans, workflows};
+use crate::{bank_import, engine, ledger, loans, t, workflows};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::HashSet;
@@ -236,17 +237,17 @@ pub fn build_report(title: String, period: Option<String>, body: String) -> Prop
     let words = body.split_whitespace().count();
     let mut stats = vec![];
     if let Some(p) = &period {
-        stats.push(Stat { label: "Period".into(), text: Some(p.clone()), amount: None });
+        stats.push(Stat { label: t!("Period"), text: Some(p.clone()), amount: None });
     }
-    stats.push(Stat { label: "Length".into(), text: Some(format!("{} words", words)), amount: None });
+    stats.push(Stat { label: t!("Length"), text: Some(t!("{n} words", n = words)), amount: None });
     if tables > 0 {
-        stats.push(Stat { label: "Tables".into(), text: Some(tables.to_string()), amount: None });
+        stats.push(Stat { label: t!("Tables"), text: Some(tables.to_string()), amount: None });
     }
     let card = Card {
-        kicker: "Report".into(),
+        kicker: t!("Report"),
         rows,
         stats,
-        note: Some("Preview it, then save it as a PDF from the print dialog.".into()),
+        note: Some(t!("Preview it, then save it as a PDF from the print dialog.")),
         more,
         ..Card::default()
     };
@@ -281,7 +282,7 @@ impl Change {
         match self {
             Change::Moves { month, moves } => {
                 for m in moves {
-                    let source = Names::new(&b).category(m.from.as_deref());
+                    let source = Names::new(&b).category_shown(m.from.as_deref());
                     b = workflows::apply(
                         b,
                         &json!({
@@ -292,7 +293,7 @@ impl Change {
                             "amount": m.amount,
                         }),
                     )
-                    .map_err(|e| format!("Moving {} from {source}: {e}", money(m.amount)))?;
+                    .map_err(|e| t!("Moving {amount} from {source}: {problem}", amount = money(m.amount), source, problem = e))?;
                 }
             }
             Change::AutoAssign { month, method, categories } => {
@@ -307,10 +308,10 @@ impl Change {
                         .transactions
                         .iter_mut()
                         .find(|t| t.id == e.id)
-                        .ok_or("A transaction in this proposal was deleted.")?;
+                        .ok_or_else(|| t!("A transaction in this proposal was deleted."))?;
                     if let Some(category) = &e.category {
                         if t.transfer_account_id.is_some() || t.splits.len() != 1 || ledger::transfer(&t.splits[0]).is_some() {
-                            return Err(format!("{} on {} is now a split or a transfer.", t.payee, t.date));
+                            return Err(t!("{payee} on {date} is now a split or a transfer.", payee = t.payee, date = t.date));
                         }
                         t.splits[0].category_id = category.clone();
                     }
@@ -419,7 +420,7 @@ pub fn build(change: Change, title: String, before: &Budget) -> Result<Proposal,
     let after = change.run(before.clone())?;
     let patch = Patch::diff(before, &after);
     if patch.is_empty() {
-        return Err("That wouldn't change anything.".into());
+        return Err(t!("That wouldn't change anything."));
     }
     let card = card(&change, before, &after)?;
     let summary = summary(&title, &card);
@@ -452,9 +453,7 @@ pub fn recheck(p: &Proposal, current: &Budget) -> Recheck {
     let mut refreshed = p.clone();
     let Some(change) = &p.change else {
         refreshed.status = Status::Failed;
-        refreshed.problem = Some(
-            if p.report.is_some() { "A report doesn't change the budget." } else { "Open the import review to add these." }.into(),
-        );
+        refreshed.problem = Some(if p.report.is_some() { t!("A report doesn't change the budget.") } else { t!("Open the import review to add these.") });
         return Recheck::Changed(refreshed);
     };
     match change.run(current.clone()) {
@@ -466,7 +465,7 @@ pub fn recheck(p: &Proposal, current: &Budget) -> Recheck {
             }
             if patch.is_empty() {
                 refreshed.status = Status::Failed;
-                refreshed.problem = Some("Your budget already has these changes.".into());
+                refreshed.problem = Some(t!("Your budget already has these changes."));
                 return Recheck::Changed(refreshed);
             }
             match card(change, current, &after) {
@@ -474,7 +473,7 @@ pub fn recheck(p: &Proposal, current: &Budget) -> Recheck {
                     refreshed.summary = summary(&refreshed.title, &c);
                     refreshed.card = c;
                     refreshed.expected = Some(normalized);
-                    refreshed.problem = Some("Your budget changed since this was proposed, so it was updated. Check it, then apply.".into());
+                    refreshed.problem = Some(t!("Your budget changed since this was proposed, so it was updated. Check it, then apply."));
                 }
                 Err(e) => {
                     refreshed.status = Status::Failed;
@@ -485,7 +484,7 @@ pub fn recheck(p: &Proposal, current: &Budget) -> Recheck {
         }
         Err(e) => {
             refreshed.status = Status::Failed;
-            refreshed.problem = Some(format!("This can't be applied any more: {e}"));
+            refreshed.problem = Some(t!("This can't be applied any more: {problem}", problem = e));
             Recheck::Changed(refreshed)
         }
     }
@@ -545,7 +544,7 @@ fn card(change: &Change, before: &Budget, after: &Budget) -> Result<Card, String
                 }
             }
             if rows.is_empty() {
-                return Err("That wouldn't change any category.".into());
+                return Err(t!("That wouldn't change any category."));
             }
             let highlight = Highlight {
                 month: Some(month.clone()),
@@ -560,17 +559,17 @@ fn card(change: &Change, before: &Budget, after: &Budget) -> Result<Card, String
             let more = rows.len().saturating_sub(MAX_ROWS);
             rows.truncate(MAX_ROWS);
             Ok(Card {
-                kicker: "Proposal · Budget".into(),
+                kicker: t!("Proposal · Budget"),
                 rows,
                 total: Some(Row {
-                    label: "Ready to assign".into(),
+                    label: t!("Ready to assign"),
                     amount: Some(sa.ready_to_assign - sb.ready_to_assign),
                     before: Some(sb.ready_to_assign),
                     after: Some(sa.ready_to_assign),
                     ..Row::default()
                 }),
                 warning: (sa.ready_to_assign < 0 && sb.ready_to_assign >= 0)
-                    .then(|| "This would assign more than you have ready to assign.".to_string()),
+                    .then(|| t!("This would assign more than you have ready to assign.")),
                 more,
                 highlight,
                 ..Card::default()
@@ -586,22 +585,22 @@ fn card(change: &Change, before: &Budget, after: &Budget) -> Result<Card, String
                 let new = after.transactions.iter().find(|t| t.id == e.id).unwrap_or(old);
                 let mut parts = vec![];
                 if e.category.is_some() {
-                    parts.push(names.category_label(new));
+                    parts.push(names.category_label_shown(new));
                 }
                 if e.payee.is_some() && new.payee != old.payee {
-                    parts.push(format!("Payee: {}", new.payee));
+                    parts.push(t!("Payee: {payee}", payee = new.payee));
                 }
                 if e.memo.is_some() {
-                    parts.push(if new.memo.is_empty() { "Clear memo".into() } else { format!("Memo: {}", super::tools::truncate(&new.memo, 30)) });
+                    parts.push(if new.memo.is_empty() { t!("Clear memo") } else { t!("Memo: {memo}", memo = super::tools::truncate(&new.memo, 30)) });
                 }
                 if let Some(c) = e.cleared {
-                    parts.push(if c { "Cleared".into() } else { "Uncleared".into() });
+                    parts.push(if c { t!("Cleared") } else { t!("Uncleared") });
                 }
                 if e.approve {
-                    parts.push("Approve".into());
+                    parts.push(t!("Approve"));
                 }
                 if let Some(f) = &e.flag {
-                    parts.push(f.as_ref().map_or("Remove flag".into(), |f| format!("{} flag", capitalize(f))));
+                    parts.push(f.as_ref().map_or_else(|| t!("Remove flag"), |f| flag_label(f)));
                 }
                 let rule = rules.iter().find(|r| new.payee.to_lowercase().contains(&r.matching.to_lowercase()));
                 if let Some(r) = rule {
@@ -612,9 +611,9 @@ fn card(change: &Change, before: &Budget, after: &Budget) -> Result<Card, String
                     detail: Some(parts.join(" · ")),
                     amount: Some(new.amount),
                     badge: if e.unsure {
-                        Some("Check this".into())
+                        Some(t!("Check this"))
                     } else {
-                        rule.map(|_| "+ rule".into())
+                        rule.map(|_| t!("+ rule"))
                     },
                     tone: e.unsure.then(|| "warn".into()),
                     ..Row::default()
@@ -627,9 +626,9 @@ fn card(change: &Change, before: &Budget, after: &Budget) -> Result<Card, String
             rows.truncate(MAX_ROWS);
             let unsure = edits.iter().filter(|e| e.unsure).count();
             Ok(Card {
-                kicker: "Proposal · Transactions".into(),
+                kicker: t!("Proposal · Transactions"),
                 rows,
-                note: (unsure > 0).then(|| format!("{} marked to check.", plural(unsure, "is", "are"))),
+                note: (unsure > 0).then(|| t!("{n|# is|# are} marked to check.", n = unsure)),
                 more,
                 highlight: Highlight { transactions: edits.iter().map(|e| e.id.clone()).collect(), ..Highlight::default() },
                 ..Card::default()
@@ -638,11 +637,11 @@ fn card(change: &Change, before: &Budget, after: &Budget) -> Result<Card, String
         Change::Add { account, transactions, from_file } => {
             let mut rows = vec![];
             for n in transactions {
-                let t = after.transactions.iter().find(|t| t.id == n.id).ok_or("Missing new transaction")?;
+                let t = after.transactions.iter().find(|t| t.id == n.id).ok_or_else(|| t!("Missing new transaction"))?;
                 if transactions.len() == 1 {
                     for s in &t.splits {
                         rows.push(Row {
-                            label: names.category(s.category_id.as_deref()),
+                            label: names.category_shown(s.category_id.as_deref()),
                             detail: s.extra.get("memo").and_then(Value::as_str).map(str::to_owned),
                             amount: Some(s.amount),
                             ..Row::default()
@@ -651,7 +650,7 @@ fn card(change: &Change, before: &Budget, after: &Budget) -> Result<Card, String
                 } else {
                     rows.push(Row {
                         label: format!("{} · {}", t.payee, short_date(&t.date)),
-                        detail: Some(names.category_label(t)),
+                        detail: Some(names.category_label_shown(t)),
                         amount: Some(t.amount),
                         ..Row::default()
                     });
@@ -662,15 +661,15 @@ fn card(change: &Change, before: &Budget, after: &Budget) -> Result<Card, String
             let mut stats = vec![];
             if transactions.len() == 1 {
                 let t = &transactions[0];
-                stats.push(Stat { label: "Payee".into(), text: Some(t.payee.clone()), amount: None });
-                stats.push(Stat { label: "Date".into(), text: Some(short_date(&t.date)), amount: None });
-                stats.push(Stat { label: "Amount".into(), text: None, amount: Some(t.amount) });
+                stats.push(Stat { label: t!("Payee"), text: Some(t.payee.clone()), amount: None });
+                stats.push(Stat { label: t!("Date"), text: Some(short_date(&t.date)), amount: None });
+                stats.push(Stat { label: t!("Amount"), text: None, amount: Some(t.amount) });
             }
             Ok(Card {
-                kicker: format!("Proposal · {}", names.account(account)),
+                kicker: t!("Proposal · {account}", account = names.account(account)),
                 rows,
                 stats,
-                warning: from_file.then(|| "Read from a file. Check the amounts.".to_string()),
+                warning: from_file.then(|| t!("Read from a file. Check the amounts.")),
                 more,
                 ..Card::default()
             })
@@ -680,8 +679,8 @@ fn card(change: &Change, before: &Budget, after: &Budget) -> Result<Card, String
             for r in renames {
                 let count = before.transactions.iter().filter(|t| t.payee == r.from).count();
                 rows.push(Row {
-                    label: format!("{} → {}", r.from, r.to),
-                    detail: Some(plural(count, "transaction", "transactions")),
+                    label: t!("{from} → {to}", from = r.from, to = r.to),
+                    detail: Some(t!("{n|# transaction|# transactions}", n = count)),
                     ..Row::default()
                 });
             }
@@ -690,7 +689,7 @@ fn card(change: &Change, before: &Budget, after: &Budget) -> Result<Card, String
             }
             let more = rows.len().saturating_sub(MAX_ROWS);
             rows.truncate(MAX_ROWS);
-            Ok(Card { kicker: "Proposal · Payees".into(), rows, more, ..Card::default() })
+            Ok(Card { kicker: t!("Proposal · Payees"), rows, more, ..Card::default() })
         }
     }
 }
@@ -698,16 +697,28 @@ fn card(change: &Change, before: &Budget, after: &Budget) -> Result<Card, String
 fn rule_row(r: &Rule, names: &Names) -> Row {
     let mut parts = vec![];
     if !r.payee.is_empty() {
-        parts.push(format!("rename to {}", r.payee));
+        parts.push(t!("rename to {payee}", payee = r.payee));
     }
     if r.category.is_some() {
-        parts.push(names.category(r.category.as_deref()));
+        parts.push(names.category_shown(r.category.as_deref()));
     }
     Row {
-        label: format!("New rule: payees containing \u{201c}{}\u{201d}", r.matching),
+        label: t!("New rule: payees containing \u{201c}{text}\u{201d}", text = r.matching),
         detail: (!parts.is_empty()).then(|| parts.join(" · ")),
-        badge: Some("rule".into()),
+        badge: Some(t!("rule")),
         ..Row::default()
+    }
+}
+/// A flag as a card names it: "Red flag".
+fn flag_label(color: &str) -> String {
+    match color {
+        "red" => t!("Red flag"),
+        "orange" => t!("Orange flag"),
+        "yellow" => t!("Yellow flag"),
+        "green" => t!("Green flag"),
+        "blue" => t!("Blue flag"),
+        "purple" => t!("Purple flag"),
+        other => t!("{color} flag", color = capitalize(other)),
     }
 }
 fn capitalize(s: &str) -> String {
@@ -715,7 +726,7 @@ fn capitalize(s: &str) -> String {
     c.next().map_or(String::new(), |f| f.to_uppercase().collect::<String>() + c.as_str())
 }
 fn short_date(date: &str) -> String {
-    chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").map_or_else(|_| date.to_owned(), |d| d.format("%b %-d").to_string())
+    chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").map_or_else(|_| date.to_owned(), crate::i18n::day_month)
 }
 
 /// A proposal to open the import review with converted rows.
@@ -740,23 +751,23 @@ pub fn build_import(
     let matches = preview.iter().filter(|r| !r.duplicate && !r.candidates.is_empty()).count();
     let mut problems = vec![];
     if let Some(n) = expected.count.filter(|n| *n != file.rows.len()) {
-        problems.push(format!("{n} rows expected, {} found", file.rows.len()));
+        problems.push(t!("{expected} rows expected, {found} found", expected = n, found = file.rows.len()));
     }
     if let Some(x) = expected.outflow.filter(|x| *x != outflow) {
-        problems.push(format!("money out {} expected, {} found", money(x), money(outflow)));
+        problems.push(t!("money out {expected} expected, {found} found", expected = money(x), found = money(outflow)));
     }
     if let Some(x) = expected.inflow.filter(|x| *x != inflow) {
-        problems.push(format!("money in {} expected, {} found", money(x), money(inflow)));
+        problems.push(t!("money in {expected} expected, {found} found", expected = money(x), found = money(inflow)));
     }
     let checked = expected.count.is_some() || expected.outflow.is_some() || expected.inflow.is_some();
     let check = if checked {
         Some(if problems.is_empty() {
-            (true, "Totals match the statement".to_string())
+            (true, t!("Totals match the statement"))
         } else {
-            (false, format!("Doesn't match the statement: {}", problems.join("; ")))
+            (false, t!("Doesn't match the statement: {problems}", problems = problems.join(list_separator())))
         })
     } else if mapped {
-        Some((true, "Every row converted from the sheet's own columns".to_string()))
+        Some((true, t!("Every row converted from the sheet's own columns")))
     } else {
         None
     };
@@ -764,38 +775,34 @@ pub fn build_import(
     if duplicates + matches > 0 {
         let mut parts = vec![];
         if duplicates > 0 {
-            parts.push(plural(duplicates, "looks like a duplicate", "look like duplicates"));
+            parts.push(t!("{n|# looks like a duplicate|# look like duplicates}", n = duplicates));
         }
         if matches > 0 {
-            parts.push(plural(matches, "matches an existing entry", "match existing entries"));
+            parts.push(t!("{n|# matches an existing entry|# match existing entries}", n = matches));
         }
-        notes.push(format!("In the review: {}.", parts.join(", ")));
+        notes.push(t!("In the review: {parts}.", parts = parts.join(comma())));
     } else {
-        notes.push("The import review shows each row before anything is added.".into());
+        notes.push(t!("The import review shows each row before anything is added."));
     }
     if !skipped.is_empty() {
         let shown: Vec<_> = skipped.iter().take(4).cloned().collect();
-        notes.push(format!(
-            "Left out {}: {}{}.",
-            plural(skipped.len(), "row", "rows"),
-            shown.join("; "),
-            if skipped.len() > 4 { "…" } else { "" }
-        ));
+        let rows = format!("{}{}", shown.join(list_separator()), if skipped.len() > 4 { "…" } else { "" });
+        notes.push(t!("Left out {n|# row|# rows}: {rows}.", n = skipped.len(), rows));
     }
     let card = Card {
-        kicker: format!("Import file · {account_name}"),
+        kicker: t!("Import file · {account}", account = account_name),
         rows: vec![],
         stats: vec![
-            Stat { label: "Dates".into(), text: Some(format!("{} – {}", short_date(first), short_date(last))), amount: None },
-            Stat { label: "Outflow".into(), text: None, amount: Some(outflow) },
-            Stat { label: "Inflow".into(), text: None, amount: Some(inflow) },
+            Stat { label: t!("Dates"), text: Some(format!("{} – {}", short_date(first), short_date(last))), amount: None },
+            Stat { label: t!("Outflow"), text: None, amount: Some(outflow) },
+            Stat { label: t!("Inflow"), text: None, amount: Some(inflow) },
         ],
         check,
-        warning: (!mapped).then(|| "Read by the assistant. Check the amounts in the review.".to_string()),
+        warning: (!mapped).then(|| t!("Read by the assistant. Check the amounts in the review.")),
         note: Some(notes.join(" ")),
         ..Card::default()
     };
-    let title = format!("{} ready to review", plural(file.rows.len(), "transaction", "transactions"));
+    let title = t!("{n|# transaction|# transactions} ready to review", n = file.rows.len());
     let mut summary = summary(&title, &card);
     summary["duplicates"] = json!(duplicates);
     summary["matchesExisting"] = json!(matches);
