@@ -1257,7 +1257,7 @@ table.fixed :is(th, td)[aria-hidden] + :is(th, td) {
   unicode-bidi: plaintext;
 }
 /* Charts read left to right in Arabic too, like the numbers and dates on their axes. */
-[dir="rtl"] .chart svg {
+[dir="rtl"] :is(.chart svg, .heat-scroll) {
   direction: ltr;
 }
 /* Arabic letters join: spacing them out breaks the words apart. */
