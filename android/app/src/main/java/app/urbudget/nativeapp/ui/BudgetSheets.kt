@@ -879,7 +879,9 @@ internal fun QuickAssignDialog(budget: JSONObject, summary: JSONObject, month: S
 internal fun NewCategoryDialog(budget: JSONObject, vm: BudgetViewModel, presetGroup: String? = null, close: () -> Unit) {
     val existing = remember(budget) { groupNames(budget) }
     var name by remember { mutableStateOf("") }
-    var group by remember { mutableStateOf(presetGroup ?: existing.firstOrNull() ?: "Everyday") }
+    // A budget's first group is named in the language in use; after that it's the person's own name.
+    val starterGroup = stringResource(R.string.starter_group_everyday)
+    var group by remember { mutableStateOf(presetGroup ?: existing.firstOrNull() ?: starterGroup) }
     var newGroup by remember { mutableStateOf(existing.isEmpty()) }
     FormDialog(stringResource(R.string.category_new), close, confirm = stringResource(R.string.common_add), onConfirm = { vm.saveCategory(name = name.trim(), group = group.trim()); close() }, enabled = name.isNotBlank() && group.isNotBlank()) {
         Field(name, { name = it }, stringResource(R.string.category_name))

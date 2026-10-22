@@ -15,6 +15,8 @@ object Money {
     @Volatile private var dateFormat = "iso"
     /** The interface's language, for month and day names; digits stay Western whatever it is. */
     @Volatile private var language: Locale = Locale.ENGLISH
+    /** The interface's language, for names that aren't formats (currency names). */
+    val interfaceLocale: Locale get() = language
     /** Whether the interface reads right to left, so amounts and dates are kept as left-to-right runs inside it. */
     @Volatile var rightToLeft = false
         private set
@@ -50,6 +52,14 @@ object Money {
      * run when the interface is right to left. Already-isolated pieces inside it join that run.
      */
     fun ltr(text: String): String = if (rightToLeft && text.isNotEmpty()) "⁦${text.replace("⁦", "").replace("⁩", "")}⁩" else text
+
+    /**
+     * Text the person wrote (a name, a memo, an email), isolated in its own direction when the
+     * interface is right to left, so "Car (2024)" never comes out as "(Car (2024". Display only.
+     */
+    fun own(text: String): String = if (rightToLeft && text.isNotEmpty()) "$FSI$text$PDI" else text
+    private const val FSI = "⁨"
+    private const val PDI = "⁩"
 
     /** A date pattern with the interface's month and day names and Western digits. */
     fun pattern(pattern: String): DateTimeFormatter = formatters.computeIfAbsent(pattern to language) { (p, locale) -> DateTimeFormatter.ofPattern(p, locale) }

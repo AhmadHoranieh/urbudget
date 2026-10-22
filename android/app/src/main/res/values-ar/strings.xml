@@ -1247,4 +1247,769 @@
     <string name="reports_range_help">يستخدم «تطبيق» الأشهر المخصصة، أما النطاق الجاهز فيُطبَّق فور اختياره.</string>
     <string name="search_named">ابحث في \u2068%1$s\u2069</string>
     <string name="nothing_matches">لا شيء يطابق.</string>
+
+    <!-- Loans: details, payoff planner and recording a payment -->
+    <string name="loan_choose_account">اختر حساب القرض.</string>
+    <string name="loan_payment_positive">أدخل الدفعة الشهرية للقرض مبلغًا موجبًا.</string>
+    <string name="loan_fees_positive">أدخل الرسوم الشهرية مبلغًا موجبًا.</string>
+    <string name="loan_rate_format">أدخل سعر الفائدة نسبةً مئوية، مثل 5.25.</string>
+    <string name="loan_rate_range">يجب أن يكون سعر الفائدة بين 0 و1,000%.</string>
+    <string name="loan_rate_month_required">اختر الشهر الذي يبدأ فيه كل تغيير في السعر.</string>
+    <string name="loan_one_rate_per_month">أبقِ سعر فائدة واحدًا لكل شهر.</string>
+    <string name="loan_category_required">اختر الفئة التي تُدفع منها الدفعة.</string>
+    <string name="loan_paid_off">تاريخ السداد</string>
+    <string name="loan_time_left">المدة المتبقية</string>
+    <string name="loan_interest">الفائدة</string>
+    <string name="loan_total_cost">التكلفة الإجمالية</string>
+    <string name="loan_interest_saved">الفائدة الموفَّرة</string>
+    <string name="loan_time_saved">الوقت الموفَّر</string>
+    <string name="loan_now">الآن</string>
+    <!-- A payment: its interest (%1$s), escrow or fees (%2$s, %3$s), principal (%4$s) and what's still owed (%5$s). -->
+    <string name="loan_schedule_line">الفائدة \u2068%1$s\u2069 · \u2068%2$s\u2069 \u2068%3$s\u2069 · الأصل \u2068%4$s\u2069 · المتبقي \u2068%5$s\u2069</string>
+    <plurals name="loan_schedule_title">
+        <item quantity="zero">جدول الدفعات · \u2068%1$s\u2069 دفعة</item>
+        <item quantity="one">جدول الدفعات · دفعة واحدة</item>
+        <item quantity="two">جدول الدفعات · دفعتان</item>
+        <item quantity="few">جدول الدفعات · \u2068%1$s\u2069 دفعات</item>
+        <item quantity="many">جدول الدفعات · \u2068%1$s\u2069 دفعة</item>
+        <item quantity="other">جدول الدفعات · \u2068%1$s\u2069 دفعة</item>
+    </plurals>
+    <plurals name="loan_schedule_title_changes">
+        <item quantity="zero">جدول الدفعات مع التغييرات · \u2068%1$s\u2069 دفعة</item>
+        <item quantity="one">جدول الدفعات مع التغييرات · دفعة واحدة</item>
+        <item quantity="two">جدول الدفعات مع التغييرات · دفعتان</item>
+        <item quantity="few">جدول الدفعات مع التغييرات · \u2068%1$s\u2069 دفعات</item>
+        <item quantity="many">جدول الدفعات مع التغييرات · \u2068%1$s\u2069 دفعة</item>
+        <item quantity="other">جدول الدفعات مع التغييرات · \u2068%1$s\u2069 دفعة</item>
+    </plurals>
+    <string name="loan_fee_escrow">الضمان</string>
+    <string name="loan_fee_fees">الرسوم</string>
+    <string name="loan_title_named">القرض · \u2068%1$s\u2069</string>
+    <string name="loan_title">مخطط سداد القرض</string>
+    <string name="loan_needs_account">أضف أولًا حساب تتبُّع من نوع قرض، مثل الرهن العقاري أو قرض السيارة، برصيد سالب يساوي ما عليك.</string>
+    <string name="loan_debt_account">حساب الدين</string>
+    <string name="loan_status_paid_off">مُسدَّد</string>
+    <string name="loan_record_payment">تسجيل الدفعة</string>
+    <string name="loan_save_first">احفظ تفاصيل القرض أولًا لتسجيل دفعة بها.</string>
+    <string name="loan_save_changes_first">احفظ تغييراتك أولًا: تستخدم الدفعة التفاصيل المحفوظة.</string>
+    <string name="loan_interest_escrow_added">تُضاف الفائدة والضمان إلى القرض مع أول دفعة كل شهر.</string>
+    <string name="loan_interest_fees_added">تُضاف الفائدة والرسوم إلى القرض مع أول دفعة كل شهر.</string>
+    <string name="loan_interest_added">تُضاف الفائدة إلى القرض مع أول دفعة كل شهر.</string>
+    <string name="loan_details">تفاصيل القرض</string>
+    <string name="loan_details_detail">ما يُحسب منه تاريخ السداد والفائدة</string>
+    <string name="loan_rate_field">سعر الفائدة (%)</string>
+    <string name="loan_payment_field">الدفعة الشهرية (\u2068%1$s\u2069)</string>
+    <string name="loan_escrow_field">الضمان الشهري (\u2068%1$s\u2069)</string>
+    <string name="loan_fees_field">الرسوم الشهرية (\u2068%1$s\u2069)</string>
+    <string name="loan_payment_category">فئة الدفعة</string>
+    <string name="loan_payment_category_hint">من أين تأتي الدفعة</string>
+    <string name="loan_rate_changes">تغييرات السعر</string>
+    <string name="loan_rate_changes_detail">للسعر المتغيّر: يحلّ كل تغيير محلّ السعر أعلاه بدءًا من شهره.</string>
+    <string name="loan_new_rate_field">السعر السنوي الجديد (%)</string>
+    <string name="loan_remove_rate">إزالة سعر \u2068%1$s\u2069</string>
+    <string name="loan_add_rate_change">إضافة تغيير في السعر</string>
+    <string name="loan_unsaved">تغييرات غير محفوظة. يجرّبها المخطط أدناه بالفعل، ويحتفظ بها «حفظ».</string>
+    <string name="loan_planner">مخطط السداد</string>
+    <string name="loan_planner_detail">للتجربة فقط: لا شيء هنا يغيّر ميزانيتك أو تفاصيل القرض.</string>
+    <string name="loan_nothing_owed">لا شيء مستحق على هذا الحساب.</string>
+    <string name="loan_extra_field">مبلغ إضافي كل شهر (\u2068%1$s\u2069)</string>
+    <string name="loan_lump_field">دفعة لمرة واحدة الآن (\u2068%1$s\u2069)</string>
+    <string name="loan_pay_off_by_date">السداد بحلول تاريخ…</string>
+    <string name="loan_pay_off_by">السداد بحلول</string>
+    <string name="loan_clear_payoff_date">مسح تاريخ السداد</string>
+    <string name="loan_amounts_format">أدخل مبالغ مثل 50 أو 25.50.</string>
+    <string name="loan_no_payment_repays">لا توجد دفعة شهرية تسدد القرض بحلول ذلك الوقت.</string>
+    <string name="loan_pay_by_needed">لسداده بحلول \u2068%1$s\u2069، ادفع \u2068%2$s\u2069 شهريًا: أي \u2068%3$s\u2069 أكثر من الآن، وقد جُرِّبت أدناه مبلغًا إضافيًا.</string>
+    <string name="loan_already_pays_by">دفعتك الحالية تسدده بالفعل بحلول \u2068%1$s\u2069.</string>
+    <string name="loan_current_plan">الخطة الحالية</string>
+    <string name="loan_with_changes">مع التغييرات</string>
+    <plurals name="loan_show_all_payments">
+        <item quantity="zero">عرض كل الدفعات (\u2068%1$s\u2069)</item>
+        <item quantity="one">عرض الدفعة الوحيدة</item>
+        <item quantity="two">عرض الدفعتين</item>
+        <item quantity="few">عرض كل الدفعات (\u2068%1$s\u2069)</item>
+        <item quantity="many">عرض كل الدفعات (\u2068%1$s\u2069)</item>
+        <item quantity="other">عرض كل الدفعات (\u2068%1$s\u2069)</item>
+    </plurals>
+    <string name="loan_note">تُحسب الفائدة مركّبة شهريًا ويُقرَّب كل رسم إلى أقرب سنت، لذا قد تختلف أرقام المُقرض قليلًا. تسجيل الدفعة يضيف معاملات محلية ولا يدفع لبنكك.</string>
+    <string name="loan_remove_details">إزالة تفاصيل القرض</string>
+    <string name="loan_remove_title">إزالة تفاصيل القرض؟</string>
+    <string name="loan_remove_message">لن يُحسب بعد الآن تاريخ السداد والفائدة لـ\u2068%1$s\u2069، وتبقى معاملاته. يمكنك التراجع عن ذلك.</string>
+    <string name="common_remove">إزالة</string>
+    <string name="loan_owed">المستحق</string>
+    <string name="loan_rate">السعر</string>
+    <string name="loan_payment">الدفعة</string>
+    <string name="loan_interest_to_pay">الفائدة المتبقية</string>
+    <string name="clear_field">مسح \u2068%1$s\u2069</string>
+    <!-- How a loan payment is recorded: from the account (%1$s) to the loan (%2$s). -->
+    <string name="loan_payment_note_interest">تُسجَّل تحويلًا من \u2068%1$s\u2069 إلى \u2068%2$s\u2069 يُنفَق من الفئة. وتُضاف فائدة الشهر إلى القرض مع أول دفعة في ذلك الشهر.</string>
+    <string name="loan_payment_note_escrow">تُسجَّل تحويلًا من \u2068%1$s\u2069 إلى \u2068%2$s\u2069 يُنفَق من الفئة. وتُضاف فائدة الشهر وضمانه إلى القرض مع أول دفعة في ذلك الشهر.</string>
+    <string name="loan_payment_note_fees">تُسجَّل تحويلًا من \u2068%1$s\u2069 إلى \u2068%2$s\u2069 يُنفَق من الفئة. وتُضاف فائدة الشهر ورسومه إلى القرض مع أول دفعة في ذلك الشهر.</string>
+    <string name="loan_account_you_choose">الحساب الذي تختاره</string>
+    <string name="loan_payment_account_required">اختر الحساب الذي تأتي منه الدفعة.</string>
+    <string name="loan_payment_amount_required">أدخل مبلغًا للدفع.</string>
+    <string name="loan_pay_title">سداد \u2068%1$s\u2069</string>
+    <string name="loan_pay_amount">دفع \u2068%1$s\u2069</string>
+    <string name="loan_owed_on_loan">المستحق على القرض</string>
+    <string name="loan_monthly_payment">الدفعة الشهرية</string>
+    <string name="loan_needs_cash_account">أضف حساب نقد في ميزانيتك لتسدّد القرض منه.</string>
+    <!-- A span of time: the years (%1$s) and the months (%2$s). -->
+    <string name="span_years_months">\u2068%1$s\u2069 و\u2068%2$s\u2069</string>
+    <plurals name="span_years">
+        <item quantity="zero">\u2068%1$s\u2069 سنة</item>
+        <item quantity="one">سنة واحدة</item>
+        <item quantity="two">سنتان</item>
+        <item quantity="few">\u2068%1$s\u2069 سنوات</item>
+        <item quantity="many">\u2068%1$s\u2069 سنة</item>
+        <item quantity="other">\u2068%1$s\u2069 سنة</item>
+    </plurals>
+    <plurals name="span_months">
+        <item quantity="zero">\u2068%1$s\u2069 شهر</item>
+        <item quantity="one">شهر واحد</item>
+        <item quantity="two">شهران</item>
+        <item quantity="few">\u2068%1$s\u2069 أشهر</item>
+        <item quantity="many">\u2068%1$s\u2069 شهرًا</item>
+        <item quantity="other">\u2068%1$s\u2069 شهر</item>
+    </plurals>
+    <string name="rate_three_decimals">أدخل سعرًا بثلاث خانات عشرية على الأكثر.</string>
+    <string name="rate_range">يجب أن يكون السعر بين 0 و1,000%.</string>
+
+    <!-- Payees and import rules -->
+    <plurals name="payee_transactions">
+        <item quantity="zero">\u2068%1$s\u2069 معاملة</item>
+        <item quantity="one">معاملة واحدة</item>
+        <item quantity="two">معاملتان</item>
+        <item quantity="few">\u2068%1$s\u2069 معاملات</item>
+        <item quantity="many">\u2068%1$s\u2069 معاملة</item>
+        <item quantity="other">\u2068%1$s\u2069 معاملة</item>
+    </plurals>
+    <string name="payee_not_used">لم يُستخدم في معاملات بعد</string>
+    <string name="payee_default_named">الافتراضية: \u2068%1$s\u2069</string>
+    <string name="category_deleted">فئة محذوفة</string>
+    <string name="category_split_count">مقسَّمة (\u2068%1$s\u2069)</string>
+    <string name="rule_contains">يحتوي على «\u2068%1$s\u2069»</string>
+    <string name="rule_rename_to_named">إعادة التسمية إلى \u2068%1$s\u2069</string>
+    <string name="rule_keep_name">إبقاء اسم المستفيد</string>
+    <string name="payees_title">المستفيدون</string>
+    <string name="payees_detail">رتّب الأسماء، واختر فئة افتراضية للمعاملات الجديدة</string>
+    <string name="payee_add">إضافة مستفيد</string>
+    <string name="payees_search">ابحث في المستفيدين</string>
+    <string name="payees_empty">يظهر المستفيدون هنا كلما أدخلت معاملات.</string>
+    <string name="rules_title">قواعد الاستيراد</string>
+    <string name="rules_detail">يفوز أطول نمط مطابق</string>
+    <string name="rule_add">إضافة قاعدة استيراد</string>
+    <plurals name="rules_pending">
+        <item quantity="zero">لن تغيّر القواعد اسم أي معاملة لديك أو فئتها.</item>
+        <item quantity="one">ستغيّر القواعد اسم معاملة واحدة لديك أو فئتها.</item>
+        <item quantity="two">ستغيّر القواعد اسم معاملتين لديك أو فئتيهما.</item>
+        <item quantity="few">ستغيّر القواعد اسم \u2068%1$s\u2069 معاملات لديك أو فئاتها.</item>
+        <item quantity="many">ستغيّر القواعد اسم \u2068%1$s\u2069 معاملة لديك أو فئتها.</item>
+        <item quantity="other">ستغيّر القواعد اسم \u2068%1$s\u2069 معاملة لديك أو فئتها.</item>
+    </plurals>
+    <string name="rules_empty">تعيد القواعد تسمية المعاملات وتصنّفها عند ورودها من كشوف الحساب ومن مزامنة البنك.</string>
+    <string name="rules_apply_existing">تطبيق القواعد على المعاملات الموجودة</string>
+    <string name="payee_choose_a">اختر مستفيدًا</string>
+    <string name="payee_last_used">آخر ما استُخدم: \u2068%1$s\u2069</string>
+    <string name="payee_no_category">بلا فئة</string>
+    <string name="payee_no_default">بلا فئة افتراضية</string>
+    <string name="payee_no_transactions">لا معاملات بعد</string>
+    <plurals name="payee_count_total">
+        <item quantity="zero">\u2068%1$s\u2069 معاملة · الإجمالي \u2068%2$s\u2069</item>
+        <item quantity="one">معاملة واحدة · الإجمالي \u2068%2$s\u2069</item>
+        <item quantity="two">معاملتان · الإجمالي \u2068%2$s\u2069</item>
+        <item quantity="few">\u2068%1$s\u2069 معاملات · الإجمالي \u2068%2$s\u2069</item>
+        <item quantity="many">\u2068%1$s\u2069 معاملة · الإجمالي \u2068%2$s\u2069</item>
+        <item quantity="other">\u2068%1$s\u2069 معاملة · الإجمالي \u2068%2$s\u2069</item>
+    </plurals>
+    <string name="payee_default_category">الفئة الافتراضية</string>
+    <string name="payee_default_category_help">تُملأ عند إدخال معاملة لهذا المستفيد. وإن لم توجد، تُقترح الفئة التي استخدمتها آخر مرة.</string>
+    <string name="payee_name">اسم المستفيد</string>
+    <string name="payee_merge">الدمج في مستفيد آخر</string>
+    <string name="payee_merge_exists">\u2068%1$s\u2069 موجود بالفعل، لذا يدمج الحفظ الاثنين.</string>
+    <string name="payee_rename_help">تُحدِّث إعادة التسمية أو الدمج المعاملات المحفوظة ومستفيدي التقسيم والمعاملات المجدولة وقواعد الاستيراد.</string>
+    <string name="payee_recent">آخر المعاملات</string>
+    <string name="rule_keep_category">إبقاء الفئة</string>
+    <string name="rule_title">قاعدة استيراد</string>
+    <string name="rule_match_field">اسم المستفيد لدى البنك يحتوي على</string>
+    <string name="rule_rename_to">إعادة التسمية إلى</string>
+    <string name="rule_match_help">أدخل النص الذي يُبحث عنه في اسم المستفيد لدى البنك، مثل CARREFOUR.</string>
+    <string name="rule_choose_something">اختر اسمًا جديدًا أو فئة أو كليهما.</string>
+    <plurals name="rule_would_change">
+        <item quantity="zero">لن تغيّر شيئًا إن طُبّقت على المعاملات الموجودة.</item>
+        <item quantity="one">إن طُبّقت على المعاملات الموجودة، فستغيّر اسم معاملة واحدة أو فئتها.</item>
+        <item quantity="two">إن طُبّقت على المعاملات الموجودة، فستغيّر اسم معاملتين أو فئتيهما.</item>
+        <item quantity="few">إن طُبّقت على المعاملات الموجودة، فستغيّر اسم \u2068%1$s\u2069 معاملات أو فئاتها.</item>
+        <item quantity="many">إن طُبّقت على المعاملات الموجودة، فستغيّر اسم \u2068%1$s\u2069 معاملة أو فئتها.</item>
+        <item quantity="other">إن طُبّقت على المعاملات الموجودة، فستغيّر اسم \u2068%1$s\u2069 معاملة أو فئتها.</item>
+    </plurals>
+    <string name="rule_how_it_matches">تطابق القاعدة عندما يحتوي اسم المستفيد لدى البنك على نصها، بصرف النظر عن حالة الأحرف وعلامات الترقيم؛ ويفوز أطول تطابق. وهي تعيد تسمية المستفيد وتملأ الفئة إن لم تكن موجودة.</string>
+    <string name="rule_move_earlier">تقديم</string>
+    <string name="rule_move_later">تأخير</string>
+    <string name="rule_order_help">يفوز أطول نمط، ويحسم ترتيب القائمة التعادل.</string>
+    <string name="rule_apply_existing">تطبيق على المعاملات الموجودة</string>
+    <string name="rule_delete">حذف القاعدة</string>
+
+    <!-- Card payments, budget settings and flag names -->
+    <string name="card_paid_toast">دُفع \u2068%1$s\u2069 إلى \u2068%2$s\u2069.</string>
+    <string name="card_set_aside_option">المُجنَّب</string>
+    <string name="card_set_aside_detail">في فئة سداد \u2068%1$s\u2069</string>
+    <string name="card_whole_balance">الرصيد كاملًا</string>
+    <string name="card_whole_balance_detail">يسدد البطاقة بالكامل</string>
+    <string name="card_another_amount">مبلغ آخر</string>
+    <string name="card_type_on_keypad">اكتبه على لوحة الأرقام</string>
+    <string name="card_payment_help">الدفعة تحويل من حساب النقد إلى البطاقة: تستخدم مالًا مُجنَّبًا من قبل، لذا لا تغيّر أي فئة.</string>
+    <string name="card_pay_from">الدفع من</string>
+    <string name="memo_optional">البيان (اختياري)</string>
+    <string name="budget_settings">إعدادات الميزانية</string>
+    <string name="budget_settings_changed">تغيّرت الميزانية المفتوحة. أغلق الإعدادات وافتحها مجددًا.</string>
+    <string name="budget_settings_saved">حُفظت إعدادات الميزانية.</string>
+    <string name="budget_currency_help">تغيّر العملة طريقة عرض المبالغ فقط، ولا تُحوَّل المبالغ أبدًا.</string>
+    <string name="budget_number_format">تنسيق الأرقام</string>
+    <string name="budget_symbol_placement">موضع رمز العملة</string>
+    <string name="budget_symbol_before">قبل المبلغ · \u2068%1$s\u2069</string>
+    <string name="budget_symbol_after">بعد المبلغ · \u2068%1$s\u2069</string>
+    <string name="budget_symbol_none">بدون رمز · \u2068%1$s\u2069</string>
+    <string name="budget_date_format">تنسيق التاريخ</string>
+    <string name="editor_budget_switched">تغيّرت الميزانية المفتوحة. أغلق هذا المحرر وافتحه مجددًا.</string>
+    <string name="flag_names_help">استخدم أسماء مثل «استرداد» أو «ضريبة». اترك الاسم فارغًا لاستخدام لونه.</string>
+    <string name="flag_field_red">العلامة الحمراء</string>
+    <string name="flag_field_orange">العلامة البرتقالية</string>
+    <string name="flag_field_yellow">العلامة الصفراء</string>
+    <string name="flag_field_green">العلامة الخضراء</string>
+    <string name="flag_field_blue">العلامة الزرقاء</string>
+    <string name="flag_field_purple">العلامة البنفسجية</string>
+
+    <!-- Budget library and backups -->
+    <string name="library_save_backup_failed">تعذّر حفظ النسخة الاحتياطية.</string>
+    <string name="library_backup_exported">تم تصدير النسخة الاحتياطية القابلة للنقل.</string>
+    <string name="library_export_backup_failed">تعذّر تصدير النسخة الاحتياطية.</string>
+    <string name="library_load_failed">تعذّر تحميل الميزانيات.</string>
+    <string name="library_budgets">الميزانيات</string>
+    <string name="library_budgets_detail">لكل ميزانية سجلها وروابط بنوكها ومحادثات المساعد ونسخها الاحتياطية.</string>
+    <string name="library_open_now">مفتوحة الآن</string>
+    <string name="library_file_missing">الملف مفقود</string>
+    <string name="library_on_device">على هذا الجهاز</string>
+    <string name="library_open_chip">مفتوحة</string>
+    <string name="common_open">فتح</string>
+    <string name="library_delete_local">حذف الميزانية المحلية</string>
+    <string name="library_new_budget">ميزانية جديدة</string>
+    <string name="library_help">انقر الميزانية المفتوحة لتعديل اسمها وعملتها وتنسيقاتها، واضغط مطولًا على أخرى لحذفها.</string>
+    <string name="library_start_new">ابدأ خطة جديدة</string>
+    <string name="library_fresh_start">بداية جديدة</string>
+    <string name="library_fresh_start_detail">انقل الأرصدة والفئات والأهداف إلى ميزانية جديدة، وتبقى هذه في المكتبة</string>
+    <!-- A fresh start's suggested name: the budget's own name, then the words. -->
+    <string name="library_fresh_name">\u2068%1$s\u2069 · بداية جديدة</string>
+    <string name="library_fresh_create">إنشاء الميزانية الجديدة</string>
+    <string name="library_fresh_field">اسم الميزانية الجديدة</string>
+    <string name="library_start_date">تاريخ البدء</string>
+    <string name="library_fresh_help">ينقل المحرّك المشترك أرصدة الحسابات والفئات والأهداف والنشاط المعلّق إلى ميزانية منفصلة، وتبقى ميزانيتك الأصلية في هذه المكتبة.</string>
+    <string name="library_backups">النسخ الاحتياطية والاستعادة</string>
+    <string name="library_backups_detail">تتبع النسخ الاحتياطية التلقائية قواعد الاحتفاظ نفسها في سطح المكتب.</string>
+    <string name="library_create_backup">إنشاء نسخة احتياطية قابلة للنقل</string>
+    <string name="library_create_backup_detail">نسخة كاملة للحفظ أو المشاركة</string>
+    <string name="library_export_json">تصدير JSON</string>
+    <string name="library_import_json">استيراد JSON</string>
+    <string name="library_keep_backups">الاحتفاظ بالنسخ التلقائية</string>
+    <string name="library_keep_all">الاحتفاظ بالكل</string>
+    <string name="library_keep_newest">أحدث \u2068%1$s\u2069</string>
+    <string name="library_size_kib">\u2068%1$s\u2069 كيلوبايت</string>
+    <string name="library_settings_hint">التفضيلات والمظهر وأسماء العلامات في «الإعدادات والبيانات».</string>
+    <string name="library_delete_title">حذف \u2068%1$s\u2069؟</string>
+    <string name="library_restore_title">استعادة هذه النسخة الاحتياطية؟</string>
+    <string name="library_delete_message">ستُحذف الميزانية المحلية وملفاتها من هذا الجهاز. صدِّر نسخة احتياطية أولًا إن أردت الاحتفاظ بها. أما النسخ السحابية فتُدار على حدة من «الحساب والمزامنة».</string>
+    <string name="library_restore_message">يستبدل هذا الميزانية المفتوحة بـ\u2068%1$s\u2069. تُحفظ نسخة احتياطية من الميزانية الحالية قبل الاستبدال، وإن وُجد تغيير أحدث فستتوقف الاستعادة لمراجعته.</string>
+
+    <!-- Account and sync -->
+    <string name="common_try_again">حاول مرة أخرى.</string>
+    <string name="common_continue">متابعة</string>
+    <string name="billing_cancelled">أُلغي الشراء.</string>
+    <string name="billing_pending">الدفع قيد الانتظار، وسيُكمله Google Play؛ استعد المشتريات عند اكتماله.</string>
+    <string name="billing_restored">تم التحقق من الشراء واستعادته إلى حسابك.</string>
+    <string name="billing_none_found">لم يُعثر على مشتريات لحسابك هذا في UrBudget.</string>
+    <string name="cloud_intro">تبقى ميزانياتك على هذا الجهاز، والمزامنة اختيارية.</string>
+    <string name="cloud_account">حسابك</string>
+    <string name="cloud_sign_in_intro">سجِّل الدخول ببريدك الإلكتروني لاستخدام المزامنة، دون حاجة إلى كلمة مرور.</string>
+    <string name="cloud_email">البريد الإلكتروني</string>
+    <string name="cloud_code">الرمز المرسل إلى بريدك</string>
+    <string name="cloud_check_email">افحص بريدك الإلكتروني لتجد رمز تسجيل الدخول.</string>
+    <string name="cloud_sign_in">تسجيل الدخول</string>
+    <string name="cloud_new_code">رمز جديد</string>
+    <string name="cloud_send_code">إرسال رمز تسجيل الدخول</string>
+    <string name="cloud_session_stored">الجلسة محفوظة بأمان على هذا الجهاز</string>
+    <string name="cloud_sign_out">تسجيل الخروج على هذا الجهاز</string>
+    <string name="cloud_subscription">اشتراك المزامنة</string>
+    <string name="cloud_subscription_intro">تطبيق UrBudget مجاني. والمزامنة اشتراك شهري اختياري، يعرض Google Play سعره ويتولى الدفع.</string>
+    <string name="cloud_sign_in_to_subscribe">سجِّل الدخول أعلاه للاشتراك أو لاستعادة المشتريات.</string>
+    <string name="cloud_show_price">عرض السعر</string>
+    <!-- The monthly price, as Google Play writes it. -->
+    <string name="cloud_subscribe">الاشتراك في المزامنة · \u2068%1$s\u2069 شهريًا</string>
+    <string name="cloud_restore_purchases">استعادة المشتريات</string>
+    <string name="cloud_manage_subscription">إدارة الاشتراك</string>
+    <string name="cloud_encrypted_sync">المزامنة المشفَّرة</string>
+    <string name="cloud_encrypted_sync_detail">تُشفَّر الميزانيات قبل رفعها، ولا تفتحها إلا عبارة مرور المزامنة الخاصة بك.</string>
+    <string name="cloud_subscription_active">اشتراك المزامنة فعّال</string>
+    <string name="cloud_subscription_needed">تحتاج المزامنة إلى اشتراك فعّال</string>
+    <string name="cloud_sync_automatically">المزامنة تلقائيًا</string>
+    <string name="cloud_while_open">أثناء فتح التطبيق</string>
+    <string name="cloud_sync_now">المزامنة الآن</string>
+    <string name="cloud_lock">قفل المزامنة على هذا الجهاز</string>
+    <string name="cloud_set_up_or_unlock">إعداد المزامنة أو فتح قفلها</string>
+    <string name="cloud_last_attempt">آخر محاولة: \u2068%1$s\u2069</string>
+    <string name="sync_state_cloud_only">في السحابة</string>
+    <string name="sync_state_local_only">هذا الجهاز فقط</string>
+    <string name="sync_state_conflict">بحاجة إلى مراجعة</string>
+    <string name="sync_state_synced">متزامنة</string>
+    <string name="sync_state_uploaded">رُفعت</string>
+    <string name="sync_state_downloaded">نُزّلت</string>
+    <string name="sync_state_merged">دُمجت</string>
+    <string name="sync_state_waiting">قيد الانتظار</string>
+    <string name="sync_state_update_app">حدّث التطبيق</string>
+    <string name="sync_state_error">خطأ</string>
+    <string name="sync_state_unknown">غير معروفة</string>
+    <string name="cloud_download_open">التنزيل والفتح</string>
+    <string name="cloud_start_syncing">بدء المزامنة</string>
+    <string name="cloud_review_differences">مراجعة الاختلافات</string>
+    <string name="cloud_remove_copy">إزالة النسخة السحابية</string>
+    <string name="cloud_reset_passphrase">إعادة تعيين عبارة مرور المزامنة المنسية</string>
+    <string name="cloud_delete_account">حذف الحساب والبيانات السحابية</string>
+    <string name="cloud_sign_in_to_sync">سجِّل الدخول أعلاه لاستخدام المزامنة.</string>
+    <string name="cloud_privacy">الخصوصية وخياراتك</string>
+    <string name="cloud_reset_title">إعادة تعيين عبارة مرور المزامنة؟</string>
+    <string name="cloud_setup_title">إنشاء عبارة مرور المزامنة</string>
+    <string name="cloud_unlock_title">فتح قفل المزامنة المشفَّرة</string>
+    <string name="cloud_reset_confirm">إعادة تعيين النسخ السحابية</string>
+    <string name="cloud_reset_message">يحذف هذا النسخ السحابية المشفَّرة بعبارة المرور القديمة. وتبقى الميزانيات المحلية على أجهزتك، ويرفع هذا الجهاز نسخه من جديد.</string>
+    <string name="cloud_passphrase_safe">احفظ عبارة المرور هذه في مكان آمن، فلا يستطيع UrBudget استعادتها لك.</string>
+    <string name="cloud_passphrase_field">عبارة مرور المزامنة · 8 أحرف على الأقل</string>
+    <string name="cloud_passphrase_repeat">أعد كتابة عبارة المرور</string>
+    <string name="cloud_delete_title">حذف حسابك؟</string>
+    <string name="cloud_delete_confirm">حذف الحساب</string>
+    <string name="cloud_delete_message">يحذف هذا حسابك وميزانياتك السحابية ويوقف تجديد الاشتراك. وتبقى الميزانيات على أجهزتك، وقد يُحتفظ بسجلات الشراء كما تصف سياسة الخصوصية.</string>
+    <string name="cloud_delete_type">اكتب \u2068%1$s\u2069 للتأكيد</string>
+    <string name="cloud_remove_title">إزالة النسخة السحابية؟</string>
+    <string name="cloud_remove_message">يوقف هذا مزامنة \u2068%1$s\u2069 ويحذف نسختها السحابية، وتبقى النسخ المحلية على أجهزتك.</string>
+    <string name="conflict_title">حل التعارض في \u2068%1$s\u2069</string>
+    <string name="conflict_apply">تطبيق الاختيارات</string>
+    <string name="conflict_help">راجع النسختين. لن يتغيّر شيء حتى تطبّق اختياراتك.</string>
+    <string name="conflict_keep_whole">الاحتفاظ بهذه الميزانية كاملة</string>
+    <string name="conflict_local_replaces">نسخة هذا الجهاز تحل محل النسخة السحابية</string>
+    <string name="conflict_cloud_replaces">النسخة السحابية تحل محل نسخة هذا الجهاز</string>
+    <string name="conflict_this_device_value">هذا الجهاز: \u2068%1$s\u2069</string>
+    <string name="conflict_cloud_value">السحابة: \u2068%1$s\u2069</string>
+    <string name="conflict_deleted">محذوف</string>
+    <string name="conflict_keep">الإبقاء على</string>
+    <string name="conflict_this_device">هذا الجهاز</string>
+    <string name="conflict_cloud">السحابة</string>
+
+    <!-- Google Play billing -->
+    <string name="billing_no_purchase">لم يُرجع Google Play أي عملية شراء. جرّب استعادة المشتريات.</string>
+    <!-- Google Play's response code, a plain number. -->
+    <string name="billing_unavailable">الفوترة في Google Play غير متاحة (\u2068%1$s\u2069). حاول مرة أخرى في Google Play، أو استعد المشتريات لاحقًا.</string>
+    <string name="billing_screen_closed">أُغلقت شاشة الفوترة. افتح «الحساب والمزامنة» مجددًا للمتابعة.</string>
+    <string name="billing_product_not_loaded">تعذّر على Google Play تحميل هذا المنتج (\u2068%1$s\u2069). حاول مرة أخرى لاحقًا.</string>
+    <string name="billing_product_missing">هذا المنتج غير متاح في Google Play بعد.</string>
+    <string name="billing_plan_not_in_play">خطة المزامنة الشهرية غير متاحة في Google Play.</string>
+    <string name="billing_sign_in_to_subscribe">سجِّل الدخول إلى حسابك في UrBudget قبل الاشتراك.</string>
+    <string name="billing_purchase_in_progress">هناك عملية شراء جارية بالفعل.</string>
+    <string name="billing_plan_unavailable">خطة المزامنة الشهرية غير متاحة.</string>
+    <string name="billing_sign_in_to_restore">سجِّل الدخول قبل استعادة المشتريات.</string>
+    <string name="billing_closed_before_restore">أُغلقت شاشة الفوترة. استعد المشتريات بعد إعادة فتح UrBudget.</string>
+    <string name="billing_open_play_to_manage">افتح Google Play لإدارة اشتراكاتك.</string>
+    <string name="billing_purchase_screen_closed">أُغلقت شاشة الشراء. استعد المشتريات بعد إعادة فتح UrBudget.</string>
+    <string name="billing_connection_closed">انقطع الاتصال بخدمة الفوترة.</string>
+
+    <!-- Bank connections and bank files -->
+    <string name="bank_sync_intro">عبر SimpleFIN Bridge · لا يُضاف شيء قبل أن تراجعه.</string>
+    <string name="bank_login_note">تبقى بيانات دخولك إلى البنك لدى SimpleFIN. ويحمي مخزن بيانات الاعتماد في هذا الجهاز رمز الربط، ولا يدخل في النسخ الاحتياطية للميزانية.</string>
+    <string name="bank_setup_token">رمز إعداد SimpleFIN</string>
+    <string name="bank_connect">ربط</string>
+    <string name="bank_get_token">الحصول على رمز</string>
+    <string name="bank_connected">متصل</string>
+    <!-- Requests used today (%1$s) out of the daily limit (%2$s). -->
+    <string name="bank_requests_used">الطلبات المستخدمة اليوم: \u2068%1$s\u2069 من \u2068%2$s\u2069</string>
+    <string name="bank_download_activity">تنزيل النشاط</string>
+    <string name="bank_link_first">اربط حسابًا في الميزانية أولًا</string>
+    <string name="bank_download_detail">من كل الحسابات المربوطة، ثم راجعها حسابًا تلو الآخر</string>
+    <string name="bank_refresh_accounts">تحديث الحسابات</string>
+    <string name="bank_disconnect">فصل هذا الجهاز</string>
+    <string name="bank_accounts">الحسابات البنكية</string>
+    <string name="bank_accounts_detail">انقر حسابًا لربطه بحساب في الميزانية.</string>
+    <!-- The budget account's name, then when it last synced (a date, or the word for never). -->
+    <string name="bank_linked_to">مربوط بـ\u2068%1$s\u2069 · آخر مزامنة: \u2068%2$s\u2069</string>
+    <string name="bank_never_synced">لم تتم بعد</string>
+    <string name="bank_not_linked">غير مربوط</string>
+    <string name="bank_downloaded_activity">النشاط المنزَّل</string>
+    <!-- Through a date (%1$s); requests used today (%2$s) out of the daily limit (%3$s). -->
+    <string name="bank_downloaded_detail">حتى \u2068%1$s\u2069 · الطلبات اليوم: \u2068%2$s\u2069 من \u2068%3$s\u2069</string>
+    <string name="bank_reviewed">تمت مراجعته</string>
+    <string name="bank_up_to_date">محدَّث</string>
+    <plurals name="bank_skipped_new">
+        <item quantity="zero">تخطّيته الآن · لا جديد</item>
+        <item quantity="one">تخطّيته الآن · معاملة جديدة واحدة</item>
+        <item quantity="two">تخطّيته الآن · معاملتان جديدتان</item>
+        <item quantity="few">تخطّيته الآن · \u2068%1$s\u2069 معاملات جديدة</item>
+        <item quantity="many">تخطّيته الآن · \u2068%1$s\u2069 معاملة جديدة</item>
+        <item quantity="other">تخطّيته الآن · \u2068%1$s\u2069 معاملة جديدة</item>
+    </plurals>
+    <plurals name="bank_new_to_review">
+        <item quantity="zero">لا جديد للمراجعة</item>
+        <item quantity="one">معاملة جديدة واحدة للمراجعة</item>
+        <item quantity="two">معاملتان جديدتان للمراجعة</item>
+        <item quantity="few">\u2068%1$s\u2069 معاملات جديدة للمراجعة</item>
+        <item quantity="many">\u2068%1$s\u2069 معاملة جديدة للمراجعة</item>
+        <item quantity="other">\u2068%1$s\u2069 معاملة جديدة للمراجعة</item>
+    </plurals>
+    <string name="bank_balance">رصيد البنك \u2068%1$s\u2069</string>
+    <!-- The bank's balance (%1$s) on a date (%2$s). -->
+    <string name="bank_balance_on">رصيد البنك \u2068%1$s\u2069 في \u2068%2$s\u2069</string>
+    <plurals name="bank_review_accounts">
+        <item quantity="zero">لا حسابات للمراجعة</item>
+        <item quantity="one">مراجعة حساب واحد</item>
+        <item quantity="two">مراجعة حسابين</item>
+        <item quantity="few">مراجعة \u2068%1$s\u2069 حسابات</item>
+        <item quantity="many">مراجعة \u2068%1$s\u2069 حسابًا</item>
+        <item quantity="other">مراجعة \u2068%1$s\u2069 حساب</item>
+    </plurals>
+    <string name="bank_link_title">ربط \u2068%1$s\u2069</string>
+    <string name="bank_choose_account">اختر حسابًا</string>
+    <string name="bank_date_not_future">اختر تاريخ اليوم أو تاريخًا سابقًا.</string>
+    <string name="bank_choose_an_account">اختر حسابًا.</string>
+    <string name="bank_currency_differs">يستخدم هذا الحساب البنكي عملة مختلفة.</string>
+    <string name="bank_budget_account">الحساب في الميزانية</string>
+    <string name="bank_first_import">أول استيراد ابتداءً من</string>
+    <string name="bank_reverse_signs">عكس إشارات مبالغ البنك</string>
+    <string name="bank_history_note">حتى سنة من السجل، تُنزَّل على فترات من 45 يومًا، وتستهلك كل فترة طلبًا واحدًا.</string>
+    <string name="bank_unlink">إلغاء ربط الحساب</string>
+    <string name="bank_review_title">مراجعة نشاط البنك</string>
+    <string name="bank_importing">جارٍ الاستيراد…</string>
+    <!-- A button: how many rows the import adds or matches. -->
+    <string name="bank_import_count">استيراد \u2068%1$s\u2069</string>
+    <string name="bank_mark_checked">تأكيد الفحص</string>
+    <string name="bank_budget_changed_close">تغيّرت الميزانية. أغلق ثم نزّل النشاط من جديد لمراجعة المطابقات الحالية.</string>
+    <string name="bank_budget_changed_download">تغيّرت الميزانية. نزّل النشاط من جديد لمراجعة المطابقات الحالية.</string>
+    <!-- Where the rows come from (a bank or a file name), then the budget account they go into. -->
+    <string name="bank_source_into">من \u2068%1$s\u2069 إلى \u2068%2$s\u2069</string>
+    <plurals name="bank_more_after">
+        <item quantity="zero">لا حسابات بعد هذا</item>
+        <item quantity="one">حساب واحد بعد هذا</item>
+        <item quantity="two">حسابان بعد هذا</item>
+        <item quantity="few">\u2068%1$s\u2069 حسابات بعد هذا</item>
+        <item quantity="many">\u2068%1$s\u2069 حسابًا بعد هذا</item>
+        <item quantity="other">\u2068%1$s\u2069 حساب بعد هذا</item>
+    </plurals>
+    <string name="bank_checking_matches">جارٍ التحقق من المطابقات…</string>
+    <string name="bank_skip_account">تخطي هذا الحساب</string>
+    <string name="bank_at_bank">لدى البنك</string>
+    <string name="bank_at_bank_on">لدى البنك في \u2068%1$s\u2069</string>
+    <string name="bank_not_sent">لم يُرسَل</string>
+    <string name="bank_ours_before">في UrBudget قبل هذا الاستيراد</string>
+    <string name="bank_no_new">لا معاملات جديدة. أكّد لتسجيل الحساب مفحوصًا حتى \u2068%1$s\u2069.</string>
+    <plurals name="bank_rows">
+        <item quantity="zero">لا صفوف</item>
+        <item quantity="one">صف واحد</item>
+        <item quantity="two">صفّان</item>
+        <item quantity="few">\u2068%1$s\u2069 صفوف</item>
+        <item quantity="many">\u2068%1$s\u2069 صفًّا</item>
+        <item quantity="other">\u2068%1$s\u2069 صف</item>
+    </plurals>
+    <plurals name="bank_already_imported_count">
+        <item quantity="zero">لا صفوف مستورَدة مسبقًا</item>
+        <item quantity="one">صف واحد مستورَد مسبقًا</item>
+        <item quantity="two">صفّان مستورَدان مسبقًا</item>
+        <item quantity="few">\u2068%1$s\u2069 صفوف مستورَدة مسبقًا</item>
+        <item quantity="many">\u2068%1$s\u2069 صفًّا مستورَدًا مسبقًا</item>
+        <item quantity="other">\u2068%1$s\u2069 صف مستورَد مسبقًا</item>
+    </plurals>
+    <plurals name="bank_renamed_count">
+        <item quantity="zero">لم تُعِد قواعدك تسمية أي صف</item>
+        <item quantity="one">صف واحد أعادت قواعدك تسميته</item>
+        <item quantity="two">صفّان أعادت قواعدك تسميتهما</item>
+        <item quantity="few">\u2068%1$s\u2069 صفوف أعادت قواعدك تسميتها</item>
+        <item quantity="many">\u2068%1$s\u2069 صفًّا أعادت قواعدك تسميتها</item>
+        <item quantity="other">\u2068%1$s\u2069 صف أعادت قواعدك تسميتها</item>
+    </plurals>
+    <string name="bank_matching_note">تُبقي المطابقة على الفئة والبيان، وتجعل المعاملة مُقاصّة. وتنتظر المعاملات المستورَدة اعتمادك.</string>
+    <string name="bank_idless_note">لا يحتوي هذا الملف على معرّفات المعاملات البنكية، فقد يكون صف ما مستورَدًا من قبل؛ قارن بيانه ومبلغه. تخطَّه إن كان الدفعة نفسها، أو أضفه منفصلًا إن كان دفعة أخرى.</string>
+    <plurals name="bank_rows_need_choice">
+        <item quantity="zero">لا صفوف تحتاج إلى اختيار قبل الاستيراد.</item>
+        <item quantity="one">صف واحد يحتاج إلى اختيار قبل الاستيراد.</item>
+        <item quantity="two">صفّان يحتاجان إلى اختيار قبل الاستيراد.</item>
+        <item quantity="few">\u2068%1$s\u2069 صفوف تحتاج إلى اختيار قبل الاستيراد.</item>
+        <item quantity="many">\u2068%1$s\u2069 صفًّا يحتاج إلى اختيار قبل الاستيراد.</item>
+        <item quantity="other">\u2068%1$s\u2069 صف يحتاج إلى اختيار قبل الاستيراد.</item>
+    </plurals>
+    <!-- What the bank called the payee before a rule renamed it. -->
+    <string name="bank_row_bank">في البنك: \u2068%1$s\u2069</string>
+    <string name="bank_already_imported_skipped">مستورَدة مسبقًا · تم تخطيها</string>
+    <string name="bank_may_be_imported">ربما استُوردت من قبل: قارن البيان والمبلغ، ثم اختر</string>
+    <string name="bank_choose_matching">اختر المعاملة المطابقة، أو أضفها معاملةً جديدة</string>
+    <string name="bank_what_to_do">الإجراء</string>
+    <string name="bank_option_already_imported">مستورَدة مسبقًا — تخطيها</string>
+    <string name="bank_option_add_separate">إضافتها معاملةً منفصلة</string>
+    <string name="bank_option_choose">اختر مطابقة أو أضفها</string>
+    <string name="bank_option_add_new">إضافتها معاملةً جديدة</string>
+    <string name="bank_option_skip">تخطي</string>
+    <string name="bank_option_possible">ربما استُوردت من قبل — اختر</string>
+    <string name="bank_match_details_missing">تفاصيل المطابقة البنكية مفقودة. اعرض المعاينة مجددًا.</string>
+    <!-- A transaction to match: its date, payee, split part, memo and notes, joined by " · ". Each name keeps its own direction. -->
+    <string name="bank_match">مطابقة: %1$s</string>
+    <!-- Which part of a split transaction (1, 2, …). -->
+    <string name="bank_match_split">الجزء \u2068%1$s\u2069</string>
+    <string name="bank_previously_imported">مستورَدة سابقًا</string>
+    <string name="bank_dates_ymd">السنة ثم الشهر ثم اليوم (2026-10-31)</string>
+    <string name="bank_dates_dmy">اليوم ثم الشهر ثم السنة (31/10/2026)</string>
+    <string name="bank_dates_mdy">الشهر ثم اليوم ثم السنة (10/31/2026)</string>
+    <!-- The name shown for a chosen file that has none. -->
+    <string name="bank_statement_file">كشف حساب</string>
+    <string name="bank_statement_too_large">اختر كشف حساب أصغر من 8 ميغابايت.</string>
+    <string name="bank_statement_unopened">تعذّر فتح كشف الحساب المحدد.</string>
+    <string name="bank_budget_changed_preview">تغيّرت ميزانيتك. اعرض معاينة كشف الحساب هذا مجددًا.</string>
+    <string name="bank_file_empty">لا يحتوي الملف على معاملات لاستيرادها.</string>
+    <string name="bank_preview">معاينة</string>
+    <string name="bank_import_lead">استورد المعاملات التي صدّرها بنكك. تراجع كل صف وكيف يطابق ما أدخلته من قبل، قبل أن يُحفظ أي شيء.</string>
+    <string name="bank_into_account">إلى الحساب</string>
+    <string name="bank_choose_file">اختر ملفًا</string>
+    <string name="bank_file_formats">ملف CSV أو OFX أو QFX أو QIF</string>
+    <!-- The file's format (CSV, OFX…). -->
+    <string name="bank_choose_another">\u2068%1$s\u2069 · انقر لاختيار ملف آخر</string>
+    <string name="bank_read_as">القراءة بصيغة</string>
+    <string name="bank_dates_in_file">التواريخ في الملف</string>
+    <string name="bank_purchases_positive">المشتريات موجبة (اعكس إشارات المبالغ)</string>
+    <!-- Date, Payee, Description, Amount, Outflow, Inflow and Memo are CSV column names: keep them in English. -->
+    <string name="bank_csv_help">تحتاج ملفات CSV إلى صف عناوين فيه Date وPayee (أو Description)، ومعهما إما Amount (سالب للأموال الصادرة) أو Outflow وInflow. والعمود Memo اختياري.</string>
+    <string name="bank_statement_label">كشف الحساب</string>
+    <string name="bank_change_file">تغيير الملف</string>
+    <string name="bank_all_in_note">ظهرت كل الصفوف أموالًا واردة. إن كانت مشتريات، فالملف يكتبها أرقامًا موجبة.</string>
+    <string name="bank_reverse_signs_action">عكس الإشارات</string>
+
+    <!-- Import from YNAB -->
+    <string name="ynab_method">طريقة الاستيراد</string>
+    <string name="ynab_method_account">حساب YNAB</string>
+    <string name="ynab_method_files">ملفات تصدير YNAB</string>
+    <string name="ynab_too_many_files">اختر ثمانية ملفات تصدير من YNAB على الأكثر.</string>
+    <string name="ynab_file_unreadable">تعذّرت قراءة الملف المحدد.</string>
+    <string name="ynab_file_too_large">يجب أن يكون كل ملف من YNAB أصغر من 8 ميغابايت.</string>
+    <string name="ynab_files_too_large">اختر ملفات تصدير لا يتجاوز مجموعها 16 ميغابايت.</string>
+    <string name="ynab_paste_token">لصق رمز لمرة واحدة</string>
+    <string name="ynab_credential">بيانات الاعتماد</string>
+    <string name="ynab_access_token">رمز الوصول الشخصي</string>
+    <string name="ynab_remember_token">التذكّر في مخزن بيانات الاعتماد على الجهاز</string>
+    <string name="ynab_forget_token">نسيان الرمز المحفوظ</string>
+    <string name="ynab_load_plans">تحميل خطط YNAB</string>
+    <string name="ynab_plan">الخطة</string>
+    <string name="ynab_replace">استبدال الميزانية بدلًا من دمج التغييرات</string>
+    <string name="ynab_backup_note">يحتفظ كل استيراد بنسخة احتياطية محلية. ولا يطلب الاستيراد المتكرر إلا التغييرات، وتنتظر التعديلات المتعارضة اختيارك.</string>
+    <string name="ynab_import_replace">الاستيراد والاستبدال</string>
+    <string name="ynab_import_changes">استيراد التغييرات</string>
+    <string name="ynab_review_differences">مراجعة الاختلافات عن YNAB</string>
+    <string name="ynab_differences_note">تختلف هذه المجاميع في المصدر عن حساب المحرّك المشترك. لا تقبلها إلا بعد مراجعتها.</string>
+    <string name="ynab_accept_differences">قبول الاختلافات والمتابعة</string>
+    <string name="ynab_choose_each">اختر في كل تغيير متعارض</string>
+    <!-- The value on this device. -->
+    <string name="ynab_local_value">المحلية: \u2068%1$s\u2069</string>
+    <!-- The value in YNAB. -->
+    <string name="ynab_remote_value">في YNAB: \u2068%1$s\u2069</string>
+    <string name="ynab_choose_version">اختر نسخة</string>
+    <string name="ynab_local">المحلية</string>
+    <string name="ynab_apply_versions">تطبيق النسخ المختارة</string>
+    <string name="ynab_up_to_date">ميزانيتك محدَّثة بالفعل.</string>
+    <string name="ynab_saved">حُفظ الاستيراد من YNAB، وتتوفر نسخة احتياطية في سجل ميزانيتك.</string>
+    <!-- Register and Plan are the names of YNAB's export files: keep them in English. -->
+    <string name="ynab_files_help">اختر ملف ZIP الذي يصدّره YNAB، أو ملفَّي Register وPlan بصيغة CSV معًا. لا تتضمن هذه الملفات معرّفات المصدر ولا الأهداف ولا الملاحظات؛ فاستخدم الاستيراد من الحساب متى أمكن.</string>
+    <string name="ynab_choose_files">اختيار ملفات تصدير YNAB</string>
+    <string name="ynab_date_order">ترتيب التاريخ</string>
+    <string name="ynab_detect">الاكتشاف تلقائيًا</string>
+    <string name="ynab_mdy">الشهر ثم اليوم ثم السنة</string>
+    <string name="ynab_dmy">اليوم ثم الشهر ثم السنة</string>
+    <string name="ynab_ymd">السنة ثم الشهر ثم اليوم</string>
+    <string name="ynab_preview">معاينة الاستيراد من الملفات</string>
+    <string name="ynab_replace_note">عند استبدال هذه الميزانية، تُحفظ الميزانية السابقة لاستعادتها عند الحاجة.</string>
+    <string name="ynab_budget_changed">تغيّرت ميزانيتك. اعرض معاينة هذه الملفات مجددًا.</string>
+    <string name="ynab_accept_replace">قبول المعاينة والاستبدال</string>
+    <!-- YNAB's figure (%1$s), then the one the shared engine calculated (%2$s). -->
+    <string name="ynab_difference_values">في YNAB \u2068%1$s\u2069 · المحسوب \u2068%2$s\u2069</string>
+
+    <!-- Saving and loading budgets -->
+    <string name="guard_budget_switched">تغيّرت الميزانية المفتوحة. افتح هذا المحرّر مجددًا في الميزانية المقصودة.</string>
+    <string name="guard_values_changed">تغيّرت القيم التي عدّلتها قبل أن يُحفظ هذا الإجراء. افتح المحرّر مجددًا وراجع أحدث القيم.</string>
+    <string name="guard_replacement_switched">تغيّرت الميزانية المفتوحة. راجع الاستبدال في الميزانية المقصودة.</string>
+    <string name="guard_replacement_changed">تغيّرت الميزانية قبل استبدالها. راجع أحدث نسخة منها وحاول مرة أخرى.</string>
+    <string name="model_action_not_saved">تعذّر حفظ الإجراء. يُرجى إعادة المحاولة.</string>
+    <string name="model_changed_while_downloading">تغيّرت الميزانية أثناء التنزيل. حدّث مراجعة البنك قبل الاستيراد.</string>
+    <string name="model_changed_refresh">تغيّرت الميزانية. حدّث الصفحة لاستخدام أحدث بياناتها.</string>
+    <string name="model_service_failed">تعذّر على الخدمة إكمال هذا الطلب.</string>
+    <string name="model_changed_preview">تغيّرت الميزانية. حدّث هذه المعاينة لاستخدام أحدث القيم.</string>
+    <string name="model_engine_failed">تعذّر على المحرّك المشترك إكمال هذا الإجراء.</string>
+    <string name="model_category_not_found">لم يُعثر على الفئة.</string>
+    <string name="model_choose_valid_month">اختر شهرًا صالحًا.</string>
+    <string name="model_invalid_budget">أعاد المحرّك ميزانية غير صالحة.</string>
+    <string name="model_backup_too_large">اختر نسخة احتياطية بصيغة JSON أصغر من 32 ميغابايت.</string>
+    <string name="model_not_a_backup">هذا الملف ليس نسخة احتياطية قابلة للنقل من UrBudget بصيغة JSON.</string>
+    <string name="model_no_editable_budget">لم يُرجع هذا الأمر ميزانية قابلة للتعديل.</string>
+    <string name="model_no_recovery">لا توجد ميزانية سابقة لاستعادتها.</string>
+    <string name="model_no_budget">أنشئ ميزانية أو استوردها أولًا.</string>
+
+    <!-- Assistant -->
+    <string name="assistant_export_failed">تعذّر حفظ الملف المصدَّر.</string>
+    <string name="assistant_tagline">ميزانيتك، بعين ثانية تراجعها</string>
+    <string name="assistant_history">سجل المحادثات</string>
+    <string name="assistant_new">محادثة جديدة</string>
+    <string name="assistant_settings">إعدادات المساعد</string>
+    <string name="assistant_close">إغلاق المساعد</string>
+    <string name="assistant_dismiss_notice">إخفاء التنبيه</string>
+    <string name="assistant_empty_title">اسأل عن ميزانيتك، وراجع كل تغيير.</string>
+    <string name="assistant_empty_detail">اطّلع على الإنفاق، وغطِّ الإنفاق الزائد، وصنّف المعاملات المحددة، واقرأ كشوف الحساب، أو أنشئ تقريرًا. ويُعاد التحقق من التغييرات المقترحة قبل أن تطبّقها.</string>
+    <string name="assistant_set_up">إعداد المساعد</string>
+    <!-- Suggested questions; tapping one puts it in the message box. -->
+    <string name="assistant_prompt_where">أين تذهب أموالي هذا الشهر؟</string>
+    <string name="assistant_prompt_cover">ساعدني في تغطية الإنفاق الزائد</string>
+    <string name="assistant_prompt_report">أعدّ تقريرًا عن ميزانية هذا الشهر</string>
+    <!-- Put in the message box to ask for changes to a proposal (its title); the person types the rest. -->
+    <string name="assistant_refine_prompt">عدِّل المقترح «\u2068%1$s\u2069»:</string>
+    <!-- A step the assistant couldn't complete, then its description. -->
+    <string name="assistant_step_failed">تعذّر الإكمال: \u2068%1$s\u2069</string>
+    <string name="assistant_reply_stopped">توقّف الرد</string>
+    <string name="assistant_you">أنت</string>
+    <string name="assistant_couldnt_finish">تعذّر الإكمال</string>
+    <string name="assistant_try_again">إعادة المحاولة</string>
+    <string name="assistant_report_reply">الإبلاغ عن الرد</string>
+    <string name="assistant_working">جارٍ العمل…</string>
+    <string name="assistant_continue_reply">متابعة الرد المنقطع</string>
+    <string name="assistant_remove_attachment">إزالة المرفق</string>
+    <plurals name="assistant_selected_transactions">
+        <item quantity="zero">لا معاملات محددة</item>
+        <item quantity="one">معاملة محددة واحدة</item>
+        <item quantity="two">معاملتان محددتان</item>
+        <item quantity="few">\u2068%1$s\u2069 معاملات محددة</item>
+        <item quantity="many">\u2068%1$s\u2069 معاملة محددة</item>
+        <item quantity="other">\u2068%1$s\u2069 معاملة محددة</item>
+    </plurals>
+    <string name="assistant_attach">إرفاق كشف حساب أو مستند أو صورة</string>
+    <string name="assistant_select_transactions">تحديد معاملات من الميزانية</string>
+    <string name="assistant_ask">اسأل عن ميزانيتك</string>
+    <string name="assistant_stop">إيقاف الرد</string>
+    <string name="assistant_send">إرسال الرسالة</string>
+    <string name="assistant_conversations">المحادثات</string>
+    <string name="assistant_export_conversation">تصدير المحادثة الحالية</string>
+    <string name="assistant_no_conversations">لا محادثات محفوظة بعد</string>
+    <string name="assistant_delete_conversation">حذف المحادثة</string>
+    <string name="assistant_delete_conversation_title">حذف هذه المحادثة؟</string>
+    <string name="assistant_delete_conversation_message">يزيل هذا سجلها المحفوظ من هذا الجهاز.</string>
+    <string name="assistant_transactions_to_discuss">معاملات للنقاش</string>
+    <string name="assistant_select_up_to">حدّد حتى 200 معاملة لرسالتك التالية.</string>
+    <string name="assistant_clear">مسح</string>
+    <string name="assistant_done_count">تم (\u2068%1$s\u2069)</string>
+    <string name="assistant_error_title">تعذّر إكمال ذلك</string>
+    <string name="assistant_applied_title">✓ طُبِّق: \u2068%1$s\u2069</string>
+    <string name="assistant_discarded_title">تم تجاهله: \u2068%1$s\u2069</string>
+    <string name="assistant_undo_proposal">التراجع عن هذا المقترح</string>
+    <string name="assistant_previous_rows">الصفوف السابقة</string>
+    <string name="assistant_next_rows">الصفوف التالية</string>
+    <!-- A page number out of how many pages. -->
+    <string name="assistant_page">\u2068%1$s\u2069 من \u2068%2$s\u2069</string>
+    <plurals name="assistant_more_rows">
+        <item quantity="zero">لا صفوف أخرى</item>
+        <item quantity="one">صف آخر واحد</item>
+        <item quantity="two">صفّان آخران</item>
+        <item quantity="few">\u2068%1$s\u2069 صفوف أخرى</item>
+        <item quantity="many">\u2068%1$s\u2069 صفًّا آخر</item>
+        <item quantity="other">\u2068%1$s\u2069 صف آخر</item>
+    </plurals>
+    <!-- A check the engine ran that did not pass, then what it says. -->
+    <string name="assistant_check">تحقّق: \u2068%1$s\u2069</string>
+    <string name="assistant_dismiss">إخفاء</string>
+    <string name="assistant_read_report">قراءة التقرير · طباعة / PDF</string>
+    <plurals name="assistant_review_import_rows">
+        <item quantity="zero">لا صفوف للمراجعة</item>
+        <item quantity="one">مراجعة صف استيراد واحد</item>
+        <item quantity="two">مراجعة صفَّي استيراد</item>
+        <item quantity="few">مراجعة \u2068%1$s\u2069 صفوف استيراد</item>
+        <item quantity="many">مراجعة \u2068%1$s\u2069 صفًّا للاستيراد</item>
+        <item quantity="other">مراجعة \u2068%1$s\u2069 صف استيراد</item>
+    </plurals>
+    <string name="assistant_export_csv">تصدير ملف CSV المحوَّل</string>
+    <string name="assistant_open_spreadsheet">فتح جدول البيانات</string>
+    <string name="assistant_export_excel">تصدير ملف Excel</string>
+    <string name="assistant_apply_changes">تطبيق التغييرات المراجَعة</string>
+    <string name="assistant_ask_changes">طلب تعديلات</string>
+    <string name="assistant_discard">تجاهل</string>
+    <string name="assistant_applied">✓ طُبِّق</string>
+    <string name="assistant_discarded">تم تجاهله</string>
+    <string name="assistant_could_not_apply">تعذّر التطبيق</string>
+    <string name="assistant_export_report_tables">تصدير جداول التقرير إلى Excel</string>
+    <string name="assistant_save_text">حفظ النص</string>
+    <string name="assistant_share_report">مشاركة التقرير</string>
+    <string name="assistant_share">مشاركة</string>
+    <string name="assistant_print">طباعة / PDF</string>
+    <string name="assistant_report_a_reply">الإبلاغ عن رد</string>
+    <string name="assistant_send_report">إرسال البلاغ</string>
+    <string name="assistant_report_note">لن يُرسَل إلى UrBudget إلا المقتطف والشرح أدناه. احذف أي شيء خاص قبل الإرسال.</string>
+    <string name="assistant_excerpt">المقتطف المحدد</string>
+    <string name="assistant_what_went_wrong">ما الذي حدث بشكل خاطئ؟</string>
+    <string name="assistant_model_default">الافتراضي لدى المزوّد</string>
+    <string name="assistant_settings_intro">تعتمد الإجابات على ميزانيتك والملفات التي ترفقها، وتُقترح التغييرات لتراجعها. ويعالج المزوّد الذي تختاره المحادثة.</string>
+    <string name="assistant_provider">المزوّد</string>
+    <string name="assistant_provider_chatgpt">خطة ChatGPT · تسجيل الدخول عبر المتصفح</string>
+    <string name="assistant_provider_openai">مفتاح OpenAI API</string>
+    <string name="assistant_provider_anthropic">مفتاح Anthropic API</string>
+    <string name="assistant_sign_in_browser">سجِّل الدخول في متصفحك، ثم عد إلى هنا. يجب أن تسمح خطة ChatGPT لديك باستخدام هذا التطبيق.</string>
+    <string name="assistant_signed_in">تم تسجيل الدخول</string>
+    <!-- The email address of the ChatGPT account. -->
+    <string name="assistant_signed_in_as">تم تسجيل الدخول بالبريد \u2068%1$s\u2069</string>
+    <string name="assistant_cancel_sign_in">إلغاء تسجيل الدخول</string>
+    <string name="assistant_sign_out">تسجيل الخروج</string>
+    <string name="assistant_continue_chatgpt">المتابعة باستخدام ChatGPT</string>
+    <string name="assistant_plan_usage">استخدام الخطة</string>
+    <string name="assistant_connected_apps">التطبيقات المتصلة</string>
+    <!-- The company that bills API usage (OpenAI or Anthropic). -->
+    <string name="assistant_api_billing">تُحتسب تكلفة استخدام API لدى \u2068%1$s\u2069، ويُتحقَّق من المفتاح لدى مزوّدك قبل حفظه.</string>
+    <string name="assistant_remove_key">إزالة المفتاح المحفوظ</string>
+    <string name="assistant_api_key">مفتاح API</string>
+    <string name="assistant_checking_key">جارٍ التحقق من المفتاح…</string>
+    <string name="assistant_verify_key">التحقق من المفتاح وحفظه</string>
+    <string name="assistant_get_key">الحصول على مفتاح API</string>
+    <!-- Where the credentials are kept, as the engine describes it. -->
+    <string name="assistant_credentials">بيانات الاعتماد: \u2068%1$s\u2069</string>
+    <string name="assistant_credentials_memory">تبقى بيانات الاعتماد في الذاكرة حتى يُغلق التطبيق.</string>
+    <string name="assistant_model">النموذج</string>
+    <string name="assistant_refresh_models">تحديث النماذج المتاحة</string>
+    <string name="assistant_share_memos">مشاركة بيان المعاملات</string>
+    <string name="assistant_share_memos_detail">تضمين نص البيان في استعلامات الميزانية المرسلة إلى المزوّد.</string>
+    <string name="assistant_keep_history">الاحتفاظ بسجل المحادثات</string>
+    <string name="assistant_keep_history_detail">يُحفظ في مجلد هذه الميزانية فقط، ويبقى السجل الحالي حتى تحذفه.</string>
+    <string name="assistant_delete_everything">حذف كل المحادثات والمرفقات</string>
+    <string name="assistant_delete_history_title">حذف سجل المساعد بالكامل؟</string>
+    <string name="assistant_delete_history_message">يحذف هذا كل المحادثات والملفات المرفقة للميزانية المفتوحة على هذا الجهاز، ويوقف الردود الجارية.</string>
+    <string name="assistant_delete_all">حذف الكل</string>
+    <string name="assistant_action_failed">تعذّر على المساعد إكمال هذا الإجراء.</string>
+    <string name="assistant_attach_limit">أرفق خمسة ملفات على الأكثر في كل رسالة.</string>
+    <string name="assistant_select_limit">حدّد 200 معاملة على الأكثر في كل رسالة.</string>
+    <string name="assistant_proposal_applied">طُبِّق المقترح</string>
+    <string name="assistant_budget_changed_review">تغيّرت ميزانيتك. راجع المقترح المحدَّث قبل تطبيقه.</string>
+    <string name="assistant_budget_changed_undo">تغيّرت ميزانيتك بعد هذا المقترح. استخدم سجل التراجع في الميزانية لمراجعة التغييرات اللاحقة.</string>
+    <!-- The reference number UrBudget gave the report. -->
+    <string name="assistant_report_sent">أُرسل البلاغ · \u2068%1$s\u2069</string>
+    <string name="assistant_file_too_large">اختر ملفًا أصغر من 25 ميغابايت.</string>
+    <string name="assistant_attachment_unopened">تعذّر فتح المرفق.</string>
+    <string name="assistant_previous">السابق</string>
+    <string name="assistant_next">التالي</string>
+    <string name="assistant_report_layout_failed">تعذّر تنسيق التقرير للطباعة.</string>
+    <string name="assistant_report_not_laid_out">لم يُنسَّق التقرير للطباعة.</string>
+    <string name="assistant_report_print_failed">تعذّرت طباعة التقرير.</string>
+
+    <!-- Names the app gives new budget data -->
+    <!-- A new budget's first category group. Stored as the person's data once created; the same word the engine uses for its starter group. -->
+    <string name="starter_group_everyday">المصروفات اليومية</string>
+
+    <!-- Charts -->
+    <!-- A chart's readout when the chosen column has no figures. -->
+    <string name="chart_nothing">لا شيء</string>
+    <string name="chart_no_spending">لا إنفاق</string>
+    <string name="chart_less">أقل</string>
+    <string name="chart_more">أكثر</string>
+    <string name="chart_spending_by_payee">الإنفاق حسب المستفيد</string>
+    <!-- Joins two series names in a chart's spoken description. -->
+    <string name="chart_and">\u2068%1$s\u2069 و\u2068%2$s\u2069</string>
+    <!-- A chart's spoken description: the series it shows, by month. -->
+    <string name="chart_by_month">\u2068%1$s\u2069 حسب الشهر</string>
 </resources>
