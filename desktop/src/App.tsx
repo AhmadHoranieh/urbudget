@@ -46,6 +46,7 @@ import { CardPaymentForm } from "./CardPayment";
 import { getPref, resetLayout } from "./prefs";
 import { TitleBar, customTitleBar } from "./WindowControls";
 import { keyLabel } from "./platform";
+import { useLanguage } from "./i18n";
 import { id, today, type Account, type Budget, type Category, type Transaction } from "./types";
 import type { RegisterFilter } from "./Register";
 import "./shell.css";
@@ -186,6 +187,8 @@ function SyncStatus({
 }
 
 export default function App() {
+  // The whole window renders again in a newly chosen language, keeping everything open.
+  useLanguage();
   const [month, setMonth] = useState(today().slice(0, 7));
   const [dialog, setDialog] = useState<Dialog>(null);
   const [planningEditor, setPlanningEditor] = useState(false);

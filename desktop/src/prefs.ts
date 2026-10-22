@@ -22,6 +22,8 @@ export type Prefs = {
   backupOnClose: boolean;
   /** How many backups to keep (0 keeps them all). */
   keepBackups: number;
+  /** The app's language: "system" follows the operating system's first preferred language. */
+  language: "system" | "en" | "ar";
 };
 export const DEFAULT_PREFS: Prefs = {
   weekStart: "auto",
@@ -34,9 +36,12 @@ export const DEFAULT_PREFS: Prefs = {
   showAgeOfMoney: true,
   backupOnClose: false,
   keepBackups: 0,
+  language: "system",
 };
 const KEY = "lb:prefs";
-const EVENT = "lb:prefs";
+/** The window event `setPref` sends, with the changed key and value as its detail. */
+export const PREFS_EVENT = "lb:prefs";
+const EVENT = PREFS_EVENT;
 const read = (): Prefs => {
   try {
     return { ...DEFAULT_PREFS, ...JSON.parse(localStorage.getItem(KEY) ?? "{}") };
