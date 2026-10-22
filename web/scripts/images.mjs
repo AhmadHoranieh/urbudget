@@ -7,7 +7,7 @@
 //         ../desktop/assets/icon.svg
 // Output: public/img/  WebP screenshots and crops at 1× and 2×, favicon.svg,
 //         apple-touch-icon.png, icon-192.png, icon-512.png and og.png.
-//         public/**/*.html  screenshot dimensions/srcsets and og.png's cache hash.
+//         public/**/*.html  screenshot dimensions/srcsets, and every /img/ link's ?v= hash.
 //
 // Every crop is listed in CROPS in the screenshot's own 2× pixels. Each one is written at its
 // requested widths (default: native and half), as <name>-<theme>-<width>.webp.
@@ -191,27 +191,28 @@ async function ogImage() {
 }
 
 /**
- * Discord, Slack, X and the rest keep a link preview's image by its URL, so a new og.png at
- * the old URL goes unseen. Every page links it with a hash of the image instead.
+ * Browsers keep /img/* for a day (public/_headers), and Discord, Slack, X and the rest keep a
+ * link preview's image by its URL, so a retaken image at the old URL goes unseen for a while.
+ * Every page links each image with a hash of its contents instead (?v=…).
  */
-async function stampOgImage() {
-  const hash = createHash("sha256")
-    .update(await readFile(join(out, "og.png")))
-    .digest("hex")
-    .slice(0, 8);
-  const link = /https:\/\/urbudget\.app\/img\/og\.png(\?v=[0-9a-f]+)?/g;
+async function stampImageVersions() {
+  const versions = new Map();
+  for (const file of await readdir(out)) {
+    versions.set(file, createHash("sha256").update(await readFile(join(out, file))).digest("hex").slice(0, 8));
+  }
+  const link = /((?:https:\/\/urbudget\.app)?\/img\/)([\w.-]+)(\?v=[0-9a-f]+)?/g;
   const pages = (await readdir(join(root, "public"), { recursive: true })).filter((f) => f.endsWith(".html"));
   let stamped = 0;
   for (const page of pages) {
     const file = join(root, "public", page);
     const html = await readFile(file, "utf8");
-    const next = html.replace(link, `https://urbudget.app/img/og.png?v=${hash}`);
+    const next = html.replace(link, (match, dir, name) => (versions.has(name) ? `${dir}${name}?v=${versions.get(name)}` : match));
     if (next !== html) {
       await writeFile(file, next);
       stamped++;
     }
   }
-  console.log(`og.png?v=${hash}  linked from ${stamped} changed page(s)`);
+  console.log(`Image links stamped with their hashes in ${stamped} changed page(s)`);
 }
 
 // Keep intrinsic sizes and responsive width descriptors tied to the actual exports.
@@ -225,11 +226,11 @@ async function stampScreenshotSizes() {
     const file = join(root, "public", page);
     const html = await readFile(file, "utf8");
     const next = html.replace(/<(?:img|source)\b[^>]*>/g, tag => {
-      let updated = tag.replace(/(\/img\/[^\s,"<>]+\.webp)\s+\d+w/g, (match, url) => {
+      let updated = tag.replace(/(\/img\/[^\s,"<>?]+\.webp)(\?v=[0-9a-f]+)?\s+\d+w/g, (match, url, version = "") => {
         const meta = dimensions.get(url);
-        return meta ? `${url} ${meta.width}w` : match;
+        return meta ? `${url}${version} ${meta.width}w` : match;
       });
-      const source = updated.match(/\bsrc="([^"]+)"/);
+      const source = updated.match(/\bsrc="([^"?]+)/);
       const meta = source && dimensions.get(source[1]);
       if (meta && updated.startsWith("<img")) {
         updated = updated.replace(/\bwidth="\d+"/, `width="${meta.width}"`)
@@ -245,6 +246,6 @@ await mkdir(out, { recursive: true });
 await icons();
 await screenshots();
 await ogImage();
-await stampOgImage();
 await stampScreenshotSizes();
+await stampImageVersions();
 console.log(`WebP screenshots in total: ${kb(total)}`);

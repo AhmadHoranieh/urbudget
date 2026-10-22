@@ -11,7 +11,7 @@
 }
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
 
   /* Brand */
   --brand: #6d4ae8;
@@ -100,51 +100,53 @@
   --header-h: 64px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --brand: #6d4ae8;
-    --brand-hover: #5f3ddc;
-    --brand-text: #b7a6ff;
-    --brand-soft: #251d45;
-    --brand-softer: #1a1530;
-    --brand-line: #3d3270;
-    --coin: #fbbf24;
-    --coin-text: #3d2c00;
+/* Dark mode: chosen with the header switch (site.js themeToggle), remembered in localStorage and
+   set on <html> by each page's head script before anything is drawn. Light is the default. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
 
-    --bg: #0f0e14;
-    --bg-soft: #14131a;
-    --surface: #18171f;
-    --surface-2: #201e28;
-    --text: #efedf4;
-    --text-2: #c7c3d0;
-    --text-3: #9a95a6;
-    --border: #2a2833;
-    --border-strong: #3b3846;
-    --focus: #b7a6ff;
-    --rule: rgb(183 166 255 / 0.07);
-    --ink: #1b1924;
-    --on-ink: #f4f2fa;
+  --brand: #6d4ae8;
+  --brand-hover: #5f3ddc;
+  --brand-text: #b7a6ff;
+  --brand-soft: #251d45;
+  --brand-softer: #1a1530;
+  --brand-line: #3d3270;
+  --coin: #fbbf24;
+  --coin-text: #3d2c00;
 
-    --success: #6fdb98;
-    --success-bg: #11281b;
-    --success-line: #24543a;
-    --warn: #f7cf74;
-    --warn-bg: #2a2110;
-    --warn-line: #5a4517;
-    --danger: #ff9b91;
-    --danger-bg: #2e1513;
-    --danger-line: #5e2a25;
+  --bg: #0f0e14;
+  --bg-soft: #14131a;
+  --surface: #18171f;
+  --surface-2: #201e28;
+  --text: #efedf4;
+  --text-2: #c7c3d0;
+  --text-3: #9a95a6;
+  --border: #2a2833;
+  --border-strong: #3b3846;
+  --focus: #b7a6ff;
+  --rule: rgb(183 166 255 / 0.07);
+  --ink: #1b1924;
+  --on-ink: #f4f2fa;
 
-    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
-    --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
-    --shadow-lg: 0 8px 24px -10px rgb(0 0 0 / 0.6);
-    --shadow-xl: var(--shadow-lg);
+  --success: #6fdb98;
+  --success-bg: #11281b;
+  --success-line: #24543a;
+  --warn: #f7cf74;
+  --warn-bg: #2a2110;
+  --warn-line: #5a4517;
+  --danger: #ff9b91;
+  --danger-bg: #2e1513;
+  --danger-line: #5e2a25;
 
-    --bezel-edge: rgb(255 255 255 / 0.12);
-    --bezel-glass: rgb(255 255 255 / 0.04);
-    --bezel-line: rgb(255 255 255 / 0.07);
-    --bezel-shadow: 0 -10px 60px -10px rgb(124 92 255 / 0.3), 0 40px 80px -40px rgb(0 0 0 / 0.7);
-  }
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.5);
+  --shadow-lg: 0 8px 24px -10px rgb(0 0 0 / 0.6);
+  --shadow-xl: var(--shadow-lg);
+
+  --bezel-edge: rgb(255 255 255 / 0.12);
+  --bezel-glass: rgb(255 255 255 / 0.04);
+  --bezel-line: rgb(255 255 255 / 0.07);
+  --bezel-shadow: 0 -10px 60px -10px rgb(124 92 255 / 0.3), 0 40px 80px -40px rgb(0 0 0 / 0.7);
 }
 
 @media (min-width: 640px) {
@@ -199,6 +201,12 @@ picture {
 }
 img {
   height: auto;
+}
+/* Screenshots come in both themes; only the current one shows. The other is loading="lazy", so
+   it isn't fetched until someone switches. */
+:root:not([data-theme="dark"]) .theme-dark,
+:root[data-theme="dark"] .theme-light {
+  display: none;
 }
 figure {
   margin: 0;
@@ -602,6 +610,40 @@ code.wrap {
 .header-github-label {
   display: none;
 }
+/* Light or dark (site.js themeToggle): the icon alone here, with its name in the phone menu.
+   Hidden until the head script has picked a theme, since it can't work without scripts. */
+.theme-toggle {
+  display: none;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 0.6rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: var(--step--1);
+  font-weight: 560;
+  cursor: pointer;
+}
+:root[data-theme] .theme-toggle {
+  display: inline-flex;
+}
+.theme-toggle:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+.theme-toggle svg {
+  flex-shrink: 0;
+}
+:root[data-theme="dark"] .theme-toggle .icon-moon,
+:root:not([data-theme="dark"]) .theme-toggle .icon-sun {
+  display: none;
+}
+.theme-toggle-label {
+  display: none;
+}
 
 .menu-button {
   display: none;
@@ -670,7 +712,8 @@ code.wrap {
     font-size: var(--step-0);
   }
   .header-signin,
-  .site-menu .header-github {
+  .site-menu .header-github,
+  .theme-toggle {
     margin: var(--space-2) 0 0;
     border-top: 1px solid var(--border);
     border-radius: 0;
@@ -679,11 +722,19 @@ code.wrap {
   .site-menu .header-github {
     padding-left: var(--space-3);
   }
-  .header-github + .header-signin {
+  .theme-toggle {
+    min-height: 48px;
+    padding-left: var(--space-3);
+    font-size: var(--step-0);
+    text-align: left;
+  }
+  .header-github + .header-signin,
+  .site-menu .theme-toggle + .header-github {
     margin-top: 0;
     border-top: 0;
   }
-  .header-github-label {
+  .header-github-label,
+  .theme-toggle-label {
     display: inline;
   }
 }

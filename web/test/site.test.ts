@@ -1,6 +1,7 @@
 // Checks the static site in public/: the sitemap lists every indexable page, each page says
 // where it lives and what it's about, and no internal link points at a missing file.
 
+import { createHash } from "node:crypto";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -59,15 +60,42 @@ describe("site", () => {
     }
     for (const file of htmlFiles) {
       for (const [tag] of read(file).matchAll(/<(?:img|source)\b[^>]*>/g)) {
-        for (const [, url, width] of tag.matchAll(/(\/img\/[^\s,"<>]+\.webp)\s+(\d+)w/g)) {
+        for (const [, url, width] of tag.matchAll(/(\/img\/[^\s,"<>?]+\.webp)(?:\?v=[0-9a-f]+)?\s+(\d+)w/g)) {
           expect(Number(width), `${file}: ${url} srcset`).toBe(dimensions.get(url)?.width);
         }
-        const src = tag.match(/\bsrc="([^"]+)"/)?.[1];
+        const src = tag.match(/\bsrc="([^"?]+)/)?.[1];
         const meta = src && dimensions.get(src);
         if (meta && tag.startsWith("<img")) {
           expect(Number(tag.match(/\bwidth="(\d+)"/)?.[1]), `${file}: ${src} width`).toBe(meta.width);
           expect(Number(tag.match(/\bheight="(\d+)"/)?.[1]), `${file}: ${src} height`).toBe(meta.height);
         }
+      }
+    }
+  });
+  it("links every image with the hash of its current contents", () => {
+    const stale: string[] = [];
+    for (const file of htmlFiles) {
+      for (const [link, name, version] of read(file).matchAll(/\/img\/([\w.-]+)(?:\?v=([0-9a-f]+))?/g)) {
+        const hash = createHash("sha256").update(readFileSync(join(pub, "img", name))).digest("hex").slice(0, 8);
+        if (version !== hash) stale.push(`${file}: ${link}`);
+      }
+    }
+    expect(stale, "run npm run images").toEqual([]);
+  });
+  it("lets the CSP run each page's theme script, and nothing else inline", () => {
+    const csp = read("_headers").match(/Content-Security-Policy: (.+)/)?.[1] ?? "";
+    const allowed = [...csp.matchAll(/'(sha256-[^']+)'/g)].map((m) => m[1]);
+    for (const file of htmlFiles) {
+      const inline = [...read(file).matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+      for (const script of inline) {
+        expect(allowed, `${file}: the head script's hash belongs in _headers`).toContain(
+          `sha256-${createHash("sha256").update(script).digest("base64")}`,
+        );
+      }
+      // Every page with the header has its switch, and the theme is applied before the page draws.
+      if (read(file).includes('class="site-header"')) {
+        expect(read(file), file).toContain("data-theme-toggle");
+        expect(inline, file).toHaveLength(1);
       }
     }
   });

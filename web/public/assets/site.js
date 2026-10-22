@@ -236,6 +236,43 @@ function year() {
   }
 }
 
+// The header's light/dark switch. The site is light unless the visitor picks dark; the choice is
+// kept in localStorage, and each page's head script applies it before anything is drawn (the CSP
+// in _headers allows that script by its hash, so change both together).
+function themeToggle() {
+  const root = document.documentElement;
+  const button = document.querySelector("[data-theme-toggle]");
+  const color = document.querySelector('meta[name="theme-color"]');
+  const show = () => {
+    const dark = root.dataset.theme === "dark";
+    if (color) color.content = dark ? "#0f0e14" : "#fbfaf7";
+    if (!button) return;
+    const label = dark ? "Light mode" : "Dark mode";
+    button.setAttribute("aria-label", `Switch to ${label.toLowerCase()}`);
+    button.title = `Switch to ${label.toLowerCase()}`;
+    button.querySelector(".theme-toggle-label").textContent = label;
+  };
+  const apply = (theme) => {
+    root.dataset.theme = theme;
+    show();
+  };
+  button?.addEventListener("click", () => {
+    const theme = root.dataset.theme === "dark" ? "light" : "dark";
+    apply(theme);
+    try {
+      if (theme === "dark") localStorage.setItem("theme", "dark");
+      else localStorage.removeItem("theme");
+    } catch {
+      // Storage blocked: the switch still works on this page.
+    }
+  });
+  // Another tab switched.
+  addEventListener("storage", (event) => {
+    if (event.key === "theme" || event.key === null) apply(event.newValue === "dark" ? "dark" : "light");
+  });
+  show();
+}
+
 // One beacon per page for the admin page's daily page views: the path, where the visitor came
 // from and any ?ref= tag. No cookie is set and nothing about who is sent.
 function countVisit() {
@@ -254,6 +291,7 @@ function countVisit() {
 if (!globalThis.urbudgetSiteReady) {
   globalThis.urbudgetSiteReady = true;
   header();
+  themeToggle();
   navGroups();
   tabs();
   year();

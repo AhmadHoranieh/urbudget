@@ -7,10 +7,13 @@
   Permissions-Policy: accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), usb=(), browsing-topics=(), payment=()
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'sha256-0IUcLuEwhmFpH53Vl8XscXedCsqL2NhFV6pEZpocp6s='; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 
-# Retaken screenshots keep their names (scripts/images.mjs), so images are kept for a day,
-# not forever.
+# script-src: the hash is each page's one-line head script that applies the saved light/dark
+# choice before the page is drawn (site.js themeToggle). Change both together; site.test.ts checks.
+
+# Pages link each image with a hash of its contents (?v=…, scripts/images.mjs), so a retaken
+# screenshot shows at once; the day is for links without one (the web manifest, other sites).
 /img/*
   Cache-Control: public, max-age=86400
 

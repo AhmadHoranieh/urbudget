@@ -10,6 +10,9 @@ export function appPrivacyHtml(source) {
   const content = article.replace(/<span data-website-only>[\s\S]*?<\/span>/g, "");
   if (/href="(?:https:\/\/urbudget\.app)?\/(?:account|buy|pricing|download)(?:[/?#"])/.test(content))
     throw new Error("The app policy must not link to checkout or the website account portal.");
+  // The website's own icon link, with the ?v= hash scripts/images.mjs keeps current.
+  const icon = source.match(/<link rel="icon" href="[^"]+" type="image\/svg\+xml">/)?.[0];
+  if (!icon) throw new Error("Privacy policy icon link not found.");
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -19,8 +22,8 @@ export function appPrivacyHtml(source) {
   <title>UrBudget app privacy policy</title>
   <meta name="description" content="How UrBudget handles local budgets, optional connections, purchases and reports, and how to request deletion.">
   <link rel="canonical" href="https://urbudget.app/privacy/app/">
-  <meta name="color-scheme" content="light dark">
-  <link rel="icon" href="/img/favicon.svg" type="image/svg+xml">
+  <meta name="color-scheme" content="light">
+  ${icon}
   <link rel="stylesheet" href="/assets/site.css?v=2">
 </head>
 <body>
