@@ -68,7 +68,7 @@
     <string name="page_library">مكتبة الميزانيات</string>
     <string name="page_library_detail">الميزانيات والنسخ الاحتياطية والبدايات الجديدة</string>
     <string name="page_settings">الإعدادات والبيانات</string>
-    <string name="page_settings_detail">النسخ الاحتياطية والاستيراد والمظهر</string>
+    <string name="page_settings_detail">النسخ الاحتياطية والاستيراد والسمة</string>
     <string name="assistant_title">المساعد</string>
     <string name="drawer_assistant_detail">اسأل عن ميزانيتك وراجع التغييرات</string>
     <string name="drawer_budget_detail">التبديل بين الميزانيات أو إدارتها · \u2068%1$s\u2069</string>
@@ -164,12 +164,12 @@
     <string name="loans_empty_title">ضع خطة سداد</string>
     <string name="loans_empty_detail">أضف حساب تتبُّع من نوع قرض، مثل الرهن العقاري أو قرض السيارة، برصيد سالب يساوي ما عليك، ثم أضف هنا سعر فائدته ودفعته.</string>
     <string name="loans_create_plan">إنشاء خطة</string>
-    <string name="loans_help">«المستحق» هو ما تبقّى من كل قرض. يجرّب المخطط الدفعات الإضافية دون تغيير أي شيء؛ ويضيف «تسجيل الدفعة» التحويل وفائدة الشهر.</string>
+    <string name="loans_help">«المتبقي» هو ما بقي عليك من كل قرض. يجرّب المخطط الدفعات الإضافية دون تغيير أي شيء؛ ويضيف «تسجيل الدفعة» التحويل وفائدة الشهر.</string>
     <string name="settings_budget_formats">الاسم والعملة والتنسيقات</string>
     <string name="settings_flag_names">أسماء العلامات</string>
     <string name="settings_flag_names_hint">سمِّ الألوان، مثل «استرداد» أو «ضريبة»</string>
-    <string name="settings_appearance">المظهر</string>
-    <string name="settings_theme_device">الجهاز</string>
+    <string name="settings_appearance">السمة</string>
+    <string name="settings_theme_device">النظام</string>
     <string name="settings_theme_light">فاتح</string>
     <string name="settings_theme_dark">داكن</string>
     <string name="settings_language">اللغة</string>
@@ -218,7 +218,7 @@
     <string name="account_kind_credit">بطاقة ائتمان</string>
     <string name="account_kind_tracking">حساب تتبُّع</string>
     <string name="account_kind_cash">نقد</string>
-    <string name="account_working_balance">الرصيد الحالي</string>
+    <string name="account_working_balance">الرصيد الإجمالي</string>
     <string name="account_edit">تعديل الحساب</string>
     <string name="transfer_line_to">إلى: \u2068%1$s\u2069</string>
     <string name="transfer_line_from">من: \u2068%1$s\u2069</string>
@@ -240,7 +240,7 @@
     <string name="range_last_12_months">آخر 12 شهرًا</string>
     <string name="range_year_to_date">منذ بداية السنة</string>
     <string name="range_last_year">السنة الماضية</string>
-    <string name="range_custom">نطاق مخصص</string>
+    <string name="range_custom">فترة مخصّصة</string>
     <string name="export_destination_failed">تعذّر فتح وجهة التصدير.</string>
     <string name="export_register_failed">تعذّر تصدير سجل المعاملات.</string>
     <string name="selection_end">إنهاء التحديد</string>
@@ -256,9 +256,9 @@
         <item quantity="other">\u2068%1$s\u2069 معاملة محددة</item>
     </plurals>
     <string name="register_search_hint">المستفيد أو الفئة أو البيان أو المبلغ</string>
-    <string name="filters_title">التصفية</string>
-    <string name="filters_count">التصفية · \u2068%1$s\u2069</string>
-    <string name="filters_clear">مسح التصفية</string>
+    <string name="filters_title">عوامل التصفية</string>
+    <string name="filters_count">عوامل التصفية · \u2068%1$s\u2069</string>
+    <string name="filters_clear">مسح عوامل التصفية</string>
     <string name="filters_amount_help">تطابق المبالغُ الصادرَ والواردَ على حدٍّ سواء.</string>
     <string name="dates_title">التواريخ</string>
     <string name="date_any">أي تاريخ</string>
@@ -495,7 +495,7 @@
     <string name="move_from_title">النقل من</string>
     <string name="move_to_title">النقل إلى</string>
     <string name="cover_overspending">تغطية الإنفاق الزائد</string>
-    <string name="target_kind_set_aside">تجنيب مبلغ</string>
+    <string name="target_kind_set_aside">تجنيب</string>
     <string name="target_kind_refill">إكمال حتى</string>
     <string name="target_kind_balance">هدف رصيد</string>
     <string name="target_kind_debt">هدف سداد قرض</string>
@@ -611,7 +611,7 @@
     <string name="note_label">ملاحظة</string>
     <string name="show_all_count">عرض الكل (\u2068%1$s\u2069)</string>
     <string name="assign_needed">المطلوب \u2068%1$s\u2069</string>
-    <string name="assign_cover">التغطية \u2068%1$s\u2069</string>
+    <string name="assign_cover">تغطية \u2068%1$s\u2069</string>
     <!-- A keypad shortcut: what it is (%1$s) and the amount it sets (%2$s). -->
     <string name="assign_suggestion">\u2068%1$s\u2069 \u2068%2$s\u2069</string>
     <string name="assign_spent_last_month">المُنفَق في الشهر الماضي</string>
@@ -931,7 +931,7 @@
         <item quantity="other">\u2068%1$s\u2069 معاملة · المتوسط \u2068%2$s\u2069</item>
     </plurals>
     <string name="report_payees_help">اختر مستفيدًا لعرض معاملاته. تعرض المربعات المستفيدين الذين فيهم صافي إنفاق؛ ويشمل الإجمالي والجدول المبالغ المستردة.</string>
-    <string name="report_payees_help_refunds">تُنقص صافي المبالغ المستردة لدى مستفيدين آخرين، وقدرها \u2068%1$s\u2069، الإجمالي.</string>
+    <string name="report_payees_help_refunds">صافي المبالغ المستردة لدى مستفيدين آخرين (\u2068%1$s\u2069) يُنقص الإجمالي.</string>
     <plurals name="report_more_payees">
         <item quantity="zero">\u2068%1$s\u2069 مستفيد آخر · \u2068%2$s\u2069</item>
         <item quantity="one">مستفيد آخر · \u2068%2$s\u2069</item>
@@ -1020,11 +1020,11 @@
     <string name="report_money_out">الأموال الصادرة</string>
     <string name="report_net_flow">صافي التدفق</string>
     <string name="report_chart_cash_flow">الأموال الواردة إلى حسابات الميزانية فوق الخط، والصادرة تحته، مع الصافي خطًّا</string>
-    <string name="report_cash_flow_month_detail">الوارد \u2068%1$s\u2069 · الصادر \u2068%2$s\u2069 · الإجمالي الجاري \u2068%3$s\u2069</string>
+    <string name="report_cash_flow_month_detail">الوارد \u2068%1$s\u2069 · الصادر \u2068%2$s\u2069 · المجموع التراكمي \u2068%3$s\u2069</string>
     <string name="report_cash_flow_average_detail">الوارد \u2068%1$s\u2069 · الصادر \u2068%2$s\u2069</string>
     <string name="report_months_in_black">أشهر بفائض</string>
     <string name="report_chart_net_flow_cumulative">صافي التدفق متراكمًا شهرًا بعد شهر</string>
-    <string name="report_running_total">الإجمالي الجاري</string>
+    <string name="report_running_total">المجموع التراكمي</string>
     <string name="report_assets">الأصول</string>
     <string name="report_debts">الديون</string>
     <string name="report_grew">نما</string>
@@ -1050,7 +1050,7 @@
     <string name="report_owe_more_than_own">ما عليك أكثر مما تملك</string>
     <string name="report_owned_is_owed">مما تملكه مستحق عليك</string>
     <string name="report_cash_on_hand">النقد المتاح</string>
-    <string name="report_months_of_spending">ما يكفي \u2068%1$s\u2069 شهر من الإنفاق</string>
+    <string name="report_months_of_spending">أشهر من الإنفاق: \u2068%1$s\u2069</string>
     <string name="report_in_cash_accounts">في حسابات النقد والبنوك</string>
     <string name="report_net_worth_on">صافي الثروة في \u2068%1$s\u2069: \u2068%2$s\u2069</string>
     <string name="report_sheet_help">الأرصدة في بداية \u2068%1$s\u2069 ونهاية \u2068%2$s\u2069. عيِّن نوع الحساب، أو استبعده من صافي الثروة، من إعداداته.</string>
@@ -1133,7 +1133,7 @@
     <string name="reports_cash_flow">الأموال الواردة والصادرة</string>
     <string name="reports_cash_flow_blurb">حركة الحسابات عبر حدود ميزانيتك، بما فيها المشتريات بالائتمان.</string>
     <string name="reports_net_worth_blurb">ما تملكه ناقص ما عليك، شهرًا بشهر.</string>
-    <string name="reports_balance_sheet">الميزانية العمومية</string>
+    <string name="reports_balance_sheet">المركز المالي</string>
     <string name="reports_balance_sheet_blurb">الأصول والالتزامات حسب النوع، مع النسب المهمة.</string>
     <string name="reports_balances">الرصيد عبر الزمن</string>
     <string name="reports_balances_blurb">رصيد كل حساب في نهاية كل شهر.</string>
@@ -1173,7 +1173,7 @@
     </plurals>
     <string name="reports_export_csv">تصدير CSV</string>
     <string name="reports_empty_title">لا أرقام لهذه الأشهر</string>
-    <string name="reports_empty_detail">اختر نطاقًا آخر أو امسح عوامل التصفية.</string>
+    <string name="reports_empty_detail">اختر فترة أخرى أو امسح عوامل التصفية.</string>
     <string name="reports_categories_filter">الفئات</string>
     <string name="reports_everyday">الإنفاق اليومي</string>
     <string name="reports_everyday_help">الإنفاق غير المجدول موزَّعًا بالتساوي على الأيام.</string>
@@ -1244,7 +1244,7 @@
     <string name="reports_schedule_more">جدوِل دخلك وفواتيرك لتصبح هذه التوقعات أدق.</string>
     <string name="reports_known_balances">تحتسب الأرصدة هنا المعاملات المعروفة فقط.</string>
     <string name="reports_months">الأشهر</string>
-    <string name="reports_range_help">يستخدم «تطبيق» الأشهر المخصصة، أما النطاق الجاهز فيُطبَّق فور اختياره.</string>
+    <string name="reports_range_help">يستخدم «تطبيق» الأشهر المخصّصة، أما الفترة الجاهزة فتُطبَّق فور اختيارها.</string>
     <string name="search_named">ابحث في \u2068%1$s\u2069</string>
     <string name="nothing_matches">لا شيء يطابق.</string>
 
@@ -1265,7 +1265,7 @@
     <string name="loan_time_saved">الوقت الموفَّر</string>
     <string name="loan_now">الآن</string>
     <!-- A payment: its interest (%1$s), escrow or fees (%2$s, %3$s), principal (%4$s) and what's still owed (%5$s). -->
-    <string name="loan_schedule_line">الفائدة \u2068%1$s\u2069 · \u2068%2$s\u2069 \u2068%3$s\u2069 · الأصل \u2068%4$s\u2069 · المتبقي \u2068%5$s\u2069</string>
+    <string name="loan_schedule_line">الفائدة \u2068%1$s\u2069 · \u2068%2$s\u2069 \u2068%3$s\u2069 · أصل الدين \u2068%4$s\u2069 · المتبقي \u2068%5$s\u2069</string>
     <plurals name="loan_schedule_title">
         <item quantity="zero">جدول الدفعات · \u2068%1$s\u2069 دفعة</item>
         <item quantity="one">جدول الدفعات · دفعة واحدة</item>
@@ -1311,7 +1311,7 @@
     <string name="loan_unsaved">تغييرات غير محفوظة. يجرّبها المخطط أدناه بالفعل، ويحتفظ بها «حفظ».</string>
     <string name="loan_planner">مخطط السداد</string>
     <string name="loan_planner_detail">للتجربة فقط: لا شيء هنا يغيّر ميزانيتك أو تفاصيل القرض.</string>
-    <string name="loan_nothing_owed">لا شيء مستحق على هذا الحساب.</string>
+    <string name="loan_nothing_owed">لا يتبقى شيء على هذا الحساب.</string>
     <string name="loan_extra_field">مبلغ إضافي كل شهر (\u2068%1$s\u2069)</string>
     <string name="loan_lump_field">دفعة لمرة واحدة الآن (\u2068%1$s\u2069)</string>
     <string name="loan_pay_off_by_date">السداد بحلول تاريخ…</string>
@@ -1319,7 +1319,7 @@
     <string name="loan_clear_payoff_date">مسح تاريخ السداد</string>
     <string name="loan_amounts_format">أدخل مبالغ مثل 50 أو 25.50.</string>
     <string name="loan_no_payment_repays">لا توجد دفعة شهرية تسدد القرض بحلول ذلك الوقت.</string>
-    <string name="loan_pay_by_needed">لسداده بحلول \u2068%1$s\u2069، ادفع \u2068%2$s\u2069 شهريًا: أي \u2068%3$s\u2069 أكثر من الآن، وقد جُرِّبت أدناه مبلغًا إضافيًا.</string>
+    <string name="loan_pay_by_needed">لسداده بحلول \u2068%1$s\u2069، ادفع \u2068%2$s\u2069 شهريًا: أي \u2068%3$s\u2069 أكثر من الآن، وقد جُرِّب أدناه مبلغًا إضافيًا.</string>
     <string name="loan_already_pays_by">دفعتك الحالية تسدده بالفعل بحلول \u2068%1$s\u2069.</string>
     <string name="loan_current_plan">الخطة الحالية</string>
     <string name="loan_with_changes">مع التغييرات</string>
@@ -1336,7 +1336,7 @@
     <string name="loan_remove_title">إزالة تفاصيل القرض؟</string>
     <string name="loan_remove_message">لن يُحسب بعد الآن تاريخ السداد والفائدة لـ\u2068%1$s\u2069، وتبقى معاملاته. يمكنك التراجع عن ذلك.</string>
     <string name="common_remove">إزالة</string>
-    <string name="loan_owed">المستحق</string>
+    <string name="loan_owed">المتبقي</string>
     <string name="loan_rate">السعر</string>
     <string name="loan_payment">الدفعة</string>
     <string name="loan_interest_to_pay">الفائدة المتبقية</string>
@@ -1350,7 +1350,7 @@
     <string name="loan_payment_amount_required">أدخل مبلغًا للدفع.</string>
     <string name="loan_pay_title">سداد \u2068%1$s\u2069</string>
     <string name="loan_pay_amount">دفع \u2068%1$s\u2069</string>
-    <string name="loan_owed_on_loan">المستحق على القرض</string>
+    <string name="loan_owed_on_loan">المتبقي من القرض</string>
     <string name="loan_monthly_payment">الدفعة الشهرية</string>
     <string name="loan_needs_cash_account">أضف حساب نقد في ميزانيتك لتسدّد القرض منه.</string>
     <!-- A span of time: the years (%1$s) and the months (%2$s). -->
@@ -1513,7 +1513,7 @@
     <string name="library_keep_all">الاحتفاظ بالكل</string>
     <string name="library_keep_newest">أحدث \u2068%1$s\u2069</string>
     <string name="library_size_kib">\u2068%1$s\u2069 كيلوبايت</string>
-    <string name="library_settings_hint">التفضيلات والمظهر وأسماء العلامات في «الإعدادات والبيانات».</string>
+    <string name="library_settings_hint">التفضيلات والسمة وأسماء العلامات في «الإعدادات والبيانات».</string>
     <string name="library_delete_title">حذف \u2068%1$s\u2069؟</string>
     <string name="library_restore_title">استعادة هذه النسخة الاحتياطية؟</string>
     <string name="library_delete_message">ستُحذف الميزانية المحلية وملفاتها من هذا الجهاز. صدِّر نسخة احتياطية أولًا إن أردت الاحتفاظ بها. أما النسخ السحابية فتُدار على حدة من «الحساب والمزامنة».</string>
@@ -1644,12 +1644,12 @@
     <string name="bank_reviewed">تمت مراجعته</string>
     <string name="bank_up_to_date">محدَّث</string>
     <plurals name="bank_skipped_new">
-        <item quantity="zero">تخطّيته الآن · لا جديد</item>
-        <item quantity="one">تخطّيته الآن · معاملة جديدة واحدة</item>
-        <item quantity="two">تخطّيته الآن · معاملتان جديدتان</item>
-        <item quantity="few">تخطّيته الآن · \u2068%1$s\u2069 معاملات جديدة</item>
-        <item quantity="many">تخطّيته الآن · \u2068%1$s\u2069 معاملة جديدة</item>
-        <item quantity="other">تخطّيته الآن · \u2068%1$s\u2069 معاملة جديدة</item>
+        <item quantity="zero">تم تخطيه مؤقتًا · لا جديد</item>
+        <item quantity="one">تم تخطيه مؤقتًا · معاملة جديدة واحدة</item>
+        <item quantity="two">تم تخطيه مؤقتًا · معاملتان جديدتان</item>
+        <item quantity="few">تم تخطيه مؤقتًا · \u2068%1$s\u2069 معاملات جديدة</item>
+        <item quantity="many">تم تخطيه مؤقتًا · \u2068%1$s\u2069 معاملة جديدة</item>
+        <item quantity="other">تم تخطيه مؤقتًا · \u2068%1$s\u2069 معاملة جديدة</item>
     </plurals>
     <plurals name="bank_new_to_review">
         <item quantity="zero">لا جديد للمراجعة</item>
@@ -1865,7 +1865,7 @@
     <string name="assistant_prompt_cover">ساعدني في تغطية الإنفاق الزائد</string>
     <string name="assistant_prompt_report">أعدّ تقريرًا عن ميزانية هذا الشهر</string>
     <!-- Put in the message box to ask for changes to a proposal (its title); the person types the rest. -->
-    <string name="assistant_refine_prompt">عدِّل المقترح «\u2068%1$s\u2069»:</string>
+    <string name="assistant_refine_prompt">عدِّل الاقتراح «\u2068%1$s\u2069»:</string>
     <!-- A step the assistant couldn't complete, then its description. -->
     <string name="assistant_step_failed">تعذّر الإكمال: \u2068%1$s\u2069</string>
     <string name="assistant_reply_stopped">توقّف الرد</string>
@@ -1902,7 +1902,7 @@
     <string name="assistant_error_title">تعذّر إكمال ذلك</string>
     <string name="assistant_applied_title">✓ طُبِّق: \u2068%1$s\u2069</string>
     <string name="assistant_discarded_title">تم تجاهله: \u2068%1$s\u2069</string>
-    <string name="assistant_undo_proposal">التراجع عن هذا المقترح</string>
+    <string name="assistant_undo_proposal">التراجع عن هذا الاقتراح</string>
     <string name="assistant_previous_rows">الصفوف السابقة</string>
     <string name="assistant_next_rows">الصفوف التالية</string>
     <!-- A page number out of how many pages. -->
@@ -1945,7 +1945,7 @@
     <string name="assistant_send_report">إرسال البلاغ</string>
     <string name="assistant_report_note">لن يُرسَل إلى UrBudget إلا المقتطف والشرح أدناه. احذف أي شيء خاص قبل الإرسال.</string>
     <string name="assistant_excerpt">المقتطف المحدد</string>
-    <string name="assistant_what_went_wrong">ما الذي حدث بشكل خاطئ؟</string>
+    <string name="assistant_what_went_wrong">ما الخطأ في الرد؟</string>
     <string name="assistant_model_default">الافتراضي لدى المزوّد</string>
     <string name="assistant_settings_intro">تعتمد الإجابات على ميزانيتك والملفات التي ترفقها، وتُقترح التغييرات لتراجعها. ويعالج المزوّد الذي تختاره المحادثة.</string>
     <string name="assistant_provider">المزوّد</string>
@@ -1984,9 +1984,9 @@
     <string name="assistant_action_failed">تعذّر على المساعد إكمال هذا الإجراء.</string>
     <string name="assistant_attach_limit">أرفق خمسة ملفات على الأكثر في كل رسالة.</string>
     <string name="assistant_select_limit">حدّد 200 معاملة على الأكثر في كل رسالة.</string>
-    <string name="assistant_proposal_applied">طُبِّق المقترح</string>
-    <string name="assistant_budget_changed_review">تغيّرت ميزانيتك. راجع المقترح المحدَّث قبل تطبيقه.</string>
-    <string name="assistant_budget_changed_undo">تغيّرت ميزانيتك بعد هذا المقترح. استخدم سجل التراجع في الميزانية لمراجعة التغييرات اللاحقة.</string>
+    <string name="assistant_proposal_applied">طُبِّق الاقتراح</string>
+    <string name="assistant_budget_changed_review">تغيّرت ميزانيتك. راجع الاقتراح المحدَّث قبل تطبيقه.</string>
+    <string name="assistant_budget_changed_undo">تغيّرت ميزانيتك بعد هذا الاقتراح. استخدم سجل التراجع في الميزانية لمراجعة التغييرات اللاحقة.</string>
     <!-- The reference number UrBudget gave the report. -->
     <string name="assistant_report_sent">أُرسل البلاغ · \u2068%1$s\u2069</string>
     <string name="assistant_file_too_large">اختر ملفًا أصغر من 25 ميغابايت.</string>
