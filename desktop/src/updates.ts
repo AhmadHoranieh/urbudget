@@ -11,6 +11,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { check, type Update } from "@tauri-apps/plugin-updater";
 import { desktop } from "./bridge";
 import { errorText } from "./format";
+import { msg, t } from "./i18n";
 
 const FIRST_CHECK = 8_000;
 const DAY = 24 * 3600_000;
@@ -37,9 +38,10 @@ export type UpdateState = {
   error: string | null;
 };
 
+// Shown as an update's notes, translated where they are shown (UpdateNotice).
 const storeNotes = {
-  ready: "Downloaded from Microsoft Store.",
-  consent: "An update is available from Microsoft Store. Your budget is saved before Windows downloads and installs it.",
+  ready: msg("Downloaded from Microsoft Store."),
+  consent: msg("An update is available from Microsoft Store. Your budget is saved before Windows downloads and installs it."),
 };
 
 export function useUpdates() {
@@ -68,7 +70,7 @@ export function useUpdates() {
         .then((value) => {
           if (!["direct", "microsoftStore"].includes(value))
             throw new Error(
-              "Couldn't identify this app's update channel. Try checking again.",
+              t("Couldn't identify this app's update channel. Try checking again."),
             );
           channel.current = value;
           setState((s) => ({ ...s, channel: value }));

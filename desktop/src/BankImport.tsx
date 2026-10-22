@@ -5,15 +5,16 @@ import { placeholder } from "./bankNames";
 import { errorText, formatDate, money } from "./format";
 import { today, type Budget } from "./types";
 import { useToast, useVirtualRows } from "./ui";
+import { list, msg, t, tn } from "./i18n";
 import "./import.css";
 
 /** Each review row is this tall, so a long bank file only renders the rows in view. */
 const REVIEW_ROW = 41;
 const FORMATS: Record<string, string> = { csv: "CSV", ofx: "OFX", qfx: "QFX", qif: "QIF" };
 const DATE_ORDERS: [string, string][] = [
-  ["ymd", "Year-month-day (2026-10-31)"],
-  ["dmy", "Day/month/year (31/10/2026)"],
-  ["mdy", "Month/day/year (10/31/2026)"],
+  ["ymd", msg("Year-month-day (2026-10-31)")],
+  ["dmy", msg("Day/month/year (31/10/2026)")],
+  ["mdy", msg("Month/day/year (10/31/2026)")],
 ];
 
 /** A CSV to start from: the headers the importer reads and a few example rows. */
@@ -32,9 +33,9 @@ export function bankTemplate(dateOrder = "ymd", month = today().slice(0, 7)) {
 /** What the assistant is asked when someone wants help with a file: ready to send, not sent. */
 export function importHelpText(account: string, problem = "") {
   return [
-    `Help me import this file into ${account}.`,
-    problem && `The import preview said: ${problem}`,
-    "Find the transactions, ask me about anything unclear, and prepare them for the import review.",
+    t("Help me import this file into {account}.", { account }),
+    problem && t("The import preview said: {problem}", { problem }),
+    t("Find the transactions, ask me about anything unclear, and prepare them for the import review."),
   ]
     .filter(Boolean)
     .join(" ");
@@ -64,14 +65,22 @@ export function uncategorizedImports(before: Budget, after: Budget): Uncategoriz
   return { ids: fresh.map((t) => t.id), accounts };
 }
 const join = (names: string[]) =>
-  names.length < 2 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
+  names.length < 2 ? names.join("") : t("{items} and {last}", { items: list(names.slice(0, -1)), last: names[names.length - 1] });
 /** What the assistant is asked about them, ready to send with them attached; never sent by itself. */
 export function categorizeText({ ids, accounts }: Uncategorized) {
   const where = join(accounts);
-  if (ids.length > ATTACH_LIMIT) return `Categorize these ${ATTACH_LIMIT} of the ${ids.length} new transactions in ${where}.`;
+  if (ids.length > ATTACH_LIMIT)
+    return tn(
+      ids.length,
+      "Categorize these {limit} of the {count} new transactions in {where}.",
+      "Categorize these {limit} of the {count} new transactions in {where}.",
+      { limit: ATTACH_LIMIT, where },
+    );
   return ids.length === 1
-    ? `Categorize the new transaction in ${where}.`
-    : `Categorize the ${ids.length} new transactions in ${where}.`;
+    ? t("Categorize the new transaction in {where}.", { where })
+    : tn(ids.length, "Categorize the {count} new transactions in {where}.", "Categorize the {count} new transactions in {where}.", {
+        where,
+      });
 }
 
 /**
@@ -144,10 +153,11 @@ export function BankImport({
   };
   const template = async () => {
     try {
+      // The file's name and contents are a format other programs read: they stay in English.
       const path = await api.writeExport("bank-import-template.csv", bankTemplate(dateFormat));
       toast({
-        message: "Template saved.",
-        action: { label: "Show in folder", onClick: () => void api.reveal(path).catch((e) => setMessage(errorText(e))) },
+        message: t("Template saved."),
+        action: { label: t("Show in folder"), onClick: () => void api.reveal(path).catch((e) => setMessage(errorText(e))) },
       });
     } catch (e) {
       setMessage(errorText(e));
@@ -168,7 +178,7 @@ export function BankImport({
       );
       setRows(r);
       setBase(budget);
-      if (!r.length) setMessage("The file has no transactions to import.");
+      if (!r.length) setMessage(t("The file has no transactions to import."));
       setFailed(!r.length);
     } catch (e) {
       setMessage(errorText(e));
@@ -186,7 +196,7 @@ export function BankImport({
     try {
       let uncategorized: Uncategorized = { ids: [], accounts: [] };
       await transform(async (b) => {
-        if (b !== base) throw Error("Your budget changed. Preview the file again before importing.");
+        if (b !== base) throw Error(t("Your budget changed. Preview the file again before importing."));
         const after = await api.importBank(b, account, choices);
         uncategorized = uncategorizedImports(b, after);
         return after;
@@ -195,7 +205,13 @@ export function BankImport({
       setFile(null);
       if (onImported) onImported(importing, uncategorized);
       else {
-        setMessage(`Imported ${importing} ${importing === 1 ? "transaction" : "transactions"}. They're waiting for your approval.`);
+        setMessage(
+          tn(
+            importing,
+            "Imported {count} transaction. They're waiting for your approval.",
+            "Imported {count} transactions. They're waiting for your approval.",
+          ),
+        );
         setLeft(uncategorized.ids.length ? uncategorized : null);
       }
     } catch (e) {
@@ -207,19 +223,18 @@ export function BankImport({
   const Wrapper = embedded ? "div" : "section";
   // Every row as money in usually means the file writes purchases as positive numbers.
   const allIn = rows.length >= 3 && rows.every((r) => r.amount > 0);
-  const problem = failed ? message : allIn ? "Every row came out as money in." : "";
+  const problem = failed ? message : allIn ? t("Every row came out as money in.") : "";
   return (
     <Wrapper className={`bank-import${embedded ? "" : " panel"}`}>
-      {!embedded && <h2>Import a bank file</h2>}
+      {!embedded && <h2>{t("Import a bank file")}</h2>}
       {!rows.length ? (
         <>
           <p className="import-lead">
-            Bring in the transactions your bank exported. You check every row, and how it matches what you already
-            entered, before anything is saved.
+            {t("Bring in the transactions your bank exported. You check every row, and how it matches what you already entered, before anything is saved.")}
           </p>
           {!initialAccount && (
             <label className="import-account">
-              Into account
+              {t("Into account")}
               <select
                 value={account}
                 onChange={(e) => {
@@ -248,18 +263,21 @@ export function BankImport({
           >
             {file ? <FileText size={22} aria-hidden /> : <FileUp size={22} aria-hidden />}
             <span>
-              <strong>{file ? file.name : "Choose a file"}</strong>
+              <strong>{file ? file.name : t("Choose a file")}</strong>
               <small>
                 {file
-                  ? `${FORMATS[format] ?? format.toUpperCase()} · ${Math.max(1, Math.round(file.size / 1024))} KB · click to choose another`
-                  : "or drop it here · CSV, OFX, QFX or QIF"}
+                  ? t("{format} · {size} KB · click to choose another", {
+                      format: FORMATS[format] ?? format.toUpperCase(),
+                      size: Math.max(1, Math.round(file.size / 1024)),
+                    })
+                  : t("or drop it here · CSV, OFX, QFX or QIF")}
               </small>
             </span>
             {file && (
               <button
                 type="button"
                 className="icon-button"
-                aria-label="Remove the file"
+                aria-label={t("Remove the file")}
                 onClick={(e) => {
                   e.preventDefault();
                   choose(null);
@@ -271,7 +289,7 @@ export function BankImport({
             <input
               type="file"
               className="sr-only"
-              aria-label="Bank file"
+              aria-label={t("Bank file")}
               accept=".csv,.ofx,.qfx,.qif,.txt"
               onChange={(e: ChangeEvent<HTMLInputElement>) => {
                 choose(e.target.files?.[0] ?? null);
@@ -282,7 +300,7 @@ export function BankImport({
           {file && (
             <div className="import-options">
               <label>
-                Read as
+                {t("Read as")}
                 <select
                   value={format}
                   onChange={(e) => {
@@ -299,7 +317,7 @@ export function BankImport({
               </label>
               {(format === "csv" || format === "qif") && (
                 <label>
-                  Dates in the file
+                  {t("Dates in the file")}
                   <select
                     value={dateFormat}
                     onChange={(e) => {
@@ -309,7 +327,7 @@ export function BankImport({
                   >
                     {DATE_ORDERS.map(([id, name]) => (
                       <option key={id} value={id}>
-                        {name}
+                        {t(name)}
                       </option>
                     ))}
                   </select>
@@ -325,24 +343,35 @@ export function BankImport({
                       reset();
                     }}
                   />
-                  Purchases are positive
+                  {t("Purchases are positive")}
                 </label>
               )}
             </div>
           )}
           <div className="import-help">
             <p>
-              <strong>CSV files</strong> need a header row with <b>Date</b>, <b>Payee</b> (or Description), and either{" "}
-              <b>Amount</b> (negative for money out) or <b>Outflow</b> and <b>Inflow</b>. <b>Memo</b> is optional. If a
-              card lists purchases as positive amounts, tick <b>Purchases are positive</b>.
+              {/* Column names are what the file must contain, so they stay in English. */}
+              {t(
+                "{csv} need a header row with {date}, {payee} (or Description), and either {amount} (negative for money out) or {outflow} and {inflow}. {memo} is optional. If a card lists purchases as positive amounts, tick {option}.",
+                {
+                  csv: <strong>{t("CSV files")}</strong>,
+                  date: <b>Date</b>,
+                  payee: <b>Payee</b>,
+                  amount: <b>Amount</b>,
+                  outflow: <b>Outflow</b>,
+                  inflow: <b>Inflow</b>,
+                  memo: <b>Memo</b>,
+                  option: <b>{t("Purchases are positive")}</b>,
+                },
+              )}
             </p>
             <button type="button" className="secondary small" onClick={() => void template()}>
-              <Download size={14} /> Download a template
+              <Download size={14} /> {t("Download a template")}
             </button>
           </div>
           <div className="form-actions">
             <button className="primary" disabled={!file || busy || !account} onClick={() => void preview()}>
-              {busy ? "Reading the file…" : "Preview transactions"}
+              {busy ? t("Reading the file…") : t("Preview transactions")}
             </button>
           </div>
         </>
@@ -352,14 +381,10 @@ export function BankImport({
           rows={rows}
           busy={busy}
           icon={<FileText size={18} aria-hidden />}
-          title={
-            <>
-              <strong>{file?.name}</strong> into {accountName}
-            </>
-          }
+          title={t("{source} into {account}", { source: <strong>{file?.name}</strong>, account: accountName })}
           action={
             <button className="link-button" onClick={reset}>
-              Change file
+              {t("Change file")}
             </button>
           }
           onCancel={reset}
@@ -385,20 +410,20 @@ export function BankImport({
           <MessageSquareText size={16} aria-hidden />
           <p>
             {failed
-              ? "The assistant can read this file, find the transactions and ask you about anything unclear."
+              ? t("The assistant can read this file, find the transactions and ask you about anything unclear.")
               : allIn
-                ? "Every row came out as money in. If these are purchases, the signs are probably reversed, and the assistant can check the file with you."
+                ? t("Every row came out as money in. If these are purchases, the signs are probably reversed, and the assistant can check the file with you.")
                 : rows.length
-                  ? "If something here doesn't look right, the assistant can go through the file with you."
-                  : "Not sure how this file will import? The assistant can read it and prepare it for you."}
-            <small>Opens the assistant with this file attached. Nothing is sent until you press Send.</small>
+                  ? t("If something here doesn't look right, the assistant can go through the file with you.")
+                  : t("Not sure how this file will import? The assistant can read it and prepare it for you.")}
+            <small>{t("Opens the assistant with this file attached. Nothing is sent until you press Send.")}</small>
           </p>
           <button
             type="button"
             className={problem ? "primary small" : "secondary small"}
             onClick={() => onAskAssistant(file, problem)}
           >
-            Help with this import
+            {t("Help with this import")}
           </button>
         </div>
       )}
@@ -428,7 +453,7 @@ export function ImportReview({
   icon,
   title,
   action,
-  cancelLabel = "Cancel",
+  cancelLabel = t("Cancel"),
   onCancel,
   onImport,
 }: {
@@ -479,28 +504,26 @@ export function ImportReview({
       <div className="import-summary">
         {icon}
         <span>
-          {title} · {rows.length} {rows.length === 1 ? "row" : "rows"}
-          {duplicates > 0 && ` · ${duplicates} already imported`}
-          {renamed > 0 && ` · ${renamed} renamed by your payee rules`}
+          {title} · {tn(rows.length, "{count} row", "{count} rows")}
+          {duplicates > 0 && ` · ${tn(duplicates, "{count} already imported", "{count} already imported")}`}
+          {renamed > 0 && ` · ${tn(renamed, "{count} renamed by your payee rules", "{count} renamed by your payee rules")}`}
         </span>
         {action}
       </div>
       <p className="help import-note">
-        Matching keeps your category and memo and marks the transaction cleared. Imported transactions wait for your
-        approval.
+        {t("Matching keeps your category and memo and marks the transaction cleared. Imported transactions wait for your approval.")}
       </p>
       {rows.some((r) => r.possibleDuplicate || (r.idless && r.duplicate)) && <p className="help import-note">
-        This file has no bank transaction IDs. A row may already be imported; compare its memo and amount.
-        Skip it if it is the same payment, or add it separately if it is a different payment.
+        {t("This file has no bank transaction IDs. A row may already be imported; compare its memo and amount. Skip it if it is the same payment, or add it separately if it is a different payment.")}
       </p>}
       <div className="table-scroll import-review" ref={review}>
         <table>
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Payee</th>
-              <th className="num">Amount</th>
-              <th>What to do</th>
+              <th>{t("Date")}</th>
+              <th>{t("Payee")}</th>
+              <th className="num">{t("Amount")}</th>
+              <th>{t("What to do")}</th>
             </tr>
           </thead>
           <tbody>
@@ -514,7 +537,7 @@ export function ImportReview({
               return (
                 <tr key={`${r.id}:${index}`} className={r.duplicate ? "muted" : ""}>
                   <td>{formatDate(r.date)}</td>
-                  <td title={r.rename ? `${r.rename}, from the bank's “${r.payee}”` : undefined}>
+                  <td title={r.rename ? t("{name}, from the bank's “{payee}”", { name: r.rename, payee: r.payee }) : undefined}>
                     {r.rename ?? r.payee}
                     {r.rename && <small className="bank-text">{r.payee}</small>}
                     {r.memo && <small className="bank-text" title={r.memo}>{r.memo}</small>}
@@ -522,29 +545,34 @@ export function ImportReview({
                   <td className="num">{money(r.amount)}</td>
                   <td>
                     {r.duplicate && !r.idless ? (
-                      "Already imported · skipped"
+                      t("Already imported · skipped")
                     ) : (
                       <select
-                        aria-label={`Import action ${index + 1}`}
+                        aria-label={t("Import action {number}", { number: index + 1 })}
                         disabled={busy}
                         value={choice(r)}
                         onChange={(e) => setChoices({ ...choices, [r.id]: e.target.value })}
                       >
-                        {!r.duplicate && <option value="review">{r.possibleDuplicate ? "May already be imported — choose" : "Choose a match or add it"}</option>}
+                        {!r.duplicate && (
+                          <option value="review">
+                            {r.possibleDuplicate ? t("May already be imported — choose") : t("Choose a match or add it")}
+                          </option>
+                        )}
                         {r.duplicate
-                          ? <option value="separate">Add as a separate transaction</option>
-                          : <option value="new">Add as a new transaction</option>}
-                        <option value="skip">{r.duplicate ? "Already imported — skip" : "Skip"}</option>
+                          ? <option value="separate">{t("Add as a separate transaction")}</option>
+                          : <option value="new">{t("Add as a new transaction")}</option>}
+                        <option value="skip">{r.duplicate ? t("Already imported — skip") : t("Skip")}</option>
                         {(r.duplicate ? [] : r.candidates).map((id) => {
                           const detail = r.candidateDetails?.find((c) => c.id === id);
-                          const t = byId.get(detail?.transactionId ?? id);
-                          const part = detail && t?.splits[detail.splitIndex];
+                          const tx = byId.get(detail?.transactionId ?? id);
+                          const part = detail && tx?.splits[detail.splitIndex];
+                          const memo = part?.memo || tx?.memo;
                           return (
                             <option key={id} value={`match:${id}`}>
-                              Match: {t ? formatDate(t.date) : ""} · {t?.payee || "Transfer"}
-                              {detail ? ` · Split ${detail.splitIndex + 1}` : ""}
-                              {part?.memo || t?.memo ? ` · ${part?.memo || t?.memo}` : ""}
-                              {r.previouslyMatchedCandidates?.includes(id) ? " · Previously imported" : ""}
+                              {t("Match: {date} · {payee}", { date: tx ? formatDate(tx.date) : "", payee: tx?.payee || t("Transfer") })}
+                              {detail ? ` · ${t("Split {number}", { number: detail.splitIndex + 1 })}` : ""}
+                              {memo ? ` · ${memo}` : ""}
+                              {r.previouslyMatchedCandidates?.includes(id) ? ` · ${t("Previously imported")}` : ""}
                             </option>
                           );
                         })}
@@ -564,15 +592,13 @@ export function ImportReview({
       </div>
       <div className="form-actions">
         {undecided > 0 && (
-          <span className="help">
-            {undecided} {undecided === 1 ? "row needs" : "rows need"} a choice
-          </span>
+          <span className="help">{tn(undecided, "{count} row needs a choice", "{count} rows need a choice")}</span>
         )}
         <button className="secondary" onClick={onCancel}>
           {cancelLabel}
         </button>
         <button className="primary" disabled={busy || undecided > 0 || !importing} onClick={() => onImport(chosen(), importing)}>
-          {busy ? "Importing…" : `Import ${importing} ${importing === 1 ? "transaction" : "transactions"}`}
+          {busy ? t("Importing…") : tn(importing, "Import {count} transaction", "Import {count} transactions")}
         </button>
       </div>
     </>
@@ -586,11 +612,13 @@ export function CategorizeOffer({ uncategorized, onCategorize }: { uncategorized
     <div className="import-assist">
       <MessageSquareText size={16} aria-hidden />
       <p>
-        {n === 1 ? "1 new transaction has no category." : `${n} new transactions have no category.`}
-        <small>Opens the assistant with them attached. Nothing is sent until you press Send.</small>
+        {n === 1
+          ? t("1 new transaction has no category.")
+          : tn(n, "{count} new transactions have no category.", "{count} new transactions have no category.")}
+        <small>{t("Opens the assistant with them attached. Nothing is sent until you press Send.")}</small>
       </p>
       <button type="button" className="secondary small" onClick={onCategorize}>
-        Categorize with the assistant
+        {t("Categorize with the assistant")}
       </button>
     </div>
   );

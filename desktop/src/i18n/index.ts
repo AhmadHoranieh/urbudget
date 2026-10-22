@@ -87,8 +87,8 @@ export const useLanguage = () => useSyncExternalStore(subscribe, getLanguage, ge
 
 // Arabic keeps names, amounts, dates and emails in their own direction: each value placed in a
 // sentence is isolated (First Strong Isolate … Pop Directional Isolate).
-const FSI = "⁨";
-const PDI = "⁩";
+const FSI = "\u2068";
+const PDI = "\u2069";
 
 function fill(text: string, values: RichValues | undefined): ReactNode {
   if (!values) return text;
@@ -118,9 +118,17 @@ function fill(text: string, values: RichValues | undefined): ReactNode {
   return createElement(Fragment, null, ...out);
 }
 
-const lookup = (key: string) => {
+// A key with a context (see `tc`) is the English text, this separator and the context; its
+// catalog entry is "text (context)". The separator never appears in real text.
+const CONTEXT = "\u0004";
+const catalogKey = (raw: string) => {
+  const at = raw.indexOf(CONTEXT);
+  return at < 0 ? { text: raw, key: raw } : { text: raw.slice(0, at), key: `${raw.slice(0, at)} (${raw.slice(at + 1)})` };
+};
+const lookup = (raw: string) => {
+  const { text, key } = catalogKey(raw);
   const entry = catalogs[current]?.[key];
-  return typeof entry === "string" && entry ? entry : key;
+  return typeof entry === "string" && entry ? entry : text;
 };
 
 /**
@@ -148,12 +156,33 @@ const pluralRules = (language: Language) => {
 export function tn(count: number, one: string, other: string, values?: Values): string;
 export function tn(count: number, one: string, other: string, values: RichValues): ReactNode;
 export function tn(count: number, one: string, other: string, values?: RichValues): ReactNode {
-  const entry = catalogs[current]?.[other];
+  const { text: english, key } = catalogKey(other);
+  const entry = catalogs[current]?.[key];
   const category = pluralRules(current).select(count) as keyof PluralForms;
   const text =
-    entry && typeof entry === "object" ? entry[category] || entry.other : category === "one" ? one : other;
+    entry && typeof entry === "object" ? entry[category] || entry.other : category === "one" ? catalogKey(one).text : english;
   return fill(text, { count, ...values });
 }
+
+/**
+ * The same English with another meaning, told apart by a context: `tc("noun", "Report")` is
+ * "Report" in English, and its catalog entry is "Report (noun)".
+ */
+export function tc(context: string, key: string, values?: Values): string;
+export function tc(context: string, key: string, values: RichValues): ReactNode;
+export function tc(context: string, key: string, values?: RichValues): ReactNode {
+  return fill(lookup(msgc(context, key)), values);
+}
+
+/** `tn` for a count whose English has another meaning elsewhere; its catalog entry is "other (context)". */
+export function tnc(context: string, count: number, one: string, other: string, values?: Values): string;
+export function tnc(context: string, count: number, one: string, other: string, values: RichValues): ReactNode;
+export function tnc(context: string, count: number, one: string, other: string, values?: RichValues): ReactNode {
+  return tn(count, one, msgc(context, other), values as RichValues);
+}
+
+/** `msg` with a context, for a table: translate the value later with `t(value)`. */
+export const msgc = (context: string, key: string) => key + CONTEXT + context;
 
 /**
  * Marks an English string for translation where `t` can't run yet, such as a table defined
@@ -164,12 +193,25 @@ export const msg = <K extends string>(key: K): K => key;
 /** Items as a list with commas, "a, b, c" (in Arabic «a، b، c»), with no "and". */
 export const list = (items: readonly string[]) => items.join(current === "ar" ? "، " : ", ");
 
+// Arabic text uses Western digits and the Gregorian calendar, whatever the system's region.
+const AR_LOCALE = "ar-u-nu-latn-ca-gregory";
+/** A count with digit grouping: as the system writes it, or with Western digits in Arabic. */
+export const formatCount = (n: number) => (current === "ar" ? n.toLocaleString("en-US") : n.toLocaleString());
+/** A moment's date in the system's style; in Arabic, with Western digits and Gregorian months. */
+export const localDate = (date: Date, options?: Intl.DateTimeFormatOptions) =>
+  current === "ar" ? date.toLocaleDateString(AR_LOCALE, options) : date.toLocaleDateString(undefined, options);
+/** A moment's date and time in the system's style; in Arabic, with Western digits and Gregorian months. */
+export const localDateTime = (date: Date, options?: Intl.DateTimeFormatOptions) =>
+  current === "ar" ? date.toLocaleString(AR_LOCALE, options) : date.toLocaleString(undefined, options);
+
 // Left-to-right isolate, for text that must never be reordered inside Arabic (amounts, dates).
-const LRI = "⁦";
+const LRI = "\u2066";
+/** In Arabic, `text` isolated as right to left, for a sentence inside a left-to-right layout (a chart). */
+export const rtlRun = (text: string) => (current === "ar" ? "\u2067" + text + PDI : text);
 /** In Arabic, `text` isolated as left to right; in English, unchanged. */
 export const ltr = (text: string) => (current === "ar" ? LRI + text + PDI : text);
 /** Removes the isolation marks `ltr` and `t` add, for text read back as input. */
-export const stripIsolates = (text: string) => text.replace(/[⁦-⁩‎‏]/g, "");
+export const stripIsolates = (text: string) => text.replace(/[\u2066-\u2069\u200e\u200f]/g, "");
 
 /** Month names, January first, in the language in use. */
 export const monthNames = (): readonly string[] | null => (current === "ar" ? AR_MONTHS : null);

@@ -5,6 +5,7 @@ import { listen } from "@tauri-apps/api/event";
 import { produce, setAutoFreeze } from "immer";
 import { api, desktop } from "./bridge";
 import { useCalculationMonth } from "./useCalculationMonth";
+import { msg, t } from "./i18n";
 import {
   type Budget,
   type DatabaseStatus,
@@ -21,12 +22,13 @@ export type SyncState =
   "loading" | "saved" | "pending" | "saving" | "conflict" | "error";
 const LEGACY_RECOVERY = "local-budget-recovery-v1";
 type Recovery = { budget: Budget; matches: boolean };
-const RECOVERY_ERROR =
-  "The recovery draft could not be written. Keep this window open until the database save succeeds.";
+const RECOVERY_ERROR = msg(
+  "The recovery draft could not be written. Keep this window open until the database save succeeds.",
+);
 /** The operation is already in the draft. Retrying must save it, never apply it again. */
 export class AppliedChangeError extends Error {
   constructor(readonly retrySave: () => Promise<void>) {
-    super("The changes are already applied to your draft but could not be saved. Retry saving or use database status; do not repeat the operation.");
+    super(t("The changes are already applied to your draft but could not be saved. Retry saving or use database status; do not repeat the operation."));
     this.name = "AppliedChangeError";
   }
 }
@@ -87,9 +89,9 @@ export function useBudget(month: string, editorOpen = false) {
     api
       .push(next)
       .then((r) => {
-        if (r.recoveryError) setError(RECOVERY_ERROR);
+        if (r.recoveryError) setError(t(RECOVERY_ERROR));
       })
-      .catch(() => setError(RECOVERY_ERROR));
+      .catch(() => setError(t(RECOVERY_ERROR)));
   const accept = useCallback((b: Budget, status: DatabaseStatus) => {
     past.current = [];
     future.current = [];
@@ -114,7 +116,8 @@ export function useBudget(month: string, editorOpen = false) {
           const status = await api.status();
           if (status.token !== token.current)
             throw new Error(
-              "CONFLICT: The database changed. Fetch the saved version before continuing.",
+              // The prefix marks a conflict for the catch below; people never see it.
+              "CONFLICT: " + t("The database changed. Fetch the saved version before continuing."),
             );
           setMetadata(status);
         }
@@ -229,7 +232,7 @@ export function useBudget(month: string, editorOpen = false) {
       const data = await api.load();
       if (current.current !== draftAtStart) {
         setError(
-          "You made another edit while the database was being fetched. Your edit has been kept; fetch again when ready.",
+          t("You made another edit while the database was being fetched. Your edit has been kept; fetch again when ready."),
         );
         void push(current.current!);
         return;
@@ -273,7 +276,7 @@ export function useBudget(month: string, editorOpen = false) {
         } catch {
           pendingRecovery.current = false;
           setError(
-            "An unreadable recovery draft was found. The saved database has been loaded.",
+            t("An unreadable recovery draft was found. The saved database has been loaded."),
           );
         }
         setRecoveryReady(true);
@@ -332,7 +335,7 @@ export function useBudget(month: string, editorOpen = false) {
             clearTimeout(timer.current);
             setSync("conflict");
             setError(
-              "The database changed while you were editing. Export your draft, or fetch the saved version.",
+              t("The database changed while you were editing. Export your draft, or fetch the saved version."),
             );
           } else {
             const data = await api.load();
@@ -407,7 +410,7 @@ export function useBudget(month: string, editorOpen = false) {
             await getCurrentWindow().destroy();
           } else
             setError(
-              "The window is staying open because changes are not saved. Resolve the database conflict or export your draft first.",
+              t("The window is staying open because changes are not saved. Resolve the database conflict or export your draft first."),
             );
         }
       })
@@ -434,12 +437,12 @@ export function useBudget(month: string, editorOpen = false) {
     work: () => Promise<T>,
   ): Promise<T> => {
     if (operationRef.current || pendingRecovery.current)
-      throw new Error("Finish the current operation or recovery first.");
+      throw new Error(t("Finish the current operation or recovery first."));
     operationRef.current = true;
     setOperation(label);
     try {
       if (!(await flush()))
-        throw new Error("Resolve unsaved changes before continuing.");
+        throw new Error(t("Resolve unsaved changes before continuing."));
       return await work();
     } finally {
       operationRef.current = false;
@@ -447,7 +450,7 @@ export function useBudget(month: string, editorOpen = false) {
     }
   };
   const importYnab = (request: YnabImportRequest) =>
-    exclusive("Importing from YNAB…", async () => {
+    exclusive(msg("Importing from YNAB…"), async () => {
       const unlisten = await listen<string>("ynab-import-progress", (e) =>
         setOperation(e.payload),
       );
@@ -462,7 +465,7 @@ export function useBudget(month: string, editorOpen = false) {
       }
     });
   const acceptYnab = (reviewId: string) =>
-    exclusive("Saving the import…", async () => {
+    exclusive(msg("Saving the import…"), async () => {
       const result = await api.acceptYnab(reviewId, token.current);
       if (result.reviewId) return result;
       accept(result.snapshot.budget, result.snapshot);
@@ -470,20 +473,20 @@ export function useBudget(month: string, editorOpen = false) {
       return result;
     });
   const resolveYnab = (reviewId: string, choices: Record<string, string>) =>
-    exclusive("Applying reviewed import…", async () => {
+    exclusive(msg("Applying reviewed import…"), async () => {
       const result = await api.resolveYnab(reviewId, choices, token.current);
       accept(result.snapshot.budget, result.snapshot);
       await forgetRecovery();
       return result;
     });
   const restoreBackup = (budget: Budget) =>
-    exclusive("Restoring backup…", async () => {
+    exclusive(msg("Restoring backup…"), async () => {
       const snapshot = await api.restoreBackup(budget, token.current);
       accept(snapshot.budget, snapshot);
       await forgetRecovery();
     });
   const transform = (work: (budget: Budget) => Promise<Budget>) =>
-    exclusive("Saving changes…", async () => {
+    exclusive(msg("Saving changes…"), async () => {
       const next = await work(current.current!);
       await api.validate(next);
       rememberHistory();
@@ -491,7 +494,7 @@ export function useBudget(month: string, editorOpen = false) {
       setBudget(next);
       await push(next);
       if (!(await flush()))
-        throw new AppliedChangeError(() => exclusive("Saving changes…", async () => {}));
+        throw new AppliedChangeError(() => exclusive(msg("Saving changes…"), async () => {}));
     });
   useEffect(() => {
     if (!desktop) return;
@@ -515,7 +518,7 @@ export function useBudget(month: string, editorOpen = false) {
       )
         return;
       operationRef.current = true;
-      setOperation("Posting scheduled transactions…");
+      setOperation(msg("Posting scheduled transactions…"));
       try {
         const data = await api.runSchedules(token.current, today());
         for (const t of ahead) askedAhead.current.add(t.id);
@@ -538,7 +541,7 @@ export function useBudget(month: string, editorOpen = false) {
 
   /** Saves the open budget, then opens another one and offers its recovery file, if any. */
   const switchBudget = (id: string) =>
-    exclusive("Opening budget…", async () => {
+    exclusive(msg("Opening budget…"), async () => {
       const data = await api.openBudget(id);
       setCalculated(null);
       accept(data.budget, data);
@@ -563,7 +566,7 @@ export function useBudget(month: string, editorOpen = false) {
       blocked.current = true;
       setSync("conflict");
       setError(
-        "The recovered draft was based on an older database. Export it for comparison, or fetch the database.",
+        t("The recovered draft was based on an older database. Export it for comparison, or fetch the database."),
       );
     } else {
       setSync("pending");
@@ -589,7 +592,7 @@ export function useBudget(month: string, editorOpen = false) {
     restoreBackup,
     transform,
     installUpdate: (install: () => Promise<void>) =>
-      exclusive("Installing the update…", async () => {
+      exclusive(msg("Installing the update…"), async () => {
         if (getPref("backupOnClose")) {
           try { await api.backup(); } catch { /* As with a normal close, saving is required; backup is best effort. */ }
         }

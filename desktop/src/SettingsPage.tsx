@@ -22,7 +22,7 @@ import type { Cloud } from "./cloud";
 import type { Updates } from "./updates";
 import { UpdateSetting } from "./UpdateNotice";
 import { PrivacySettings } from "./PrivacySettings";
-import { ltr, list, msg, t, tn, type LanguageSetting } from "./i18n";
+import { list, localDateTime, msg, t, tn, type LanguageSetting } from "./i18n";
 import "./settings.css";
 
 export type Tab = "general" | "display" | "import" | "assistant" | "backup" | "sync" | "shortcuts" | "advanced";
@@ -135,10 +135,18 @@ function LanguageChoice() {
   );
 }
 
+// Key names stay as printed on keyboards; these also hold words (click, or), which are translated.
+const KEYS_WITH_WORDS = new Set<string>([
+  msg("Click, Ctrl+click, Shift+click"),
+  msg("F2 or double-click"),
+  msg("Enter, F2 or double-click"),
+  msg("/ or Ctrl+F"),
+]);
+
 /** "Ctrl+Z / Ctrl+Shift+Z" as separate key caps in this system's notation, keeping the separators as text. */
 const Keys = ({ keys }: { keys: string }) => (
   <>
-    {keyLabel(t(keys)).split(/( \/ |, |، | or | أو )/).map((part, i) =>
+    {keyLabel(KEYS_WITH_WORDS.has(keys) ? t(keys) : keys).split(/( \/ |, |، | or | أو )/).map((part, i) =>
       i % 2 ? (
         <span key={i} className={part === ", " || part === "، " ? "muted comma" : "muted"}>
           {part.trim()}
@@ -150,7 +158,6 @@ const Keys = ({ keys }: { keys: string }) => (
   </>
 );
 
-// Keys are printed as on keyboards; the words among them (click, or) are translated.
 const SHORTCUTS: [string, [string, string][]][] = [
   [
     msg("Anywhere"),
@@ -164,8 +171,8 @@ const SHORTCUTS: [string, [string, string][]][] = [
   [
     msg("Budget"),
     [
-      [msg("Click, Ctrl+click, Shift+click"), msg("Select categories (the inspector shows them)")],
-      [msg("F2 or double-click"), msg("Rename a category or group")],
+      ["Click, Ctrl+click, Shift+click", msg("Select categories (the inspector shows them)")],
+      ["F2 or double-click", msg("Rename a category or group")],
       ["Alt+↑ / Alt+↓", msg("Move a category up or down")],
       ["Enter", msg("In Assigned: save and move to the next category")],
       ["Esc", msg("Clear the selection")],
@@ -176,7 +183,7 @@ const SHORTCUTS: [string, [string, string][]][] = [
     [
       ["↑ / ↓, Shift+↑ / Shift+↓", msg("Move, or extend the selection")],
       ["Home / End, Page Up / Page Down", msg("Jump to the first or last row, or a page at a time")],
-      [msg("Enter, F2 or double-click"), msg("Edit the transaction in place")],
+      ["Enter, F2 or double-click", msg("Edit the transaction in place")],
       ["Space", msg("Select or unselect the row")],
       ["Ctrl+A", msg("Select every listed transaction")],
       ["C", msg("Mark the selection cleared (again to unclear)")],
@@ -184,7 +191,7 @@ const SHORTCUTS: [string, [string, string][]][] = [
       ["Ctrl+D", msg("Duplicate the selection")],
       ["Delete", msg("Delete the selection (with Undo)")],
       ["N", msg("Add a transaction")],
-      [msg("/ or Ctrl+F"), msg("Search")],
+      ["/ or Ctrl+F", msg("Search")],
       ["Esc", msg("Clear the selection")],
     ],
   ],
@@ -642,7 +649,7 @@ export function SettingsPage({
               </div>
               <div>
                 <dt>{t("Last saved")}</dt>
-                <dd>{metadata?.savedAt ? ltr(new Date(metadata.savedAt).toLocaleString()) : t("Not yet")}</dd>
+                <dd>{metadata?.savedAt ? localDateTime(new Date(metadata.savedAt)) : t("Not yet")}</dd>
               </div>
               {version && (
                 <div>
