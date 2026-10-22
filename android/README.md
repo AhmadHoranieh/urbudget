@@ -93,6 +93,7 @@ import matches or sync merges.
 | Billing | The monthly sync subscription (`urbudget_sync`, base plan `monthly`) at Play's localized price, pending/cancelled states, account-bound restore, server verification, subscription management |
 | Banks | SimpleFIN setup claim, secure tokens, account links, import range/sign handling, request quotas, download/match/duplicate review, import and disconnect |
 | YNAB | Multiple saved tokens, plans, delta sync with full-download fallback, conflict/discrepancy review, ZIP and Register/Plan CSV imports |
+| Languages | English and Arabic from string resources, chosen in Settings & data or Android's own app-language settings (System by default); Arabic lays the app out right to left, keeping amounts and charts left to right ([languages guide](../docs/LOCALIZATION.md)) |
 | Assistant | ChatGPT browser sign-in, OpenAI/Anthropic keys, model/settings, streamed conversations, cancel/history/export, files/photos, context selection, shared tools, review/recheck/apply/undo/refine/discard proposals, bank-file conversion review, workbook generation, report replies/printing/sharing |
 
 Desktop window controls, updater delivery and OS-specific shell integration stay

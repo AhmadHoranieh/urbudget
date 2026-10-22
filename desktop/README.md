@@ -52,6 +52,7 @@ original three-column assignment table remains compatible with existing database
 
 ## Supported workflows
 
+- English and Arabic, chosen in Settings › General (System follows Windows' or macOS's language). Arabic lays the whole window out right to left, the title bar included; amounts and charts keep their left-to-right order. Strings go through `t()` and `tn()` in `src/i18n`, and [the languages guide](../docs/LOCALIZATION.md) has the rules and glossary.
 - A first launch starts in the currency, number and date format of the system's language and region, and offers three ways in: YNAB's export file (filling the empty budget), starter categories, or a sample budget opened as its own budget. A budget set up from there shows a five-step getting-started checklist (accounts, assigning, spending, a target, covering overspending) that ticks itself off from what's in the budget and can be hidden.
 - Cash, credit-card, and tracking accounts, including closed account history. Accounts have a type (checking, savings, line of credit, investment, property, vehicle, receivable, mortgage, auto/student/personal loan, …); tracking accounts can be left out of net worth.
 - Monthly envelopes, assignments, positive rollover, cash/credit overspending, credit payment reserves, and categorized transfers to tracking accounts.
