@@ -190,6 +190,10 @@ function renderSync() {
     setBadge("Past due", "badge-warn");
     summary =
       "Your last payment didn't go through. Sync keeps working for now; update your payment method under Manage subscription to keep it on.";
+  } else if (sub.status === "unpaid" && sub.provider === "apple") {
+    setBadge("Payment due", "badge-warn");
+    summary =
+      "The App Store couldn't renew your subscription and is still trying, so sync is off for now. Update your payment method in your Apple Account settings.";
   } else if (sub.status === "paused") {
     setBadge("Paused", "");
     summary = "Your subscription is paused, so sync is off. Resume it under Manage subscription.";
@@ -201,7 +205,8 @@ function renderSync() {
 
   els.syncSummary.textContent = summary;
   els.manage.hidden = !canManage;
-  els.manage.textContent = sub?.provider === "google" ? "Manage in Google Play" : "Manage subscription";
+  els.manage.textContent =
+    sub?.provider === "google" ? "Manage in Google Play" : sub?.provider === "apple" ? "Manage in the App Store" : "Manage subscription";
   els.subscribe.hidden = !canSubscribe;
   els.subscribe.querySelector("[data-label]").textContent =
     sub && sub.status === "canceled" ? "Subscribe again" : "Subscribe";
