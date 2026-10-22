@@ -1253,7 +1253,7 @@
     <string name="loan_payment_positive">أدخل الدفعة الشهرية للقرض مبلغًا موجبًا.</string>
     <string name="loan_fees_positive">أدخل الرسوم الشهرية مبلغًا موجبًا.</string>
     <string name="loan_rate_format">أدخل سعر الفائدة نسبةً مئوية، مثل 5.25.</string>
-    <string name="loan_rate_range">يجب أن يكون سعر الفائدة بين 0 و1,000%.</string>
+    <string name="loan_rate_range">يجب أن يكون سعر الفائدة بين 0 و\u20661,000%\u2069.</string>
     <string name="loan_rate_month_required">اختر الشهر الذي يبدأ فيه كل تغيير في السعر.</string>
     <string name="loan_one_rate_per_month">أبقِ سعر فائدة واحدًا لكل شهر.</string>
     <string name="loan_category_required">اختر الفئة التي تُدفع منها الدفعة.</string>
@@ -1372,7 +1372,7 @@
         <item quantity="other">\u2068%1$s\u2069 شهر</item>
     </plurals>
     <string name="rate_three_decimals">أدخل سعرًا بثلاث خانات عشرية على الأكثر.</string>
-    <string name="rate_range">يجب أن يكون السعر بين 0 و1,000%.</string>
+    <string name="rate_range">يجب أن يكون السعر بين 0 و\u20661,000%\u2069.</string>
 
     <!-- Payees and import rules -->
     <plurals name="payee_transactions">
@@ -1756,9 +1756,9 @@
     <!-- Which part of a split transaction (1, 2, …). -->
     <string name="bank_match_split">الجزء \u2068%1$s\u2069</string>
     <string name="bank_previously_imported">مستورَدة سابقًا</string>
-    <string name="bank_dates_ymd">السنة ثم الشهر ثم اليوم (2026-10-31)</string>
-    <string name="bank_dates_dmy">اليوم ثم الشهر ثم السنة (31/10/2026)</string>
-    <string name="bank_dates_mdy">الشهر ثم اليوم ثم السنة (10/31/2026)</string>
+    <string name="bank_dates_ymd">السنة ثم الشهر ثم اليوم (\u20662026-10-31\u2069)</string>
+    <string name="bank_dates_dmy">اليوم ثم الشهر ثم السنة (\u206631/10/2026\u2069)</string>
+    <string name="bank_dates_mdy">الشهر ثم اليوم ثم السنة (\u206610/31/2026\u2069)</string>
     <!-- The name shown for a chosen file that has none. -->
     <string name="bank_statement_file">كشف حساب</string>
     <string name="bank_statement_too_large">اختر كشف حساب أصغر من 8 ميغابايت.</string>

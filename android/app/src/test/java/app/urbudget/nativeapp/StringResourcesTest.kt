@@ -76,15 +76,19 @@ class StringResourcesTest {
      */
     @Test fun arabicReadsRightToLeft() {
         val isolated = Regex("[\u2066\u2067\u2068][^\u2069]*\u2069")
+        val bareFigure = Regex("\\d[\\d,.]*\\s?[-%+]|[-+]\\d")
+        val argumentText = Regex("%\\d+\\\$s")
         // Codes and date patterns are read by the app, not shown.
         val codes = arabic.strings.keys.filter { it == "language_code" || it.startsWith("date_pattern_") }
         val texts = arabic.strings - codes + arabic.plurals.flatMap { (name, forms) -> forms.map { "$name/${it.key}" to it.value } }
         val wrong = problems { out ->
             texts.forEach { (name, text) ->
                 val outside = text.replace(isolated, "")
+                if ('→' in text) out += "$name points right: $text"
+                // After an Arabic word, "2026-10-31" or "1,000%" would come apart unless isolated.
+                if (bareFigure.containsMatchIn(outside.replace(argumentText, ""))) out += "$name has a figure to isolate: $text"
                 val first = outside.firstOrNull { it.isLetter() } ?: return@forEach
                 if (Character.UnicodeScript.of(first.code) != Character.UnicodeScript.ARABIC) out += "$name starts with “$first”: $text"
-                if ('→' in text) out += "$name points right: $text"
             }
         }
         assertEquals(emptyList<String>(), wrong)

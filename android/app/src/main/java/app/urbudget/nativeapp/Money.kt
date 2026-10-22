@@ -57,17 +57,19 @@ object Money {
      * Text the person wrote (a name, a memo, an email), isolated in its own direction when the
      * interface is right to left, so "Car (2024)" never comes out as "(Car (2024". Display only.
      */
-    fun own(text: String): String = if (rightToLeft && startsLeftToRight(text)) "$FSI$text$PDI" else text
+    fun own(text: String): String = if (rightToLeft && needsIsolating(text)) "$FSI$text$PDI" else text
 
     /**
-     * Whether the text's first strong letter, outside pieces already isolated, reads left to right.
-     * Arabic text, figures and already-isolated pieces read right in a right-to-left line as they are.
+     * Whether a right-to-left line needs [text] isolated: it starts left to right, or it is bare
+     * figures ("2026-10-15") that an Arabic word before them would turn into "15-10-2026". Arabic
+     * text, and lines already made of isolated pieces, read right as they are.
      */
-    private fun startsLeftToRight(text: String): Boolean {
+    private fun needsIsolating(text: String): Boolean {
         var depth = 0
+        var isolated = false
         for (c in text) {
             when (c) {
-                '\u2066', '\u2067', '\u2068' -> { depth++; continue }
+                '\u2066', '\u2067', '\u2068' -> { depth++; isolated = true; continue }
                 '\u2069' -> { if (depth > 0) depth--; continue }
             }
             if (depth > 0) continue
@@ -76,7 +78,7 @@ object Money {
                 Character.DIRECTIONALITY_RIGHT_TO_LEFT, Character.DIRECTIONALITY_RIGHT_TO_LEFT_ARABIC -> return false
             }
         }
-        return false
+        return text.isNotEmpty() && !isolated
     }
 
     /**
