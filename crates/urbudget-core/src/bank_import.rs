@@ -349,6 +349,44 @@ pub(crate) fn dates(raw: &[String], format: &str) -> Result<Vec<String>, String>
         _ => chosen,
     }
 }
+/// How a statement's dates read when some may not: each date in the order the dates themselves
+/// settle, else the chosen one, and whether that order still needs confirming.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DateReading {
+    /// The order the dates are read in.
+    pub order: &'static str,
+    /// Two orders read these dates differently and the dates don't settle which (none reads more
+    /// of them), and the order hasn't been confirmed: an import asks before going on.
+    pub unconfirmed: bool,
+    /// The first date those orders read differently, to show when asking.
+    pub example: Option<String>,
+    /// Each date as YYYY-MM-DD, or None where it doesn't read in that order.
+    pub dates: Vec<Option<String>>,
+}
+const ORDERS: [&str; 3] = ["ymd", "dmy", "mdy"];
+/// Reads a column of dates that may hold unreadable ones without giving up on the rest: the order
+/// that reads the most of them (the chosen one when it's among those), asking only when orders
+/// reading as many would give different dates. ISO dates, or 31/10/2026 beside 01/02/2026, settle
+/// it; 01/02/2026 alone doesn't, unless `confirmed` says the chosen order is right. Unlike `dates`,
+/// nothing here fails: a date that doesn't read is None.
+pub fn read_dates(raw: &[&str], chosen: &str, confirmed: bool) -> DateReading {
+    let read: Vec<Vec<Option<String>>> = ORDERS.iter().map(|f| raw.iter().map(|s| date(s, f).ok()).collect()).collect();
+    let counts: Vec<usize> = read.iter().map(|dates| dates.iter().filter(|d| d.is_some()).count()).collect();
+    let most = counts.iter().copied().max().unwrap_or(0);
+    let best: Vec<usize> = (0..ORDERS.len()).filter(|&i| counts[i] == most).collect();
+    let chosen_at = ORDERS.iter().position(|f| *f == chosen);
+    let i = chosen_at.filter(|c| best.contains(c)).unwrap_or(best[0]);
+    // The first date another order reading as many would make a different day.
+    let example = best.iter().filter(|&&j| j != i).find_map(|&j| {
+        (0..raw.len()).find(|&k| matches!((&read[i][k], &read[j][k]), (Some(a), Some(b)) if a != b)).map(|k| raw[k].trim().to_string())
+    });
+    DateReading {
+        order: ORDERS[i],
+        unconfirmed: example.is_some() && !(confirmed && Some(i) == chosen_at),
+        example,
+        dates: read[i].clone(),
+    }
+}
 /// The order every one of these dates fits, when only one does (or year first, which any order
 /// reads).
 pub(crate) fn date_order(raw: &[&str]) -> Option<&'static str> {
@@ -1622,6 +1660,36 @@ mod tests {
             assert_eq!(read, want.format("%Y-%m-%d").to_string(), "{ahead}");
         }
     }
+    #[test]
+    fn reads_dates_in_the_order_they_settle_and_asks_when_they_dont() {
+        let read = |raw: &[&str], chosen: &str, confirmed: bool| read_dates(raw, chosen, confirmed);
+        // ISO dates read the same in any order: nothing to ask.
+        let iso = read(&["2026-10-01", "2026-10-02"], "dmy", false);
+        assert_eq!((iso.order, iso.unconfirmed), ("dmy", false));
+        assert_eq!(iso.dates, [Some("2026-10-01".into()), Some("2026-10-02".into())]);
+        // 31/10/2026 reads only day first, so 01/02/2026 is 1 February, whatever was chosen.
+        let settled = read(&["31/10/2026", "01/02/2026"], "mdy", false);
+        assert_eq!((settled.order, settled.unconfirmed), ("dmy", false));
+        assert_eq!(settled.dates[1].as_deref(), Some("2026-02-01"));
+        // Only 01/02/2026: either order fits, so the chosen one is used and needs confirming...
+        let open = read(&["01/02/2026", "03/04/2026"], "mdy", false);
+        assert_eq!((open.order, open.unconfirmed, open.example.as_deref()), ("mdy", true, Some("01/02/2026")));
+        assert_eq!(open.dates[0].as_deref(), Some("2026-01-02"));
+        // ...unless it was confirmed.
+        assert!(!read(&["01/02/2026"], "dmy", true).unconfirmed);
+        // A damaged date reads as nothing; the others still read. When it was the only one that
+        // settled the order, the order needs confirming rather than changing silently.
+        let damaged = read(&["31/1O/2026", "01/02/2026"], "mdy", false);
+        assert_eq!(damaged.dates[0], None);
+        assert!(damaged.unconfirmed);
+        let kept = read(&["31/10/2026", "n/a", "01/02/2026"], "mdy", false);
+        assert_eq!((kept.order, kept.unconfirmed, kept.dates[1].clone()), ("dmy", false, None));
+        // A confirmed order the dates contradict gives way to them.
+        assert_eq!(read(&["10/31/2026", "01/02/2026"], "dmy", true).order, "mdy");
+        // Nothing to read.
+        assert!(!read(&[], "ymd", false).unconfirmed);
+    }
+
     #[test]
     fn reads_ofx_and_qif_the_way_banks_and_quicken_write_them() {
         let b = sample();
