@@ -28,6 +28,7 @@ import { SettingsPage, type Tab as SettingsTab } from "./SettingsPage";
 import { useCloud } from "./cloud";
 import { SyncChip } from "./CloudBadges";
 import { useUpdates } from "./updates";
+import { useUsageCounts } from "./usage";
 import { UpdateChip } from "./UpdateNotice";
 import { TransactionsPage, saveTransaction, scheduledMessage } from "./Register";
 import { Sidebar, useSidebarLayout, type Page } from "./Sidebar";
@@ -216,6 +217,7 @@ export default function App() {
     fetchDatabase: model.fetchDatabase,
   });
   const updates = useUpdates();
+  useUsageCounts();
   const startPage = (): Page => (getPref("startPage") === "transactions" ? "transactions" : "budget");
   const [page, setPage] = useState<Page>(startPage);
   const [accountId, setAccountId] = useState("all");

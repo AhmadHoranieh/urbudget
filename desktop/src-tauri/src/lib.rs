@@ -481,6 +481,8 @@ pub fn run() {
             let directory = std::env::var_os("LOCAL_BUDGET_DATA_DIR")
                 .map(std::path::PathBuf::from)
                 .unwrap_or(directory);
+            // Before anything writes there: an empty folder is a copy opened for the first time.
+            app.manage(urbudget_services::usage::Usage::open(&directory));
             vault::init(&directory);
             let library = budgets::Budgets::load(&directory).map_err(std::io::Error::other)?;
             let id = library.current().to_owned();
@@ -555,6 +557,7 @@ pub fn run() {
             updates::check_store_update,
             updates::install_store_update,
             updates::open_update_store,
+            updates::report_usage,
             cloud::cloud_status,
             cloud::account_overview,
             cloud::account_start,

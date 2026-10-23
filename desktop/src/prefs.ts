@@ -22,6 +22,8 @@ export type Prefs = {
   backupOnClose: boolean;
   /** How many backups to keep (0 keeps them all). */
   keepBackups: number;
+  /** Count this copy as in use on urbudget.app, anonymously, once a day (usage.ts). */
+  usageCounts: boolean;
 };
 export const DEFAULT_PREFS: Prefs = {
   weekStart: "auto",
@@ -34,6 +36,7 @@ export const DEFAULT_PREFS: Prefs = {
   showAgeOfMoney: true,
   backupOnClose: false,
   keepBackups: 0,
+  usageCounts: true,
 };
 const KEY = "lb:prefs";
 const EVENT = "lb:prefs";

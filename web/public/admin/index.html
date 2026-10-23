@@ -36,6 +36,7 @@
       <button class="tab" type="button" role="tab" id="tab-overview" aria-controls="panel-overview" aria-selected="true">Overview</button>
       <button class="tab" type="button" role="tab" id="tab-accounts" aria-controls="panel-accounts" aria-selected="false" tabindex="-1">Accounts</button>
       <button class="tab" type="button" role="tab" id="tab-downloads" aria-controls="panel-downloads" aria-selected="false" tabindex="-1">Downloads</button>
+      <button class="tab" type="button" role="tab" id="tab-usage" aria-controls="panel-usage" aria-selected="false" tabindex="-1">Usage</button>
       <button class="tab" type="button" role="tab" id="tab-traffic" aria-controls="panel-traffic" aria-selected="false" tabindex="-1">Traffic</button>
       <button class="tab" type="button" role="tab" id="tab-revenue" aria-controls="panel-revenue" aria-selected="false" tabindex="-1">Revenue</button>
       <button class="tab" type="button" role="tab" id="tab-health" aria-controls="panel-health" aria-selected="false" tabindex="-1">Health</button>
@@ -55,12 +56,13 @@
       </section>
       <div class="chart-grid">
         <figure class="chart-card" id="chart-downloads"></figure>
+        <figure class="chart-card" id="chart-in-use"></figure>
         <figure class="chart-card" id="chart-checkouts"></figure>
         <figure class="chart-card" id="chart-signups"></figure>
       </div>
       <section class="panel" aria-labelledby="weeks-title">
         <h2 id="weeks-title" class="h3">Week by week</h2>
-        <p class="muted small">Monday to Sunday (UTC), people only. <b>Copy</b> on a finished week gives its row for <code>marketing/weekly-log.md</code> with this page's downloads (top link tags) filled in; the other columns stay blank for you.</p>
+        <p class="muted small">Monday to Sunday (UTC), people only. Downloads are every channel's; link tags are the site's. <b>Copy</b> on a finished week gives its row for <code>marketing/weekly-log.md</code> with this page's downloads (top link tags) filled in; the other columns stay blank for you.</p>
         <div class="table-wrap">
           <table class="data-table" id="weeks-table">
             <thead>
@@ -69,9 +71,10 @@
                 <th scope="col" class="num">Page views</th>
                 <th scope="col" class="num">Downloads</th>
                 <th scope="col">Top link tags</th>
+                <th scope="col" class="num" title="Copies of the app opened for the first time">First opens</th>
+                <th scope="col" class="num" title="Copies of the app used that week">In use</th>
                 <th scope="col" class="num" title="Sync checkouts opened at Polar">Checkouts</th>
                 <th scope="col" class="num">Accounts</th>
-                <th scope="col" class="num" title="About one a launch, from copies of 1.0.2 and later outside the Store">Update checks</th>
                 <th scope="col"><span class="visually-hidden">Weekly log row</span></th>
               </tr>
             </thead>
@@ -119,30 +122,79 @@
       </div>
     </section>
 
-    <!-- Downloads -->
+    <!-- Downloads: every channel -->
     <section id="panel-downloads" class="tab-panel" role="tabpanel" aria-labelledby="tab-downloads" tabindex="0" hidden>
       <div id="downloads-tiles" class="tiles"></div>
+      <section class="panel" aria-labelledby="channels-title">
+        <h2 id="channels-title" class="h3">Where the numbers come from</h2>
+        <ul id="channel-status" class="settings-list status-list"></ul>
+      </section>
       <figure class="chart-card chart-wide" id="chart-downloads-90"></figure>
+      <section class="panel" aria-labelledby="opened-title">
+        <h2 id="opened-title" class="h3">Downloads that became a copy in use</h2>
+        <p class="muted small">Last 30 days. A download is a click, and bots, link checkers and people who change their minds click too. A first open is a copy that was installed and opened, so a person was there. Copies count themselves from the desktop release with usage counts on, so first opens trail downloads until most copies have it.</p>
+        <div class="table-wrap"><table class="data-table" id="opened-table"><thead><tr><th scope="col">Installed from</th><th scope="col" class="num">Downloads</th><th scope="col" class="num">First opens</th><th scope="col" class="num">Opened per download</th></tr></thead><tbody></tbody></table></div>
+      </section>
+      <section class="panel" aria-labelledby="by-channel-title">
+        <h2 id="by-channel-title" class="h3">By channel</h2>
+        <div class="table-wrap">
+          <table class="data-table" id="channels-table">
+            <thead><tr><th scope="col">Channel</th><th scope="col">Counted</th><th scope="col" class="num">7 days</th><th scope="col" class="num">30 days</th><th scope="col" class="num">90 days</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
       <div class="two-col">
         <section class="panel">
-          <h2 class="h3">Where clicks came from</h2>
-          <p class="muted small">Last 90 days. <code>ref:</code> is a link's tag (<code>urbudget.app/download/?ref=hn</code>), a path is the page of this site the button was on, and a name is the site that linked to the download.</p>
-          <div class="table-wrap"><table class="data-table" id="sources-table"><thead><tr><th scope="col">Source</th><th scope="col" class="num">Downloads</th></tr></thead><tbody></tbody></table></div>
+          <h2 class="h3">Where the site's clicks came from</h2>
+          <p class="muted small">Last 90 days, urbudget.app only. <code>ref:</code> is a link's tag (<code>urbudget.app/download/?ref=hn</code>), a path is the page of this site the button was on, and a name is the site that linked to the download.</p>
+          <div class="table-wrap"><table class="data-table" id="sources-table"><thead><tr><th scope="col">Source</th><th scope="col" class="num">Clicks</th></tr></thead><tbody></tbody></table></div>
         </section>
         <section class="panel">
-          <h2 class="h3">By version</h2>
+          <h2 class="h3">The site's clicks by version</h2>
           <p class="muted small">Every click counted on urbudget.app, by the installer it led to.</p>
-          <div class="table-wrap"><table class="data-table" id="versions-table"><thead><tr><th scope="col">Version</th><th scope="col">System</th><th scope="col" class="num">Downloads</th><th scope="col">Last</th></tr></thead><tbody></tbody></table></div>
+          <div class="table-wrap"><table class="data-table" id="versions-table"><thead><tr><th scope="col">Version</th><th scope="col">System</th><th scope="col" class="num">Clicks</th><th scope="col">Last</th></tr></thead><tbody></tbody></table></div>
         </section>
       </div>
       <section class="panel">
-        <h2 class="h3">GitHub releases</h2>
-        <p class="muted small">Downloads of the files on GitHub. Each count includes the publish workflow's own download of that file.</p>
+        <h2 class="h3">GitHub releases, all time</h2>
+        <p class="muted small">GitHub's count for each file right now. Each includes the publish workflow's own download of that file (the <code>.msix</code> twice, with the Store workflow's); signatures and update packages aren't people's downloads.</p>
         <div id="github"></div>
       </section>
     </section>
 
-    <!-- Traffic: page views and update checks -->
+    <!-- Usage: copies of the app in use -->
+    <section id="panel-usage" class="tab-panel" role="tabpanel" aria-labelledby="tab-usage" tabindex="0" hidden>
+      <p id="usage-note" class="notice"></p>
+      <div id="usage-tiles" class="tiles"></div>
+      <div class="chart-grid">
+        <figure class="chart-card" id="chart-active-90"></figure>
+        <figure class="chart-card" id="chart-opens-90"></figure>
+        <figure class="chart-card" id="chart-weekly"></figure>
+      </div>
+      <section class="panel" aria-labelledby="retention-title">
+        <h2 id="retention-title" class="h3">Who came back</h2>
+        <p class="muted small">Copies first opened the same week (Monday to Sunday, UTC), and the share of them used again in each week after. Bots don't come back, so this is the surest sign of people. The current week isn't over yet.</p>
+        <div class="table-wrap"><table class="data-table retention" id="retention-table"><thead></thead><tbody></tbody></table></div>
+      </section>
+      <section class="panel">
+        <h2 class="h3">Week by week</h2>
+        <div class="table-wrap"><table class="data-table" id="usage-weeks-table"><thead><tr><th scope="col">Week of</th><th scope="col" class="num">In use</th><th scope="col" class="num">Windows</th><th scope="col" class="num">macOS</th><th scope="col" class="num" title="Installed from urbudget.app or GitHub">Site or GitHub</th><th scope="col" class="num">Store</th><th scope="col" class="num">First opens</th></tr></thead><tbody></tbody></table></div>
+      </section>
+      <section class="panel">
+        <h2 class="h3">Versions in use</h2>
+        <p class="muted small">Copies used this week and last, by the version they had the first time they were used that week.</p>
+        <div class="table-wrap"><table class="data-table" id="usage-versions-table"><thead><tr><th scope="col">Version</th><th scope="col">System</th><th scope="col">From</th><th scope="col" class="num">This week</th><th scope="col" class="num">Last week</th></tr></thead><tbody></tbody></table></div>
+      </section>
+      <figure class="chart-card chart-wide" id="chart-launches-90"></figure>
+      <section class="panel">
+        <h2 class="h3">Update checks by version</h2>
+        <p class="muted small">Copies from 1.0.2 on that were installed outside the Store ask urbudget.app for updates a few seconds after they start, and once a day while open, so each check is about one launch. Nothing identifies a computer, so these aren't users or installs, but they include copies older than the usage counts.</p>
+        <div class="table-wrap"><table class="data-table" id="launch-versions-table"><thead><tr><th scope="col">Version</th><th scope="col">System</th><th scope="col" class="num">Checks</th><th scope="col">Last</th></tr></thead><tbody></tbody></table></div>
+      </section>
+    </section>
+
+    <!-- Traffic: page views -->
     <section id="panel-traffic" class="tab-panel" role="tabpanel" aria-labelledby="tab-traffic" tabindex="0" hidden>
       <div id="traffic-tiles" class="tiles"></div>
       <figure class="chart-card chart-wide" id="chart-views-90"></figure>
@@ -162,12 +214,6 @@
         <h2 class="h3">Link tags</h2>
         <p class="muted small">Every <code>ref</code> tag counted so far, most recent first. Visits are page views that arrived with the tag (<code>urbudget.app/?ref=hn</code>), and downloads are clicks on a download button that carried it on. A tag on this site's own buttons (<code>/download/#ref=tool-loan</code>) counts its visits to the download page.</p>
         <div class="table-wrap"><table class="data-table" id="tags-table"><thead><tr><th scope="col">Tag</th><th scope="col" class="num">Visits</th><th scope="col" class="num">Downloads</th><th scope="col" class="num">Per visit</th><th scope="col">First</th><th scope="col">Last</th></tr></thead><tbody></tbody></table></div>
-      </section>
-      <figure class="chart-card chart-wide" id="chart-launches-90"></figure>
-      <section class="panel">
-        <h2 class="h3">Update checks by version</h2>
-        <p class="muted small">Copies from 1.0.2 on ask urbudget.app for updates a few seconds after they start, and once a day while open, so each check is about one launch. Nothing identifies a computer, so these aren't users or installs. Store copies don't ask (Partner Center → Insights → Usage counts them), and 1.0.0 and 1.0.1 don't either.</p>
-        <div class="table-wrap"><table class="data-table" id="launch-versions-table"><thead><tr><th scope="col">Version</th><th scope="col">System</th><th scope="col" class="num">Checks</th><th scope="col">Last</th></tr></thead><tbody></tbody></table></div>
       </section>
     </section>
 

@@ -56,4 +56,7 @@
   //                           "UrBudget admins" must let them in too
   //   GOOGLE_PLAY_SERVICE_ACCOUNT Google service-account JSON; server only, never in the app
   //   GITHUB_TOKEN            optional read-only token for GITHUB_REPO's releases (the admin page's download counts)
+  //   MSSTORE_TENANT_ID, MSSTORE_CLIENT_ID, MSSTORE_CLIENT_SECRET
+  //                           optional: the Store workflow's Entra application, for the Microsoft
+  //                           Store's acquisitions and installs on the admin page (README.md, Admin page)
 }

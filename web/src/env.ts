@@ -40,6 +40,13 @@ export interface Env {
   GITHUB_REPO?: string;
   /** Optional read-only GitHub token; unauthenticated requests share a low per-address rate limit. */
   GITHUB_TOKEN?: string;
+  /**
+   * Optional: the "UrBudget releases" Microsoft Entra application (Manager role in Partner Center),
+   * the same one .github/workflows/store.yml signs in with, for the Store's acquisitions and installs.
+   */
+  MSSTORE_TENANT_ID?: string;
+  MSSTORE_CLIENT_ID?: string;
+  MSSTORE_CLIENT_SECRET?: string;
 }
 
 export interface User {
