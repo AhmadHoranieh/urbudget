@@ -13,6 +13,8 @@ import { googleBilling, refreshGooglePurchases } from "./billing/google";
 import { googleNotifications } from "./billing/google-rtdn";
 import { downloads, files, releases, TEAM_COOKIE } from "./releases";
 import { visits } from "./visits";
+import { usage } from "./usage";
+import { fetchStore, snapshotGitHub } from "./channels";
 import { cleanupSyncObjects, sync, syncActive } from "./sync";
 import { ApiError, countEvent, jsonBody, now, randomId } from "./util";
 
@@ -117,6 +119,7 @@ api.route("/billing/apple", appleBilling);
 api.route("/sync", sync);
 api.route("/releases", releases);
 api.route("/visits", visits);
+api.route("/usage", usage);
 api.route("/admin", admin);
 api.route("/assistant-reports", assistantReports);
 
@@ -163,13 +166,16 @@ app.route("/releases", files);
 export default {
   fetch: app.fetch,
   /**
-   * Hourly: refresh older Play receipts, end lapsed App Store subscriptions, and forget expired
-   * sessions, rate limits, problems and reports.
+   * Hourly: refresh older Play receipts, end lapsed App Store subscriptions, note GitHub's and the
+   * Microsoft Store's download numbers, and forget expired sessions, rate limits, problems and
+   * reports.
    */
   async scheduled(_controller: ScheduledController, env: Env) {
     await refreshGooglePurchases(env);
     await settleAppleSubscriptions(env);
     await cleanupSyncObjects(env);
+    // Numbers from elsewhere never hold up the clean-up; a failure is noted for the admin page.
+    await Promise.all([snapshotGitHub(env), fetchStore(env)].map((p) => p.catch((error) => console.error("[channels]", error))));
     const at = now();
     const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
     await env.DB.batch([

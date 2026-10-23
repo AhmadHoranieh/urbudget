@@ -494,14 +494,30 @@
   position: relative;
   z-index: 1;
 }
+/* Paper tinted with the brand in light, like the tour's picture cards; solid brand purple in dark. */
 .band {
   --lift: clamp(5rem, 16vw, 15rem);
+  --band-bg: color-mix(in srgb, var(--brand) 7%, var(--surface));
+  --band-rule: var(--rule);
+  --band-text: var(--text);
+  --band-muted: var(--text-2);
+  --band-edge: color-mix(in srgb, var(--brand) 40%, transparent);
+  --band-line: color-mix(in srgb, var(--brand) 14%, var(--border));
   position: relative;
   margin-top: calc(var(--lift) * -1);
   padding: calc(var(--lift) + var(--space-7)) 0 var(--space-7);
-  background-color: var(--brand);
-  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, rgb(255 255 255 / 0.07) 31px 32px);
-  color: #fff;
+  border-bottom: 1px solid var(--band-line);
+  background-color: var(--band-bg);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--band-rule) 31px 32px);
+  color: var(--band-text);
+}
+:root[data-theme="dark"] .band {
+  --band-bg: var(--brand);
+  --band-rule: rgb(255 255 255 / 0.07);
+  --band-text: #fff;
+  --band-muted: rgb(255 255 255 / 0.78);
+  --band-edge: rgb(255 255 255 / 0.3);
+  border-bottom: 0;
 }
 .facts {
   display: grid;
@@ -524,7 +540,7 @@
   display: grid;
   gap: 0.2rem;
   padding-left: var(--space-4);
-  border-left: 2px solid rgb(255 255 255 / 0.3);
+  border-left: 2px solid var(--band-edge);
 }
 .facts b {
   font-family: var(--font-display);
@@ -534,7 +550,7 @@
   letter-spacing: -0.015em;
 }
 .facts li > span {
-  color: rgb(255 255 255 / 0.78);
+  color: var(--band-muted);
   font-size: var(--step--1);
 }
 
@@ -697,15 +713,16 @@
 
 /* ---------- Reports: a working copy of the app's reports screen ---------- */
 
-/* Deep ink with a soft light from above and a little grain, instead of ruled lines. */
+/* Light: paper tinted with the brand, deepening toward a soft glow behind the reports, and ruled
+   lines fading out behind the heading. Dark: deep ink with a soft light from above and a little
+   grain instead of ruled lines. */
 .slab {
   position: relative;
   padding-block: var(--section);
+  border-top: 1px solid color-mix(in srgb, var(--brand) 14%, var(--border));
   background:
-    radial-gradient(70% 55% at 50% -5%, rgb(124 92 255 / 0.3), transparent 70%),
-    radial-gradient(45% 45% at 100% 100%, rgb(124 92 255 / 0.1), transparent 70%),
-    linear-gradient(180deg, #1a162c 0%, #110f19 100%);
-  color: var(--on-ink);
+    radial-gradient(60% 45% at 50% 72%, color-mix(in srgb, var(--brand) 14%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, var(--brand) 3%, var(--surface)), color-mix(in srgb, var(--brand) 7%, var(--surface)));
   isolation: isolate;
 }
 .slab::before {
@@ -713,12 +730,24 @@
   position: absolute;
   inset: 0;
   z-index: -1;
-  opacity: 0.22;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--rule) 31px 32px);
+  -webkit-mask-image: radial-gradient(70% 45% at 20% 0%, #000 30%, transparent 80%);
+  mask-image: radial-gradient(70% 45% at 20% 0%, #000 30%, transparent 80%);
   pointer-events: none;
 }
 :root[data-theme="dark"] .slab {
   border-block: 1px solid rgb(255 255 255 / 0.06);
+  background:
+    radial-gradient(70% 55% at 50% -5%, rgb(124 92 255 / 0.3), transparent 70%),
+    radial-gradient(45% 45% at 100% 100%, rgb(124 92 255 / 0.1), transparent 70%),
+    linear-gradient(180deg, #1a162c 0%, #110f19 100%);
+  color: var(--on-ink);
+}
+:root[data-theme="dark"] .slab::before {
+  -webkit-mask-image: none;
+  mask-image: none;
+  opacity: 0.22;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 .reports-head {
   display: grid;
@@ -730,9 +759,12 @@
   font-size: clamp(2rem, 1.5rem + 2vw, 3.1rem);
 }
 .reports-head p {
-  color: rgb(244 242 250 / 0.72);
+  color: var(--text-2);
   font-size: var(--step-1);
   line-height: 1.55;
+}
+:root[data-theme="dark"] .reports-head p {
+  color: rgb(244 242 250 / 0.72);
 }
 
 .rw {
@@ -755,10 +787,13 @@
   line-height: 1.4;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px rgb(255 255 255 / 0.12),
-    0 60px 120px -50px rgb(0 0 0 / 0.8);
+    0 0 0 1px var(--bezel-line),
+    var(--bezel-shadow);
 }
 :root[data-theme="dark"] .rw {
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.12),
+    0 60px 120px -50px rgb(0 0 0 / 0.8);
   --rw-bg: #121318;
   --rw-side: #0d0e12;
   --rw-card: #17181e;
@@ -2279,16 +2314,34 @@ g.is-hot > .rw-hit {
 .finale {
   padding: 0 0 var(--section);
 }
-/* A night-violet card, the same in light and dark, with the app running off its edge: a glow
-   behind the app, ruled lines fading out behind the copy, and the reports slab's grain. */
+/* Tinted like the tour's picture cards in light and night-violet in dark, with the app running off
+   its edge: a glow behind the app, ruled lines fading out behind the copy, and in dark the reports
+   slab's grain. */
 .finale-card {
   --pad: clamp(1.75rem, 1rem + 3vw, 4.5rem);
+  --finale-rule: var(--rule);
+  --finale-muted: var(--text-2);
+  --finale-faint: var(--text-3);
+  --finale-shot-shadow: -16px 0 48px -24px rgb(40 20 110 / 0.28);
   position: relative;
   display: grid;
   overflow: hidden;
   isolation: isolate;
   padding: var(--pad);
   border-radius: 32px;
+  background:
+    radial-gradient(55% 75% at 88% 85%, color-mix(in srgb, var(--brand) 20%, transparent), transparent 70%),
+    linear-gradient(160deg, color-mix(in srgb, var(--brand) 9%, var(--surface)), color-mix(in srgb, var(--brand) 6%, var(--bg)));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--brand) 16%, var(--border)),
+    0 40px 80px -48px rgb(40 20 110 / 0.3);
+  color: var(--text);
+}
+:root[data-theme="dark"] .finale-card {
+  --finale-rule: rgb(255 255 255 / 0.05);
+  --finale-muted: rgb(255 255 255 / 0.7);
+  --finale-faint: rgb(255 255 255 / 0.6);
+  --finale-shot-shadow: 0 -10px 60px -10px rgb(124 92 255 / 0.35);
   background:
     radial-gradient(55% 75% at 88% 80%, rgb(124 92 255 / 0.4), transparent 70%),
     radial-gradient(60% 90% at 0% 0%, rgb(109 74 232 / 0.2), transparent 70%),
@@ -2308,11 +2361,11 @@ g.is-hot > .rw-hit {
   pointer-events: none;
 }
 .finale-card::before {
-  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, rgb(255 255 255 / 0.05) 31px 32px);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 31px, var(--finale-rule) 31px 32px);
   -webkit-mask-image: radial-gradient(70% 100% at 10% 50%, #000 20%, transparent 75%);
   mask-image: radial-gradient(70% 100% at 10% 50%, #000 20%, transparent 75%);
 }
-.finale-card::after {
+:root[data-theme="dark"] .finale-card::after {
   opacity: 0.2;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -2324,7 +2377,7 @@ g.is-hot > .rw-hit {
 .finale h2 {
   /* Room under the last line, so the clipped gradient doesn't cut off descenders. */
   padding-bottom: 0.08em;
-  background: linear-gradient(180deg, #fff 45%, #cdc1ff);
+  background: linear-gradient(180deg, var(--text) 50%, color-mix(in srgb, var(--brand-text) 70%, var(--text)));
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -2332,16 +2385,27 @@ g.is-hot > .rw-hit {
   line-height: 1.02;
   letter-spacing: -0.035em;
 }
+:root[data-theme="dark"] .finale h2 {
+  background-image: linear-gradient(180deg, #fff 45%, #cdc1ff);
+}
 .finale p {
   margin-top: var(--space-4);
-  color: rgb(255 255 255 / 0.7);
+  color: var(--finale-muted);
   font-size: var(--step-1);
 }
 .finale .cta-row {
   margin-top: var(--space-6);
 }
-.finale .btn-light {
+/* The brand button on lavender; in dark, a white one on the night-violet card. */
+:root[data-theme="dark"] .finale .btn-primary {
+  --btn-bg: #ffffff;
+  --btn-fg: #2b1880;
+  --btn-border: #ffffff;
   box-shadow: 0 14px 30px -14px rgb(0 0 0 / 0.7);
+}
+:root[data-theme="dark"] .finale .btn-primary:hover {
+  --btn-bg: #f1edff;
+  --btn-border: #f1edff;
 }
 /* Frosted glass: the second button on a dark card. */
 .btn-glass {
@@ -2362,7 +2426,7 @@ g.is-hot > .rw-hit {
   margin: var(--space-6) 0 0;
   padding: 0;
   list-style: none;
-  color: rgb(255 255 255 / 0.6);
+  color: var(--finale-faint);
   font-size: var(--step--1);
 }
 .finale-facts li {
@@ -2375,7 +2439,10 @@ g.is-hot > .rw-hit {
   flex: none;
   width: 1rem;
   height: 1rem;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l2.8 2.8 6.2-6.4' fill='none' stroke='%23b7a6ff' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  /* A check in the brand's text color for the theme. */
+  background: var(--brand-text);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l2.8 2.8 6.2-6.4' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l2.8 2.8 6.2-6.4' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat;
 }
 
 /* The app in a glass bezel. On phones it sits under the copy and runs off the card's right and
@@ -2384,11 +2451,11 @@ g.is-hot > .rw-hit {
   height: 17rem;
   margin: var(--space-7) calc(-1 * var(--pad)) calc(-1 * var(--pad)) 0;
   padding: 7px 0 0 7px;
-  border: 1px solid rgb(255 255 255 / 0.12);
+  border: 1px solid var(--bezel-edge);
   border-width: 1px 0 0 1px;
   border-radius: 22px 0 0 0;
-  background: rgb(255 255 255 / 0.04);
-  box-shadow: 0 -10px 60px -10px rgb(124 92 255 / 0.35);
+  background: var(--bezel-glass);
+  box-shadow: var(--finale-shot-shadow);
   overflow: hidden;
 }
 .finale-shot img {
@@ -2397,7 +2464,7 @@ g.is-hot > .rw-hit {
   max-width: none;
   height: auto;
   border-radius: 15px 0 0 0;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.07);
+  box-shadow: 0 0 0 1px var(--bezel-line);
 }
 @media (min-width: 860px) {
   .finale-card {

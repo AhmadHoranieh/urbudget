@@ -2,14 +2,17 @@
    header, stat tiles, the funnel, tables, charts and the account dialog. */
 
 .admin {
-  /* Chart series: categorical slots 1 and 2, validated against --surface in both modes. */
+  /* Chart series: categorical slots 1 to 3, validated against --surface in both modes. Slot 3 is
+     under 3:1 on the light surface, so its charts keep their legend values and table view. */
   --series-1: #2a78d6;
   --series-2: #eb6834;
+  --series-3: #1baf7a;
   --grid: var(--border);
 }
 :root[data-theme="dark"] .admin {
   --series-1: #3987e5;
   --series-2: #d95926;
+  --series-3: #199e70;
 }
 
 .admin .h3 {
@@ -183,7 +186,8 @@
   .chart-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .chart-grid > :first-child {
+  .chart-grid > :first-child,
+  .chart-grid > :last-child:nth-child(even) {
     grid-column: 1 / -1;
   }
 }
@@ -585,3 +589,31 @@
 .assistant-report summary { cursor: pointer; overflow-wrap: anywhere; }
 .assistant-report pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 24rem; overflow: auto; font: inherit; }
 .assistant-reports + p { margin-top: 1rem; }
+
+/* ---------- Usage ---------- */
+
+/* Each week's share of copies that came back, shaded by the share (one hue, light to dark). */
+.retention td.share {
+  background: color-mix(in srgb, var(--series-1) calc(var(--share, 0) * 45%), transparent);
+  font-variant-numeric: tabular-nums;
+}
+.retention td.share small {
+  display: block;
+  color: var(--text-3);
+}
+/* Each source of download numbers on a line of its own: its state, then what it means. */
+.settings-list.status-list {
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+.status-list li {
+  align-items: baseline;
+}
+.status-list .badge {
+  flex: none;
+  min-width: 6.5rem;
+  justify-content: center;
+}
+#usage-note:empty {
+  display: none;
+}

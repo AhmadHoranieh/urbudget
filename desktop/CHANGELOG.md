@@ -4,6 +4,10 @@ Notable changes to UrBudget, organized using [Keep a Changelog](https://keepacha
 
 ## [Unreleased]
 
+### Added
+
+- Once a day, UrBudget counts itself as in use on urbudget.app: only whether this is the copy's first opening, or its first today, this week or this month, with its version, system and whether it came from the Microsoft Store. Nothing identifies you, the computer or your budgets. Settings → Privacy & data → Count this copy as in use turns it off.
+
 ## [1.0.8] - 2026-10-22
 
 ### Changed
