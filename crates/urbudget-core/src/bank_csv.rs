@@ -1,7 +1,8 @@
 //! A bank's CSV export: where its header row is, and which column holds what, found by the
 //! names banks give their columns or taken from the columns someone chose for the account. The
 //! account keeps that choice, with the file's date order and signs, for its next file.
-use crate::bank_import::{dates, money, BankTransaction};
+use crate::bank_import::{dates, money, read_dates, BankTransaction, DateReading};
+use crate::bank_statement::{Field, Reason, Status, DECLINED};
 use crate::domain::Budget;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -256,46 +257,109 @@ pub fn layout(b: &Budget, account: &str, content: &str, columns: Option<&Columns
     }
     let kept = settings(b, account);
     let chosen = columns.filter(|c| c.date.is_some());
-    let sheet = Sheet::read(content, &b.currency, chosen.or(kept.columns.as_ref()))?;
+    let sheet = Sheet::read(content, &b.currency, chosen.or(kept.columns.as_ref()), None)?;
+    let visible = sheet.visible();
     let days: Vec<&str> = sheet.picked.date.into_iter()
-        .flat_map(|d| sheet.records.iter().filter_map(move |r| r.get(d)))
+        .flat_map(|d| visible.iter().filter_map(move |r| r.get(d)))
         .filter(|s| !s.is_empty()).collect();
     let found = crate::bank_import::date_order(&days).map(String::from);
     // A card's statement that's mostly money in writes purchases as positive numbers.
     let card = b.accounts.iter().any(|a| a.id == account && a.kind == crate::domain::AccountKind::Credit);
     let signs: Vec<i64> = sheet.picked.amount.filter(|_| sheet.picked.direction.is_none()).into_iter()
-        .flat_map(|i| sheet.records.iter().filter_map(move |r| r.get(i)))
+        .flat_map(|i| visible.iter().filter_map(move |r| r.get(i)))
         .filter_map(|c| money(c, &b.currency).ok()).filter(|n| *n != 0).map(i64::signum).collect();
     let positive = signs.len() >= 3 && signs.iter().filter(|s| **s > 0).count() * 2 > signs.len();
     Ok(Layout {
         format: "csv".into(),
         columns: sheet.columns(),
         saved: sheet.saved && chosen.is_none(),
-        samples: sheet.records.iter().take(3).map(|r| r.iter().map(String::from).collect()).collect(),
+        samples: visible.iter().take(3).map(|r| r.iter().map(String::from).collect()).collect(),
         date_format: if chosen.is_some() { found.or(kept.date_format) } else { kept.date_format.or(found) },
         flip_signs: kept.flip_signs.unwrap_or(card && positive),
         headers: sheet.headers,
     })
 }
 
-/// A CSV's transactions. `columns` are the ones chosen for this file (without a date: find them
-/// by name); without any, the account's saved choice when the file has those columns.
-pub(crate) fn read(
-    b: &Budget,
-    account: &str,
-    content: &str,
-    date_format: &str,
-    flip_signs: bool,
-    columns: Option<&Columns>,
-) -> Result<Vec<BankTransaction>, String> {
+/// How to read a CSV's records beyond what its names say.
+#[derive(Default, Clone)]
+pub(crate) struct Options<'a> {
+    /// The columns chosen for this file (without a date: find them by name); None for the
+    /// account's saved choice when the file has those columns.
+    pub columns: Option<&'a Columns>,
+    /// Where the header row starts, as someone chose it.
+    pub header_at: Option<usize>,
+    pub flip_signs: bool,
+    /// Which account's rows, by its label, in a file with several.
+    pub source: Option<&'a str>,
+    /// Records someone included though they're left out, by where they start.
+    pub include: HashSet<usize>,
+    /// Cells someone fixed, by where their record starts: (column, value).
+    pub cells: HashMap<usize, Vec<(usize, String)>>,
+    /// Keep each record's cells, to show them (today's import doesn't need them).
+    pub shown: bool,
+}
+
+/// What became of a CSV record, read up to its date (dates are read together, once their order
+/// is known).
+#[derive(Clone, Debug)]
+pub(crate) struct Record {
+    /// Where the record starts in the file as written: its line's id.
+    pub offset: usize,
+    /// Its cells, with any fixes.
+    pub cells: Vec<String>,
+    /// Its date as written (with any fix), where it got that far.
+    pub day: Option<String>,
+    /// Its date as the file writes it, where today's reader would read it: what the file's dates
+    /// say about their order comes from these alone, never from fixes.
+    pub evidence: Option<String>,
+    pub fate: Fate,
+    /// Today's reader reads it (it passes every check that leaves rows out first, then reads or
+    /// fails to read its amount): it holds its place among rows with a repeated bank id.
+    pub reserves: bool,
+    /// Today's reader never saw it (see `Sheet::hidden`).
+    pub hidden: bool,
+}
+#[derive(Clone, Debug)]
+pub(crate) enum Fate {
+    /// Read, all but its date.
+    Read { fit: String, payee: String, memo: String, amount: i64 },
+    Attention { field: Field, column: Option<usize>, reason: String },
+    LeftOut { reason: Reason, detail: String },
+}
+
+/// A CSV's records and what was read from it.
+pub(crate) struct Records {
+    pub headers: Vec<String>,
+    pub columns: Columns,
+    pub saved: bool,
+    /// Where the header row (or, without one, the first record) starts.
+    pub start: usize,
+    pub numbered: bool,
+    pub separator: u8,
+    pub date_column: usize,
+    /// The accounts in a file with several (labels and how many dated rows each has), and which
+    /// is read.
+    pub sources: Vec<(String, usize)>,
+    pub source: usize,
+    pub records: Vec<Record>,
+    /// Another currency some of the read account's rows are in.
+    pub foreign: Option<String>,
+}
+
+/// A CSV's records, each with what became of it: nothing a row holds stops the others from
+/// reading. Only a file without a date or amount column, or one whose chosen columns are gone,
+/// is an error. What the file says about itself (its sections, its account column, who holds
+/// the account, which records today's reader would read) comes from the file as written; fixes
+/// and inclusions change only their own lines.
+pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> Result<Records, String> {
     let saved = settings(b, account).columns;
-    let chosen = match columns {
+    let chosen = match o.columns {
         Some(c) => Some(c).filter(|c| c.date.is_some()),
         None => saved.as_ref(),
     };
-    let mut sheet = Sheet::read(content, &b.currency, chosen)?;
+    let mut sheet = Sheet::read(content, &b.currency, chosen, o.header_at)?;
     sheet.mend(&b.currency);
-    if let Some(c) = columns.filter(|c| c.date.is_some() && !sheet.saved) {
+    if let Some(c) = o.columns.filter(|c| c.date.is_some() && !sheet.saved) {
         let missing = c.names().into_iter().flatten().find(|n| position(&sheet.headers, n).is_none());
         return Err(match missing {
             Some(n) => format!("This file has no column named ‘{n}’. Choose its columns again."),
@@ -316,13 +380,15 @@ pub(crate) fn read(
     fn cell(r: &csv::StringRecord, i: Option<usize>) -> &str {
         i.and_then(|i| r.get(i)).unwrap_or("")
     }
+    let dated = |r: &csv::StringRecord| cell(r, Some(d)).bytes().any(|c| c.is_ascii_digit());
     // An empty cell, or a dash for one (Monobank's "—").
     let blank = |s: &str| s.chars().all(|c| matches!(c, '-' | '—' | '–'));
     let read = |s: &str| if blank(s) { Ok(0) } else { money(s, &b.currency) };
+    let shown: Vec<&csv::StringRecord> = sheet.records.iter().zip(&sheet.hidden).filter(|(_, h)| !**h).map(|(r, _)| r).collect();
     // With a column for each party, the account holder is the name that comes up most in them.
     let holder = p.parties.map(|(a, b)| {
         let mut seen: HashMap<&str, usize> = HashMap::new();
-        for r in &sheet.records {
+        for r in &shown {
             for i in [a, b] {
                 let name = cell(r, Some(i));
                 if !name.is_empty() {
@@ -332,89 +398,98 @@ pub(crate) fn read(
         }
         seen.into_iter().max_by_key(|&(name, n)| (n, std::cmp::Reverse(name))).map(|(name, _)| name).unwrap_or("")
     });
-    let (mut raw, mut days, mut foreign) = (vec![], vec![], None);
-    // Something other than a transaction came since the last one: a balance, an account's title.
-    let mut between = false;
-    // A file with every account's transactions, each row saying whose: the first account's. That
-    // column names an account on every row, a few accounts in turn, the first more than once; the
-    // other party's account changes from row to row, and is often blank.
-    let dated: Vec<&csv::StringRecord> = sheet.records.iter().filter(|r| cell(r, Some(d)).bytes().any(|c| c.is_ascii_digit())).collect();
+    // A file with every account's transactions, each row saying whose. That column names an
+    // account on every row, a few accounts in turn, the first more than once; the other party's
+    // account changes from row to row, and is often blank.
+    let with_dates: Vec<&&csv::StringRecord> = shown.iter().filter(|r| dated(r)).collect();
     let own = p.accounts.iter().find_map(|&i| {
-        let values: Vec<&str> = dated.iter().map(|r| cell(r, Some(i))).collect();
+        let values: Vec<&str> = with_dates.iter().map(|r| cell(r, Some(i))).collect();
         let mut blocks: Vec<&str> = values.clone();
         blocks.dedup();
         let distinct: HashSet<&&str> = blocks.iter().collect();
         let first = *values.first()?;
         let ok = !values.contains(&"") && distinct.len() == blocks.len() && blocks.len() >= 2 && blocks.len() * 2 <= values.len()
             && values.iter().filter(|v| **v == first).count() >= 2;
-        ok.then_some((i, first))
+        ok.then(|| (i, blocks.iter().map(|b| (b.to_string(), values.iter().filter(|v| *v == b).count())).collect::<Vec<_>>()))
     });
-    for r in &sheet.records {
-        if own.is_some_and(|(i, first)| cell(r, Some(i)) != first && cell(r, Some(d)).bytes().any(|c| c.is_ascii_digit())) {
-            continue;
-        }
-        // The header row again after that starts another account's transactions, as some banks
-        // export every account in one file: this one's are read.
-        if r.len() == sheet.headers.len() && r.iter().zip(&sheet.headers).all(|(c, h)| plain(c) == plain(h)) {
-            if between && !raw.is_empty() {
-                break;
-            }
-            continue;
-        }
+    // A record as it reads, someone having included it or not.
+    let classify = |r: &csv::StringRecord, included: bool| -> (Option<String>, Fate) {
+        let lift = |reason: Reason| included && reason.includable();
+        let left = |reason: Reason, detail: &str| Fate::LeftOut { reason, detail: detail.to_string() };
+        let attention = |field: Field, column: Option<usize>, reason: String| Fate::Attention { field, column, reason };
         // A note, a total, or a pending row without its date yet: no digits where the date goes.
         let day = cell(r, Some(d));
-        if !day.bytes().any(|c| c.is_ascii_digit()) {
-            between = true;
-            continue;
+        if !dated(r) {
+            return (None, if lift(Reason::NoDate) { attention(Field::Date, Some(d), "This line has no date.".into()) } else { left(Reason::NoDate, day) });
         }
+        let day = Some(day.to_string());
         // An opening or closing balance, or a turnover total, written as a row.
-        if r.iter().any(|c| BALANCES.contains(&plain(c).as_str())) {
-            continue;
+        if let Some(c) = r.iter().find(|c| BALANCES.contains(&plain(c).as_str())) {
+            if !lift(Reason::Balance) {
+                return (day, left(Reason::Balance, c));
+            }
         }
         // A payment the bank reversed, declined or never made, or hasn't booked yet (with a
         // booking date still to come, too): a pending row can come back booked on another day or
         // for another sum, so it's read once booked.
-        if p.states.iter().any(|&i| SKIPPED.contains(&plain(cell(r, Some(i))).as_str()))
-            || p.posted.is_some_and(|i| cell(r, Some(i)).is_empty())
-        {
-            continue;
+        if let Some(state) = p.states.iter().map(|&i| cell(r, Some(i))).find(|s| SKIPPED.contains(&plain(s).as_str())) {
+            let reason = if DECLINED.contains(&plain(state).as_str()) { Reason::Declined } else { Reason::Pending };
+            if !lift(reason) {
+                return (day, left(reason, state));
+            }
+        }
+        if p.posted.is_some_and(|i| cell(r, Some(i)).is_empty()) && !lift(Reason::Pending) {
+            return (day, left(Reason::Pending, ""));
         }
         // Money in another currency, in a file that mixes them (a conversion's other leg).
         if let Some(code) = p.currencies.iter().map(|&i| cell(r, Some(i))).find(|c| {
             c.len() == 3 && c.bytes().all(|b| b.is_ascii_alphabetic()) && !c.eq_ignore_ascii_case(&b.currency)
         }) {
-            foreign.get_or_insert(code.to_ascii_uppercase());
-            continue;
+            let code = code.to_ascii_uppercase();
+            return (day, if lift(Reason::OtherCurrency) {
+                attention(Field::Amount, p.amount.or(p.outflow).or(p.inflow), format!("This line is in {code}: enter the amount in {}.", b.currency))
+            } else {
+                left(Reason::OtherCurrency, &code)
+            });
         }
         // Money moved between the holder's own balances, by the file's own account.
-        if p.direction.is_some_and(|i| cell(r, Some(i)) == "/" || NEUTRAL.contains(&plain(cell(r, Some(i))).as_str())) {
-            continue;
+        if let Some(way) = p.direction.map(|i| cell(r, Some(i))).filter(|w| *w == "/" || NEUTRAL.contains(&plain(w).as_str())) {
+            if !lift(Reason::OwnBalances) {
+                return (day, left(Reason::OwnBalances, way));
+            }
         }
         // A row whose amount is empty states something (a balance) rather than moving money.
         if [p.amount, p.outflow, p.inflow].iter().all(|&i| blank(cell(r, i))) {
-            continue;
+            return (day, if lift(Reason::NoAmount) { attention(Field::Amount, p.amount.or(p.outflow).or(p.inflow), "This line has no amount.".into()) } else { left(Reason::NoAmount, "") });
         }
         // An empty amount, with money out and in in columns of their own, is read from those.
-        let mut amount = if p.amount.is_some() && !(blank(cell(r, p.amount)) && (p.outflow.is_some() || p.inflow.is_some())) {
-            let n = money(cell(r, p.amount), &b.currency)?;
-            match p.direction.map(|i| plain(cell(r, Some(i)))) {
-                Some(w) if OUT.contains(&w.as_str()) => -n.abs(),
-                Some(w) if IN.contains(&w.as_str()) => n.abs(),
-                // Some card issuers write purchases as positive numbers in one Amount column.
-                _ if flip_signs => -n,
-                _ => n,
+        let amount = if p.amount.is_some() && !(blank(cell(r, p.amount)) && (p.outflow.is_some() || p.inflow.is_some())) {
+            match money(cell(r, p.amount), &b.currency) {
+                Err(e) => return (day, attention(Field::Amount, p.amount, e)),
+                Ok(n) => match p.direction.map(|i| plain(cell(r, Some(i)))) {
+                    Some(w) if OUT.contains(&w.as_str()) => -n.abs(),
+                    Some(w) if IN.contains(&w.as_str()) => n.abs(),
+                    // Some card issuers write purchases as positive numbers in one Amount column.
+                    _ if o.flip_signs => -n,
+                    _ => n,
+                },
             }
         } else {
             // Money out and money in, which some banks write with a minus and some without.
-            read(cell(r, p.inflow))?.abs() - read(cell(r, p.outflow))?.abs()
+            match (read(cell(r, p.inflow)), read(cell(r, p.outflow))) {
+                (Err(e), _) => return (day, attention(Field::Amount, p.inflow, e)),
+                (_, Err(e)) => return (day, attention(Field::Amount, p.outflow, e)),
+                (Ok(i), Ok(out)) => i.abs() - out.abs(),
+            }
         };
-        amount -= read(cell(r, p.fee))?.abs();
+        let amount = match read(cell(r, p.fee)) {
+            Err(e) => return (day, attention(Field::Amount, p.fee, e)),
+            Ok(fee) => amount - fee.abs(),
+        };
         // A notice of nothing moving (a statement closing, a card check).
         if amount == 0 {
-            continue;
+            return (day, left(Reason::Zero, ""));
         }
-        between = false;
-        days.push(cell(r, Some(d)).to_string());
         // The party that isn't the account holder (the holder, for money moved between their own
         // accounts), or else a column that only names the other party, or else the payee's.
         let party = p.parties.and_then(|(a, b)| {
@@ -422,12 +497,6 @@ pub(crate) fn read(
             named.into_iter().find(|n| !n.is_empty() && Some(*n) != holder).or(named.into_iter().find(|n| !n.is_empty()))
         });
         let name = p.names.iter().map(|&i| cell(r, Some(i))).find(|n| !n.trim().is_empty());
-        // Bank text loses its line breaks, tabs and padding.
-        // Marks that set the direction of right-to-left text (an Israeli card's merchants) go too.
-        let tidy = |s: &str| {
-            let s: String = s.chars().filter(|c| !matches!(c, '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')).collect();
-            s.split_whitespace().collect::<Vec<_>>().join(" ")
-        };
         let (mut payee, mut memo) = (tidy(party.or(name).unwrap_or(cell(r, p.payee))), tidy(cell(r, p.memo)));
         // A payee from a column that only names them keeps the bank's description as the memo,
         // where the file has no other.
@@ -443,15 +512,230 @@ pub(crate) fn read(
         if payee.is_empty() {
             payee = tidy(cell(r, p.kind));
         }
-        raw.push(BankTransaction { fit: cell(r, p.id).into(), date: String::new(), payee, memo, amount });
+        (day, Fate::Read { fit: cell(r, p.id).into(), payee, memo, amount })
+    };
+    // First the file as written: each record's section (the header row again after something
+    // other than a transaction starts another account's rows, as comdirect exports) and what
+    // today's reader makes of it.
+    let mut originals: Vec<Option<(Option<String>, Fate)>> = Vec::with_capacity(sheet.records.len());
+    let (mut sections, mut labels) = (vec![], vec![String::new()]);
+    let (mut section, mut between, mut read_here, mut note) = (0, false, 0, String::new());
+    for (r, hidden) in sheet.records.iter().zip(&sheet.hidden) {
+        if *hidden {
+            originals.push(None);
+            sections.push(section);
+            continue;
+        }
+        if r.len() == sheet.headers.len() && r.iter().zip(&sheet.headers).all(|(c, h)| plain(c) == plain(h)) {
+            if between && read_here > 0 {
+                section += 1;
+                read_here = 0;
+                labels.push(std::mem::take(&mut note));
+            }
+            originals.push(None);
+            sections.push(section);
+            continue;
+        }
+        if !dated(r) {
+            between = true;
+            note = tidy(&r.iter().filter(|c| !c.is_empty()).collect::<Vec<_>>().join(" "));
+        }
+        let (day, fate) = classify(r, false);
+        if matches!(fate, Fate::Read { .. }) {
+            between = false;
+            read_here += 1;
+        }
+        originals.push(Some((day, fate)));
+        sections.push(section);
     }
-    if let (true, Some(code)) = (raw.is_empty(), foreign) {
+    // The accounts: by the account column where there is one, else by section.
+    let (sources, by_column): (Vec<(String, usize)>, bool) = match &own {
+        Some((_, blocks)) => (blocks.clone(), true),
+        None if section > 0 => {
+            let counts: Vec<usize> = (0..=section).map(|s| sections.iter().zip(&originals).filter(|(x, o)| **x == s && o.is_some()).count()).collect();
+            let named = labels.iter().enumerate().map(|(i, l)| if l.is_empty() { format!("Part {}", i + 1) } else { l.clone() });
+            (named.zip(counts).collect(), false)
+        }
+        None => (vec![], false),
+    };
+    let source = o.source.and_then(|s| sources.iter().position(|(l, _)| l == s)).unwrap_or(0);
+    let mut out = Vec::with_capacity(sheet.records.len());
+    let mut foreign = None;
+    for (k, original) in sheet.records.iter().enumerate() {
+        let offset = sheet.offsets[k];
+        let included = o.include.contains(&offset);
+        let fixed = o.cells.get(&offset).map(|fixes| {
+            let mut cells: Vec<String> = original.iter().map(String::from).collect();
+            for (column, value) in fixes {
+                if cells.len() <= *column {
+                    cells.resize(column + 1, String::new());
+                }
+                cells[*column] = value.trim().to_string();
+            }
+            csv::StringRecord::from(cells)
+        });
+        let r = fixed.as_ref().unwrap_or(original);
+        let cells: Vec<String> = if o.shown { r.iter().map(String::from).collect() } else { vec![] };
+        let mut record = Record { offset, cells, day: None, evidence: None, fate: Fate::LeftOut { reason: Reason::RepeatedHeader, detail: String::new() }, reserves: false, hidden: sheet.hidden[k] };
+        // A line of a statement in aligned columns that today's reader dropped for having no date.
+        if record.hidden {
+            let (day, fate) = classify(r, included);
+            record.fate = fate;
+            record.day = day;
+            out.push(record);
+            continue;
+        }
+        let Some((day0, fate0)) = &originals[k] else {
+            out.push(record);
+            continue;
+        };
+        // Another account's rows: by its column (a dated row naming another), or its section.
+        let elsewhere = match &own {
+            Some((i, _)) if by_column => dated(original) && cell(original, Some(*i)) != sources[source].0,
+            _ => !sources.is_empty() && sections[k] != source,
+        };
+        if elsewhere {
+            let label = match &own {
+                Some((i, _)) => cell(original, Some(*i)).to_string(),
+                None => sources.get(sections[k]).map(|(l, _)| l.clone()).unwrap_or_default(),
+            };
+            record.fate = Fate::LeftOut { reason: Reason::OtherAccount, detail: label };
+            out.push(record);
+            continue;
+        }
+        record.reserves = matches!(fate0, Fate::Read { .. } | Fate::Attention { .. });
+        record.evidence = day0.clone().filter(|_| record.reserves);
+        let (day, fate) = if fixed.is_some() || included { classify(r, included) } else { (day0.clone(), fate0.clone()) };
+        if let Fate::LeftOut { reason: Reason::OtherCurrency, detail } = fate0 {
+            foreign.get_or_insert(detail.clone());
+        }
+        record.day = day;
+        record.fate = fate;
+        out.push(record);
+    }
+    Ok(Records {
+        columns: sheet.columns(),
+        saved: sheet.saved,
+        start: sheet.start,
+        numbered: sheet.numbered,
+        separator: sheet.separator,
+        date_column: d,
+        sources,
+        source,
+        records: out,
+        foreign,
+        headers: sheet.headers,
+    })
+}
+/// Bank text loses its line breaks, tabs and padding, and the marks that set the direction of
+/// right-to-left text (an Israeli card's merchants).
+fn tidy(s: &str) -> String {
+    let s: String = s.chars().filter(|c| !matches!(c, '\u{200e}' | '\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}')).collect();
+    s.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// A CSV's transactions as today's import reads them: every record must read, or the first that
+/// doesn't is the error. `columns` are the ones chosen for this file (without a date: find them
+/// by name); without any, the account's saved choice when the file has those columns.
+pub(crate) fn read(
+    b: &Budget,
+    account: &str,
+    content: &str,
+    date_format: &str,
+    flip_signs: bool,
+    columns: Option<&Columns>,
+) -> Result<Vec<BankTransaction>, String> {
+    let read = records(b, account, content, &Options { columns, flip_signs, ..Options::default() })?;
+    let shown = || read.records.iter().filter(|r| !r.hidden);
+    if let Some(reason) = shown().find_map(|r| match &r.fate {
+        Fate::Attention { reason, .. } => Some(reason.clone()),
+        _ => None,
+    }) {
+        return Err(reason);
+    }
+    let (mut raw, mut days) = (vec![], vec![]);
+    for r in shown() {
+        if let Fate::Read { fit, payee, memo, amount } = &r.fate {
+            raw.push(BankTransaction { fit: fit.clone(), date: String::new(), payee: payee.clone(), memo: memo.clone(), amount: *amount });
+            days.push(r.day.clone().unwrap_or_default());
+        }
+    }
+    if let (true, Some(code)) = (raw.is_empty(), &read.foreign) {
         return Err(format!("The file's amounts are in {code}, but this budget uses {}.", b.currency));
     }
     for (t, day) in raw.iter_mut().zip(dates(&days, date_format)?) {
         t.date = day;
     }
     Ok(raw)
+}
+
+/// A line of a CSV, as an import shows it.
+pub(crate) struct CsvLine {
+    pub offset: usize,
+    pub cells: Vec<String>,
+    pub status: Status,
+    /// The transaction it gives, when it's ready.
+    pub transaction: Option<BankTransaction>,
+    pub reserves: bool,
+}
+/// A CSV as lines: its records with their dates read in the order the file's own dates settle,
+/// and the lines above its header.
+pub(crate) struct CsvLines {
+    pub records: Records,
+    pub dates: DateReading,
+    pub lines: Vec<CsvLine>,
+}
+pub(crate) fn read_lines(b: &Budget, account: &str, content: &str, o: &Options, date_format: &str, confirmed: bool) -> Result<CsvLines, String> {
+    let mut records = records(b, account, content, &Options { shown: true, ..o.clone() })?;
+    // What the file's own dates say about their order, from the lines today's reader reads.
+    let evidence: Vec<&str> = records.records.iter().filter_map(|r| r.evidence.as_deref()).collect();
+    let dates = read_dates(&evidence, date_format, confirmed);
+    let column = Some(records.date_column);
+    let content = content.trim_start_matches('\u{feff}');
+    // Account details or a title above the header: shown, not read.
+    let mut lines: Vec<CsvLine> = all_lines(&content[..records.start.min(content.len())])
+        .into_iter()
+        .map(|(offset, line)| CsvLine {
+            offset,
+            cells: fields(line, records.separator),
+            status: Status::LeftOut { reason: Reason::AboveHeader, detail: String::new() },
+            transaction: None,
+            reserves: false,
+        })
+        .collect();
+    for r in std::mem::take(&mut records.records) {
+        let (status, transaction) = match r.fate {
+            Fate::Read { fit, payee, memo, amount } => {
+                let day = r.day.as_deref().unwrap_or("");
+                match crate::bank_import::date(day, dates.order) {
+                    Ok(date) => (Status::Ready, Some(BankTransaction { fit, date, payee, memo, amount })),
+                    Err(_) => (Status::Attention { field: Field::Date, column, reason: format!("Can't read the date ‘{day}’.") }, None),
+                }
+            }
+            Fate::Attention { field, column, reason } => (Status::Attention { field, column, reason }, None),
+            Fate::LeftOut { reason, detail } => (Status::LeftOut { reason, detail }, None),
+        };
+        lines.push(CsvLine { offset: r.offset, cells: r.cells, status, transaction, reserves: r.reserves });
+    }
+    Ok(CsvLines { records, dates, lines })
+}
+/// Every line with something on it, and where it starts; lines end in CR LF, LF or a lone CR.
+fn all_lines(content: &str) -> Vec<(usize, &str)> {
+    let (mut out, mut start, mut i) = (vec![], 0, 0);
+    let bytes = content.as_bytes();
+    while i <= bytes.len() {
+        if i == bytes.len() || bytes[i] == b'\n' || bytes[i] == b'\r' {
+            let line = &content[start..i];
+            if !line.trim().is_empty() {
+                out.push((start, line));
+            }
+            i += if bytes.get(i) == Some(&b'\r') && bytes.get(i + 1) == Some(&b'\n') { 2 } else { 1 };
+            start = i;
+        } else {
+            i += 1;
+        }
+    }
+    out
 }
 
 /// Header names banks give each column, after `plain`. A column from an earlier list wins; within
@@ -826,7 +1110,7 @@ fn amount_like(cell: &str, currency: &str) -> bool {
 /// are (BBVA México's): the header row's names mark where each column is, and each run of text in
 /// a transaction's line goes to the name it lines up with. As tab-separated text, or None for a
 /// file that isn't laid out this way.
-fn aligned(content: &str) -> Option<String> {
+fn aligned(content: &str) -> Option<(String, Vec<(usize, bool)>)> {
     // Runs of text between two or more spaces, with where they start and end (in characters).
     fn runs(line: &str) -> Vec<(usize, usize, String)> {
         let chars: Vec<char> = line.trim_end().chars().collect();
@@ -844,18 +1128,22 @@ fn aligned(content: &str) -> Option<String> {
         }
         out
     }
-    let lines: Vec<&str> = content.lines().collect();
+    let lines: Vec<(usize, &str)> = all_lines(content);
     let dated = |line: &str| runs(line).first().is_some_and(|(_, _, first)| is_date(first));
     // Separators, or commas between fields rather than in amounts, make it a CSV.
     let separated = |line: &str| line.contains(['\t', ';', '|']) || line.matches(',').count() >= 2;
     let header = (0..lines.len().min(60)).find(|&h| {
-        let next = lines[h + 1..].iter().find(|l| !l.trim().is_empty());
-        runs(lines[h]).len() >= 3 && !separated(lines[h]) && !dated(lines[h])
+        let next = lines.get(h + 1).map(|l| l.1);
+        runs(lines[h].1).len() >= 3 && !separated(lines[h].1) && !dated(lines[h].1)
             && next.is_some_and(|n| dated(n) && runs(n).len() >= 3)
     })?;
-    let names = runs(lines[header]);
+    let names = runs(lines[header].1);
     let mut out = vec![names.iter().map(|n| n.2.as_str()).collect::<Vec<_>>().join("\t")];
-    for line in lines[header + 1..].iter().filter(|l| dated(l)) {
+    // Each line of the aligned text: where it starts in the file, and whether today's reader
+    // read it (it read only dated lines; the others are kept for showing and fixing).
+    let mut origin = vec![(lines[header].0, true)];
+    for &(offset, line) in &lines[header + 1..] {
+        origin.push((offset, dated(line)));
         let mut cells = vec![String::new(); names.len()];
         for (start, end, text) in runs(line) {
             // The name it overlaps most, as an amount lines up under its column's name; text that
@@ -871,7 +1159,7 @@ fn aligned(content: &str) -> Option<String> {
         }
         out.push(cells.join("\t"));
     }
-    Some(out.join("\n"))
+    Some((out.join("\n"), origin))
 }
 /// Where the transactions start in a file whose header row doesn't name its columns, or that has
 /// none: the first line with a date and an amount among those with the most common number of
@@ -895,6 +1183,14 @@ fn data_start(lines: &[(usize, &str)], currency: &str) -> Option<(usize, u8, Opt
 struct Sheet {
     headers: Vec<String>,
     records: Vec<csv::StringRecord>,
+    /// Where each record starts in the file as written: its line's id.
+    offsets: Vec<usize>,
+    /// Records today's reader never saw: lines of a statement in aligned columns without a date
+    /// (it kept only dated lines). Shown and fixable, never part of what it reads.
+    hidden: Vec<bool>,
+    /// Where the header row starts, or the first record where there's none.
+    start: usize,
+    numbered: bool,
     picked: Picked,
     /// The columns are the ones chosen.
     saved: bool,
@@ -905,67 +1201,135 @@ impl Sheet {
     /// above it: the first with every chosen column, or else the first whose names give a date
     /// and an amount. Without one, the columns are found by what's in them, under the header row
     /// if there is one ("Column 1", "Column 2"… if not, as some banks export). Failing that, the
-    /// widest line, so its columns can be chosen by hand.
-    fn read(content: &str, currency: &str, chosen: Option<&Columns>) -> Result<Self, String> {
+    /// widest line, so its columns can be chosen by hand. `header_at` is a header row someone
+    /// chose (it doesn't apply to a statement in aligned columns, whose header is its layout).
+    fn read(content: &str, currency: &str, chosen: Option<&Columns>, header_at: Option<usize>) -> Result<Self, String> {
         let content = content.trim_start_matches('\u{feff}');
-        let columns = aligned(content);
-        let content = columns.as_deref().unwrap_or(content);
+        match aligned(content) {
+            Some((text, origin)) => Self::find(&text, currency, chosen, None, Some(&origin)),
+            None => Self::find(content, currency, chosen, header_at, None),
+        }
+    }
+    fn find(content: &str, currency: &str, chosen: Option<&Columns>, header_at: Option<usize>, origin: Option<&[(usize, bool)]>) -> Result<Self, String> {
+        // A header row someone chose: its names say what they can, what's under them the rest.
+        if let Some(at) = header_at.filter(|&at| at < content.len() && content.is_char_boundary(at)) {
+            let line = content[at..].lines().next().unwrap_or("");
+            let separator = separators(line).fold((b',', 0), |best, d| {
+                let n = fields(line, d).len();
+                if n > best.1 { (d, n) } else { best }
+            }).0;
+            let mut sheet = Self::parse(content, at, separator, false, Picked::default(), false, origin)?;
+            match chosen.and_then(|c| Picked::chosen(&sheet.headers, c, currency)) {
+                Some(picked) => (sheet.picked, sheet.saved) = (picked, true),
+                None => {
+                    let visible = sheet.visible();
+                    let named = Picked::detect(&sheet.headers, currency);
+                    sheet.picked = if named.complete() {
+                        let mut named = named;
+                        named.refine(&sheet.headers, &visible, currency);
+                        named
+                    } else {
+                        Picked::by_content(&sheet.headers, &visible, currency)
+                    };
+                }
+            }
+            return Ok(sheet);
+        }
         let lines = first_lines(content);
-        let find = |pick: &dyn Fn(&[String]) -> Option<Picked>| {
+        let locate = |pick: &dyn Fn(&[String]) -> Option<Picked>| {
             lines.iter().find_map(|&(at, line)| {
                 separators(line).find_map(|d| pick(&fields(line, d)).map(|p| (at, d, p)))
             })
         };
-        if let Some((at, separator, picked)) = chosen.and_then(|c| find(&|h| Picked::chosen(h, c, currency))) {
-            return Self::parse(content, at, separator, false, picked, true);
+        if let Some((at, separator, picked)) = chosen.and_then(|c| locate(&|h| Picked::chosen(h, c, currency))) {
+            return Self::parse(content, at, separator, false, picked, true, origin);
         }
-        if let Some((at, separator, picked)) = find(&|h| Some(Picked::detect(h, currency)).filter(Picked::complete)) {
-            let mut sheet = Self::parse(content, at, separator, false, picked, false)?;
-            sheet.picked.refine(&sheet.headers, &sheet.records, currency);
+        if let Some((at, separator, picked)) = locate(&|h| Some(Picked::detect(h, currency)).filter(Picked::complete)) {
+            let mut sheet = Self::parse(content, at, separator, false, picked, false, origin)?;
+            let mut picked = std::mem::take(&mut sheet.picked);
+            picked.refine(&sheet.headers, &sheet.visible(), currency);
+            sheet.picked = picked;
             return Ok(sheet);
         }
         if let Some((first, separator, header)) = data_start(&lines, currency) {
-            let mut sheet = Self::parse(content, header.unwrap_or(first), separator, header.is_none(), Picked::default(), false)?;
+            let mut sheet = Self::parse(content, header.unwrap_or(first), separator, header.is_none(), Picked::default(), false, origin)?;
             match chosen.and_then(|c| Picked::chosen(&sheet.headers, c, currency)) {
                 Some(picked) => (sheet.picked, sheet.saved) = (picked, true),
-                None => sheet.picked = Picked::by_content(&sheet.headers, &sheet.records, currency),
+                None => {
+                    let visible = sheet.visible();
+                    sheet.picked = Picked::by_content(&sheet.headers, &visible, currency);
+                }
             }
             return Ok(sheet);
         }
         let (at, separator) = widest(&lines);
         let line = lines.iter().find(|l| l.0 == at).map_or("", |l| l.1);
-        Self::parse(content, at, separator, false, Picked::detect(&fields(line, separator), currency), false)
+        Self::parse(content, at, separator, false, Picked::detect(&fields(line, separator), currency), false, origin)
     }
-    /// The records from `at` on: the first is the header row, unless `numbered`.
-    fn parse(content: &str, at: usize, separator: u8, numbered: bool, picked: Picked, saved: bool) -> Result<Self, String> {
-        let mut records = csv::ReaderBuilder::new()
+    /// The records from `at` on: the first is the header row, unless `numbered`. `origin` maps a
+    /// statement in aligned columns back to the file's lines (see `aligned`).
+    fn parse(content: &str, at: usize, separator: u8, numbered: bool, picked: Picked, saved: bool, origin: Option<&[(usize, bool)]>) -> Result<Self, String> {
+        let mut reader = csv::ReaderBuilder::new()
             .delimiter(separator)
             .trim(csv::Trim::All)
             .flexible(true)
             .has_headers(false)
-            .from_reader(content[at..].as_bytes())
-            .into_records();
-        let headers: Vec<String> = if numbered {
-            vec![]
-        } else {
-            records.next().ok_or("Empty file")?.map_err(|e| e.to_string())?.iter().map(String::from).collect()
+            .from_reader(content[at..].as_bytes());
+        // Where a record starts in the file as written, and whether today's reader saw it.
+        let first_line = content[..at].matches('\n').count();
+        let place = |position: Option<&csv::Position>| -> (usize, bool) {
+            let position = position.cloned().unwrap_or_else(csv::Position::new);
+            match origin {
+                Some(origin) => origin.get(first_line + position.line().max(1) as usize - 1).copied().unwrap_or((at, true)),
+                None => (at + position.byte() as usize, true),
+            }
         };
-        let records: Vec<csv::StringRecord> = records
-            .filter(|r| r.as_ref().map_or(true, |r| r.iter().any(|f| !f.is_empty())))
-            .collect::<Result<_, _>>()
-            .map_err(|e| e.to_string())?;
+        let start = match origin {
+            Some(origin) => origin.get(first_line).map_or(at, |o| o.0),
+            None => at,
+        };
+        let (mut headers, mut records, mut offsets, mut hidden, mut first) = (vec![], vec![], vec![], vec![], true);
+        for record in reader.records() {
+            let record = record.map_err(|e| e.to_string())?;
+            if first && !numbered {
+                first = false;
+                headers = record.iter().map(String::from).collect();
+                continue;
+            }
+            first = false;
+            if record.iter().all(|f| f.is_empty()) {
+                continue;
+            }
+            let (offset, seen) = place(record.position());
+            records.push(record);
+            offsets.push(offset);
+            hidden.push(!seen);
+        }
+        if first && !numbered {
+            return Err("Empty file".into());
+        }
         let headers = if numbered {
             // As wide as most rows: a total under them can run wider.
             let mut counts: HashMap<usize, usize> = HashMap::new();
-            for r in &records {
-                *counts.entry(r.len()).or_default() += 1;
+            for (r, h) in records.iter().zip(&hidden) {
+                if !h {
+                    *counts.entry(r.len()).or_default() += 1;
+                }
             }
             let width = counts.into_iter().max_by_key(|&(n, k)| (k, n)).map_or(0, |(n, _)| n);
             (1..=width).map(|i| format!("Column {i}")).collect()
         } else {
             headers
         };
-        Ok(Self { headers, records, picked, saved, separator })
+        Ok(Self { headers, records, offsets, hidden, start, numbered, picked, saved, separator })
+    }
+    /// The records today's reader saw, which say what the columns hold.
+    fn visible(&self) -> std::borrow::Cow<'_, [csv::StringRecord]> {
+        if self.hidden.iter().any(|h| *h) {
+            self.records.iter().zip(&self.hidden).filter(|(_, h)| !**h).map(|(r, _)| r.clone()).collect::<Vec<_>>().into()
+        } else {
+            self.records.as_slice().into()
+        }
     }
     /// A row with more fields than the header row, whose amounts don't read, has an unquoted
     /// separator in its text: the fields it split go back together in the payee's column, if the
@@ -1073,6 +1437,188 @@ mod tests {
         let mut b = sample();
         b.currency = "EUR".into();
         b
+    }
+
+    type Shown = Vec<(String, Option<(String, i64, String)>)>;
+    fn status(s: &Status) -> String {
+        match s {
+            Status::Ready => "ready".into(),
+            Status::Attention { field, .. } => format!("attention {field:?}"),
+            Status::LeftOut { reason, .. } => format!("{reason:?}"),
+        }
+    }
+    fn shown(b: &Budget, csv: &str, o: &Options, order: &str) -> Shown {
+        let read = read_lines(b, "cash", csv, o, order, false).unwrap();
+        read.lines.iter().map(|l| (status(&l.status), l.transaction.as_ref().map(|t| (t.date.clone(), t.amount, t.payee.clone())))).collect()
+    }
+    fn fixture(file: &str) -> String {
+        read_statement(&std::fs::read(format!("{}/../../shared/fixtures/bank-files/{file}", env!("CARGO_MANIFEST_DIR"))).unwrap()).unwrap().text
+    }
+
+    #[test]
+    fn every_line_says_what_became_of_it() {
+        let b = eur();
+        let csv = "Account statement 4711\n\
+                   Date,Payee,Amount,Currency,Status\n\
+                   2026-10-01,Bakery,-3.20,EUR,Booked\n\
+                   2026-10-02,Cinema,-12.00,EUR,Pending\n\
+                   2026-10-03,Shop,-5.00,EUR,Declined\n\
+                   2026-10-04,Closing balance,100.00,EUR,\n\
+                   Total,,-20.20,,\n\
+                   2026-10-05,Card check,0.00,EUR,Booked\n\
+                   2026-10-06,Note,,EUR,Booked\n\
+                   2026-10-07,London shop,-9.99,GBP,Booked\n\
+                   2026-10-08,Grocer,n/a,EUR,Booked\n\
+                   2026-10-09,Lunch,-8.50,EUR,Booked\n";
+        let read = read_lines(&b, "cash", csv, &Options::default(), "ymd", false).unwrap();
+        let got: Vec<(String, bool)> = read.lines.iter().map(|l| (status(&l.status), l.reserves)).collect();
+        let want = [
+            ("AboveHeader", false), ("ready", true), ("Pending", false), ("Declined", false), ("Balance", false), ("NoDate", false),
+            ("Zero", false), ("NoAmount", false), ("OtherCurrency", false), ("attention Amount", true), ("ready", true),
+        ];
+        assert_eq!(got, want.map(|(s, r)| (s.to_string(), r)));
+        // The amount that doesn't read says why, in its column.
+        assert_eq!(read.lines[9].status, Status::Attention { field: Field::Amount, column: Some(2), reason: "Invalid amount: n/a".into() });
+        // Every line keeps where it starts in the file, and its cells.
+        assert_eq!(read.lines[0].offset, 0);
+        assert_eq!(&csv[read.lines[1].offset..read.lines[1].offset + 10], "2026-10-01");
+        assert_eq!(read.lines[9].cells, ["2026-10-08", "Grocer", "n/a", "EUR", "Booked"]);
+        // Today's import stops at that amount; the other lines read as it reads them.
+        assert_eq!(preview(&b, "cash", csv, "csv", "ymd", false).err().unwrap(), "Invalid amount: n/a");
+        let clean = csv.replace("2026-10-08,Grocer,n/a,EUR,Booked\n", "");
+        let today: Vec<(String, i64, String)> = preview(&b, "cash", &clean, "csv", "ymd", false).unwrap().into_iter().map(|r| (r.date, r.amount, r.payee)).collect();
+        let now: Vec<(String, i64, String)> = read.lines.iter().filter_map(|l| l.transaction.as_ref()).map(|t| (t.date.clone(), t.amount, t.payee.clone())).collect();
+        assert_eq!(now, today);
+    }
+
+    #[test]
+    fn a_corrupt_cell_changes_only_its_own_line() {
+        let b = eur();
+        let clean = fixture("de-dkb-2023.csv");
+        let o = Options::default();
+        let before = shown(&b, &clean, &o, "dmy");
+        // Each line with a date and an amount, broken in turn: that line needs attention, and
+        // every other line reads exactly as it did.
+        let ready: Vec<usize> = (0..before.len()).filter(|&i| before[i].0 == "ready").collect();
+        assert!(ready.len() >= 6);
+        let read = read_lines(&b, "cash", &clean, &o, "dmy", false).unwrap();
+        for &i in &ready {
+            let line = &read.lines[i];
+            let amount = read.records.columns.amount.as_ref().map(|n| position(&read.records.headers, n).unwrap()).unwrap();
+            let (from, to) = (line.offset, line.offset + clean[line.offset..].find(['\r', '\n']).unwrap_or(clean.len() - line.offset));
+            let original = &clean[from..to];
+            let broken_cell = &line.cells[amount];
+            for (what, broken) in [("amount", original.replacen(broken_cell.as_str(), "x1", 1)), ("date", original.replacen(&line.cells[read.records.date_column], "3x.10.2026", 1))] {
+                let text = format!("{}{}{}", &clean[..from], broken, &clean[to..]);
+                let after = shown(&b, &text, &o, "dmy");
+                assert_eq!(after.len(), before.len(), "{what} {i}");
+                for k in 0..after.len() {
+                    if k == i {
+                        assert!(after[k].0.starts_with("attention"), "{what} {i}: {:?}", after[k]);
+                    } else {
+                        assert_eq!(after[k], before[k], "{what} {i} broke line {k}");
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn dates_that_no_longer_settle_their_order_ask_instead_of_changing() {
+        let b = eur();
+        let csv = "Date;Payee;Amount\n31/10/2026;Rent;-500,00\n01/02/2026;Shop;-3,00\n";
+        let read = read_lines(&b, "cash", csv, &Options::default(), "mdy", false).unwrap();
+        assert_eq!((read.dates.order, read.dates.unconfirmed), ("dmy", false));
+        assert_eq!(read.lines[1].transaction.as_ref().unwrap().date, "2026-02-01");
+        // The only date that settled it broken: nothing re-dated silently, the order needs confirming.
+        let broken = csv.replace("31/10/2026", "3l/10/2026");
+        let read = read_lines(&b, "cash", &broken, &Options::default(), "mdy", false).unwrap();
+        assert!(read.dates.unconfirmed);
+        assert_eq!(read.dates.example.as_deref(), Some("01/02/2026"));
+        // Confirmed day first, it reads as before.
+        let read = read_lines(&b, "cash", &broken, &Options::default(), "dmy", true).unwrap();
+        assert!(!read.dates.unconfirmed);
+        assert_eq!(read.lines[1].transaction.as_ref().unwrap().date, "2026-02-01");
+        // A fixed date doesn't count toward the order: only the file's own dates do.
+        let evidence: Vec<_> = records(&b, "cash", &broken, &Options::default()).unwrap().records.iter().map(|r| r.evidence.clone()).collect();
+        assert_eq!(evidence, [Some("3l/10/2026".to_string()), Some("01/02/2026".to_string())]);
+    }
+
+    #[test]
+    fn a_file_with_several_accounts_reads_the_one_chosen() {
+        let mut b = eur();
+        b.currency = "CAD".into();
+        let rbc = fixture("ca-rbc.csv");
+        let read = read_lines(&b, "cash", &rbc, &Options::default(), "mdy", false).unwrap();
+        let sources: Vec<&str> = read.records.sources.iter().map(|(l, _)| l.as_str()).collect();
+        assert_eq!(sources, ["01234-5000123", "4510000000001234"]);
+        let ready = |read: &CsvLines| read.lines.iter().filter(|l| l.status == Status::Ready).count();
+        assert_eq!(ready(&read), 5);
+        let visa = Options { source: Some("4510000000001234"), ..Options::default() };
+        let read = read_lines(&b, "cash", &rbc, &visa, "mdy", false).unwrap();
+        assert_eq!(ready(&read), 2);
+        assert_eq!(read.lines.iter().filter(|l| matches!(l.status, Status::LeftOut { reason: Reason::OtherAccount, .. })).count(), 5);
+        // comdirect writes each account's rows under a heading of their own.
+        let comdirect = fixture("de-comdirect.csv");
+        let read = read_lines(&eur(), "cash", &comdirect, &Options::default(), "dmy", false).unwrap();
+        assert_eq!(read.records.sources.len(), 2);
+        let second = Options { source: Some(&read.records.sources[1].0), ..Options::default() };
+        let other = read_lines(&eur(), "cash", &comdirect, &second, "dmy", false).unwrap();
+        assert!(ready(&other) > 0);
+        assert_eq!(ready(&read), 6);
+    }
+
+    #[test]
+    fn included_lines_read_and_need_what_they_still_lack() {
+        let b = eur();
+        let csv = "Date,Payee,Amount,Currency,Status\n\
+                   2026-10-01,Bakery,-3.20,EUR,Booked\n\
+                   2026-10-02,Cinema,-12.00,EUR,Pending\n\
+                   2026-10-03,London shop,-9.99,GBP,Booked\n\
+                   ,Pending card,-4.00,EUR,Booked\n\
+                   2026-10-05,Card check,0.00,EUR,Booked\n";
+        let read = read_lines(&b, "cash", csv, &Options::default(), "ymd", false).unwrap();
+        let include: HashSet<usize> = read.lines.iter().map(|l| l.offset).collect();
+        let all = read_lines(&b, "cash", csv, &Options { include, ..Options::default() }, "ymd", false).unwrap();
+        let got: Vec<(String, bool)> = all.lines.iter().map(|l| (status(&l.status), l.reserves)).collect();
+        // Pending reads; another currency needs the amount in the budget's; no date needs one;
+        // nothing moving can't be included. Included lines hold no place among repeated ids.
+        let want = [("ready", true), ("ready", false), ("attention Amount", false), ("attention Date", false), ("Zero", false)];
+        assert_eq!(got, want.map(|(s, r)| (s.to_string(), r)));
+        assert_eq!(all.lines[1].transaction.as_ref().map(|t| t.amount), Some(-1200));
+    }
+
+    #[test]
+    fn a_fixed_cell_changes_only_its_line_and_keeps_its_place() {
+        let b = eur();
+        let csv = "Date,Payee,Amount\n2026-10-01,Bakery,-3.20\n2026-10-02,Grocer,n/a\n2026-10-03,Lunch,-8.50\n";
+        let read = read_lines(&b, "cash", csv, &Options::default(), "ymd", false).unwrap();
+        let grocer = read.lines[1].offset;
+        let fixed = Options { cells: HashMap::from([(grocer, vec![(2, "-12.40".to_string())])]), ..Options::default() };
+        let after = read_lines(&b, "cash", csv, &fixed, "ymd", false).unwrap();
+        assert_eq!(after.lines[1].status, Status::Ready);
+        assert_eq!(after.lines[1].cells[2], "-12.40");
+        assert!(after.lines[1].reserves);
+        assert_eq!(after.lines[1].transaction.as_ref().map(|t| t.amount), Some(-1240));
+        for k in [0, 2] {
+            assert_eq!(after.lines[k].transaction.as_ref().map(|t| (t.date.clone(), t.amount)), read.lines[k].transaction.as_ref().map(|t| (t.date.clone(), t.amount)));
+        }
+    }
+
+    #[test]
+    fn an_aligned_statement_shows_the_lines_todays_reader_left_out() {
+        let mut b = eur();
+        b.currency = "MXN".into();
+        let text = fixture("mx-bbva.txt");
+        // A date the bank's text export mangled: today's reader drops the line without a word.
+        let broken = text.replacen("29-09-2026", "29-O9-2026", 1);
+        assert_eq!(preview(&b, "cash", &broken, "csv", "dmy", false).unwrap().len(), 6);
+        let read = read_lines(&b, "cash", &broken, &Options::default(), "dmy", false).unwrap();
+        let line = read.lines.iter().find(|l| l.cells.first().is_some_and(|c| c == "29-O9-2026")).unwrap();
+        assert!(matches!(line.status, Status::Attention { field: Field::Date, .. }));
+        assert!(!line.reserves);
+        assert_eq!(&broken[line.offset..line.offset + 10], "29-O9-2026");
+        assert_eq!(read.lines.iter().filter(|l| l.status == Status::Ready).count(), 6);
     }
 
     #[test]
