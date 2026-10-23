@@ -2,6 +2,8 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { apply, diff, type Patch } from "./patch";
 import { getPref } from "./prefs";
 import type {
+  BankColumns,
+  BankFileSettings,
   Budget,
   DatabaseStatus,
   Snapshot,
@@ -181,19 +183,48 @@ export const api = {
     dateFormat: string,
     /** For a CSV whose one Amount column writes purchases as positive numbers. */
     flipSigns: boolean,
+    /** A CSV's columns as chosen; without them, the account's saved choice or the ones found by name. */
+    columns: BankColumns | null = null,
   ) =>
-    read<BankRow[]>(budget, "preview_bank_file", {
+    // Rows that could be the same transactions share one list of them (an account with thousands
+    // of the same charge would otherwise send thousands of lists), and each row reads its own.
+    read<CompactReview>(budget, "preview_bank_file", {
       account,
       content,
       format,
       dateFormat,
       flipSigns,
-    }),
+      columns,
+    }).then(({ items, candidateSets }) => items.map(({ candidateSet, ...row }) => ({ ...row, ...candidateSets[candidateSet] }))),
+  /** A CSV's header row, first rows and the columns an import would read, for choosing them. */
+  /** A statement that isn't UTF-8, as ISO-8859-1 (a character for each byte): its text in the encoding the engine finds. */
+  decodeStatement: (latin1: string) => invoke<{ text: string; encoding: string }>("decode_statement", { latin1 }),
+  bankFileColumns: (budget: Budget, account: string, content: string, columns: BankColumns | null = null) =>
+    read<BankFileLayout>(budget, "bank_file_columns", { account, content, columns }),
   importBank: (
     budget: Budget,
     account: string,
     choices: { row: BankRow; action: string; matchId: string | null }[],
-  ) => change(budget, "import_bank_file", { account, choices }),
+    /** How the file read, for the account to keep for its next one. */
+    remember: BankFileSettings | null = null,
+  ) =>
+    change(budget, "import_bank_file", {
+      account,
+      // The engine checks a match against the budget again; of the rows' candidates it needs only
+      // whether the one chosen was an earlier bank row's.
+      choices: choices.map(({ row, action, matchId }) => ({
+        row: {
+          ...row,
+          candidates: [],
+          candidateDetails: undefined,
+          transferCandidates: undefined,
+          previouslyMatchedCandidates: matchId && row.previouslyMatchedCandidates?.includes(matchId) ? [matchId] : undefined,
+        },
+        action,
+        matchId,
+      })),
+      remember,
+    }),
   action: (budget: Budget, action: Record<string, unknown>) =>
     change(budget, "budget_action", { action }),
   /**
@@ -305,6 +336,10 @@ export type BankRow = {
   candidates: string[];
   previouslyMatchedCandidates?: string[];
   candidateDetails?: { id: string; transactionId: string; splitIndex: number }[];
+  /** Candidates in another account that matching makes into a transfer with this one. */
+  transferCandidates?: string[];
+  /** The bank text backs the transfer up, so it's chosen; otherwise it's only suggested. */
+  transferSure?: boolean;
   idless?: boolean;
   possibleDuplicate?: boolean;
   groupId?: string;
@@ -316,4 +351,24 @@ export type BankRow = {
   categoryId?: string;
   /** When the bank says it happened (bank sync), which becomes its createdAt; a file has none. */
   at?: string;
+};
+/** A preview with each list of possible matches sent once, for every row it's for (bank_import.rs). */
+type CompactReview = {
+  items: (BankRow & { candidateSet: number })[];
+  candidateSets: Pick<BankRow, "candidates" | "previouslyMatchedCandidates" | "candidateDetails" | "transferCandidates" | "transferSure">[];
+};
+/** A CSV's columns, for choosing which holds what (bank_csv.rs). */
+export type BankFileLayout = {
+  /** "csv", or the format the file turned out to be in (an MT940 statement saved as .txt), with no columns. */
+  format: string;
+  headers: string[];
+  /** The first rows under the header. */
+  samples: string[][];
+  /** What an import reads now: the account's saved choice when the file has those columns, or else the ones found by name. */
+  columns: BankColumns;
+  /** The columns are the account's saved choice. */
+  saved: boolean;
+  /** The account's date order, or else the only one every date in the file fits. */
+  dateFormat?: string | null;
+  flipSigns: boolean;
 };

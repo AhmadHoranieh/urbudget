@@ -16,10 +16,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.urbudget.nativeapp.BankReviewRow
 import app.urbudget.nativeapp.BankReviewSummary
+import android.net.Uri
 import app.urbudget.nativeapp.BudgetViewModel
 import app.urbudget.nativeapp.bankReviewChoices
 import app.urbudget.nativeapp.bankReviewCounts
+import app.urbudget.nativeapp.decodeStatement
 import app.urbudget.nativeapp.prepareBankReview
+import app.urbudget.nativeapp.statementFormat
 import app.urbudget.nativeapp.summarizeBankReview
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -28,7 +31,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 
-private val bankFormats = listOf("csv" to "CSV", "ofx" to "OFX", "qfx" to "QFX", "qif" to "QIF")
+private val bankFormats = listOf("csv" to "CSV or Excel", "ofx" to "OFX", "qfx" to "QFX", "qif" to "QIF", "camt053" to "CAMT.053", "mt940" to "MT940")
 private val dateOrders = listOf("ymd" to "Year-month-day (2026-10-31)", "dmy" to "Day/month/year (31/10/2026)", "mdy" to "Month/day/year (10/31/2026)")
 
 /**
@@ -36,7 +39,8 @@ private val dateOrders = listOf("ymd" to "Year-month-day (2026-10-31)", "dmy" to
  * row does (add it, match an existing transaction, or skip it), then one atomic budget change.
  */
 @Composable
-internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, initialImport: JSONObject? = null, onImported: () -> Unit = {}, close: () -> Unit) {
+internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, initialImport: JSONObject? = null, onImported: () -> Unit = {},
+                               askAssistant: ((Uri) -> Unit)? = null, close: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val budgetState by vm.state.collectAsStateWithLifecycle()
@@ -46,6 +50,8 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, initialIm
     var flipSigns by remember { mutableStateOf(false) }
     var fileName by remember { mutableStateOf(initialImport?.text("name").orEmpty()) }
     var content by remember { mutableStateOf<String?>(initialImport?.text("csv")) }
+    // A PDF chosen, which the assistant reads.
+    var pdf by remember { mutableStateOf<Uri?>(null) }
     var rows by remember { mutableStateOf<List<BankReviewRow>?>(null) }
     var summary by remember { mutableStateOf<BankReviewSummary?>(null) }
     val decisions = remember { mutableStateMapOf<Int, String>() }
@@ -67,6 +73,16 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, initialIm
         if (saving && budgetState.error != null) { error = budgetState.error; loading = false; saving = false }
     }
 
+    // How the account's last bank file read: its date order and signs, kept by the import. A file
+    // the assistant prepared is written the standard way.
+    LaunchedEffect(account) {
+        val kept = budget.rows("accounts").firstOrNull { it.text("id") == account }?.optJSONObject("fileImport")
+        if (initialImport == null && kept != null) {
+            if (kept.has("dateFormat")) dateOrder = kept.text("dateFormat")
+            if (kept.has("flipSigns")) flipSigns = kept.optBoolean("flipSigns")
+        }
+    }
+
     LaunchedEffect(budget, account, format, dateOrder, flipSigns, content) {
         epoch++
         rows = null
@@ -85,7 +101,7 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, initialIm
                     val name = context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use {
                         if (it.moveToFirst()) it.getString(0) else "Bank statement"
                     } ?: "Bank statement"
-                    val text = context.contentResolver.openInputStream(uri)?.use { input ->
+                    val read = context.contentResolver.openInputStream(uri)?.use { input ->
                         val output = ByteArrayOutputStream()
                         val buffer = ByteArray(8192)
                         while (true) {
@@ -94,15 +110,18 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, initialIm
                             require(output.size() + size <= 8 * 1024 * 1024) { "Choose a statement smaller than 8 MiB." }
                             output.write(buffer, 0, size)
                         }
-                        output.toString(Charsets.UTF_8.name()).removePrefix(Char(0xFEFF).toString())
+                        val bytes = output.toByteArray()
+                        // A PDF is the assistant's to read: no text.
+                        val isPdf = name.endsWith(".pdf", ignoreCase = true) || bytes.take(4) == "%PDF".toByteArray().toList()
+                        isPdf to (if (isPdf) "" else decodeStatement(bytes))
                     } ?: error("The selected statement could not be opened.")
-                    name to text
+                    Triple(name, read.second, read.first)
                 }
-            }.onSuccess { (name, text) ->
+            }.onSuccess { (name, text, isPdf) ->
                 fileName = name
-                content = text
-                val extension = name.substringAfterLast('.', "").lowercase()
-                if (extension in listOf("csv", "ofx", "qfx", "qif")) format = extension
+                pdf = if (isPdf) uri else null
+                content = if (isPdf) null else text
+                if (!isPdf) statementFormat(name, text)?.let { format = it }
             }.onFailure { error = it.message }
             loading = false
         }
@@ -150,11 +169,13 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, initialIm
         loading = true
         saving = true
         val source = previewBudget; val imported = rows.orEmpty(); val selected = decisions.toMap(); val accountId = account
+        // The account keeps how this file read for its next one; a CSV's columns stay as chosen on the desktop.
+        val remember = if (datesInFile && initialImport == null) JSONObject().put("dateFormat", dateOrder).apply { if (signs) put("flipSigns", flipSigns) } else null
         scope.launch {
             try {
                 val choices = withContext(Dispatchers.Default) { bankReviewChoices(imported, selected, true) }
                 require(source === vm.state.value.budget) { "Your budget changed. Preview this statement again." }
-                vm.runCommand("bankApply", JSONObject().put("accountId", accountId).put("choices", choices)) { onImported(); close() }
+                vm.runCommand("bankApply", JSONObject().put("accountId", accountId).put("choices", choices).put("remember", remember ?: JSONObject.NULL)) { onImported(); close() }
             } catch (cancel: CancellationException) { throw cancel } catch (failure: Exception) { error = failure.message; loading = false; saving = false }
         }
     }
@@ -174,8 +195,15 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, initialIm
             item(key = "import:account") { Choice("Into account", account, accountChoices) { if (!loading) account = it } }
             item(key = "import:file") {
                 ListCard {
-                    ListRow(fileName.ifEmpty { "Choose a file" }, subtitle = if (content == null) "CSV, OFX, QFX or QIF" else "${bankFormats.first { it.first == format }.second} · tap to choose another",
+                    ListRow(fileName.ifEmpty { "Choose a file" }, subtitle = if (pdf != null) "PDF · tap to choose another" else if (content == null) "CSV, Excel, OFX, QIF, CAMT.053 or MT940; PDF through the assistant" else "${bankFormats.first { it.first == format }.second} · tap to choose another",
                         icon = if (content == null) Icons.Outlined.FileOpen else Icons.Outlined.Description, onClick = { if (!loading) picker.launch(arrayOf("*/*")) })
+                }
+            }
+            pdf?.let { file ->
+                item(key = "import:pdf") {
+                    if (askAssistant != null) Notice("PDF statements need the assistant. It reads the PDF, finds the transactions, checks them against the statement's totals and brings them to a review like this one, where you decide on each row.", tone = "info",
+                        action = "Read it with the assistant", onAction = { askAssistant(file) }, icon = Icons.Outlined.AutoAwesome)
+                    else Notice("PDF statements need the assistant. Open the assistant, attach this PDF and ask it to import the statement.", tone = "info")
                 }
             }
             if (content != null) {
@@ -184,7 +212,7 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, initialIm
                 if (signs) item(key = "import:signs") { CheckRow("Purchases are positive (reverse amount signs)", flipSigns, { if (!loading) flipSigns = it }) }
             }
             item(key = "import:help") {
-                Text("CSV files need a header row with Date, Payee (or Description), and either Amount (negative for money out) or Outflow and Inflow. Memo is optional.",
+                Text("In a CSV or Excel file, the date, payee and amount (or money out and money in) columns are found by the names banks give them, in most languages, or by what's in them, or by the columns chosen for the account on the desktop.",
                     style = MaterialTheme.typography.bodySmall, color = ur.muted)
             }
         } else {
@@ -202,6 +230,7 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, initialIm
                     onAction = { flipSigns = true }, icon = Icons.Outlined.SwapVert)
             }
             summary?.let { bankReviewNotes(it, undecided) }
+            suggestedTransfers(reviewing, decisions, !loading)
             bankReviewRows(reviewing, decisions, !loading) { index, value -> decisions[index] = value }
         }
     }

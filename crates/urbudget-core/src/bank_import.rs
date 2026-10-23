@@ -1,3 +1,4 @@
+use crate::bank_csv::{self, Columns};
 use crate::{domain::*, ledger, workflows};
 use chrono::{DateTime, Datelike, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
@@ -30,6 +31,13 @@ pub struct Row {
     pub previously_matched_candidates: Vec<String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub candidate_details: Vec<Candidate>,
+    /// Candidates in another account that matching makes into a transfer with this one.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub transfer_candidates: Vec<String>,
+    /// The transfer is clear enough to choose for the row (see `transfer_offers`); otherwise it's
+    /// only suggested.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub transfer_sure: bool,
     /// Without a bank ID, identical rows in separate files cannot be distinguished for sure.
     #[serde(default)]
     pub idless: bool,
@@ -69,6 +77,10 @@ pub struct CandidateSet {
     pub candidates: Vec<String>,
     pub previously_matched_candidates: Vec<String>,
     pub candidate_details: Vec<Candidate>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub transfer_candidates: Vec<String>,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub transfer_sure: bool,
 }
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -102,10 +114,10 @@ fn code(t: &str) -> Option<(&str, &str)> {
 }
 /// An amount in cents: "1,234.56", "1.234,56", "1 234,56", "(12.34)", "12.34-", "$12.34" or
 /// "12.34 USD". One that could be read two ways, such as "1.234", is refused, never guessed.
-fn money(s: &str, currency: &str) -> Result<i64, String> {
+pub(crate) fn money(s: &str, currency: &str) -> Result<i64, String> {
     let bad = || format!("Invalid amount: {}", s.trim());
     let mut t = s.trim();
-    let mut negative = false;
+    let (mut negative, mut credit) = (false, false);
     if let Some(inner) = t.strip_prefix('(').and_then(|t| t.strip_suffix(')')) {
         negative = true;
         t = inner;
@@ -134,6 +146,14 @@ fn money(s: &str, currency: &str) -> Result<i64, String> {
                     s.trim()
                 ));
             }
+            t = rest;
+        }
+        // "12.34 CR" is money in and "12.34 DR" money out, as some statements write them.
+        if let Some(rest) = t.strip_suffix("CR").or(t.strip_suffix("Cr")) {
+            credit = true;
+            t = rest;
+        } else if let Some(rest) = t.strip_suffix("DR").or(t.strip_suffix("Dr")) {
+            negative = true;
             t = rest;
         }
         if t == before {
@@ -179,7 +199,7 @@ fn money(s: &str, currency: &str) -> Result<i64, String> {
     {
         return Err(bad());
     }
-    let sign = if negative { -1 } else { 1 };
+    let sign = if negative && !credit { -1 } else { 1 };
     let whole = groups
         .concat()
         .parse::<i64>()
@@ -193,31 +213,164 @@ fn money(s: &str, currency: &str) -> Result<i64, String> {
     }
     Ok(n * sign)
 }
-fn date(s: &str, format: &str) -> Result<String, String> {
-    let raw = s.trim().replace('\'', "/").replace(' ', "");
-    // Two-digit years first: %Y also reads "26" as the year 26, so "10/17/26" would become 0026.
-    let patterns = match format {
-        "dmy" => vec!["%d/%m/%y", "%d-%m-%y", "%d/%m/%Y", "%d-%m-%Y"],
-        "mdy" => vec!["%m/%d/%y", "%m-%d-%y", "%m/%d/%Y", "%m-%d-%Y"],
-        _ => vec!["%Y-%m-%d", "%Y/%m/%d"],
+pub(crate) fn date(s: &str, format: &str) -> Result<String, String> {
+    // A time after the date isn't needed: "2026-10-15 14:03:22", "2026-10-15T14:03:22Z",
+    // "15 Oct 2026 10:00". It starts at the last space (or T between digits) before its colon.
+    // FNB writes its dates in single quotes.
+    let s = s.trim().trim_matches('\'').trim();
+    let day = s.find(':').and_then(|colon| {
+        let head = &s[..colon];
+        head.char_indices().rev().find(|&(i, c)| {
+            c.is_whitespace()
+                || c == 'T' && head[..i].ends_with(|p: char| p.is_ascii_digit()) && head[i + 1..].starts_with(|n: char| n.is_ascii_digit())
+        })
+    });
+    let day = match day {
+        Some((i, _)) if i > 0 => &s[..i],
+        _ => s,
     };
-    for pattern in std::iter::once("%Y-%m-%d").chain(patterns) {
-        if let Ok(d) = NaiveDate::parse_from_str(&raw, pattern) {
-            let normalized = d.format("%Y-%m-%d").to_string();
-            if d.year() >= 1900 && valid_date(&normalized) {
-                return Ok(normalized);
-            }
+    let raw = day.trim_end_matches('.').replace('\'', "/").replace(' ', "");
+    // Two-digit years first: %Y also reads "26" as the year 26, so "10/17/26" would become 0026.
+    // Dots and month names before the month ("15 Oct 2026") are written day first.
+    let patterns = match format {
+        "dmy" => vec![
+            "%d/%m/%y", "%d-%m-%y", "%d.%m.%y", "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y", "%d%b%y", "%d-%b-%y", "%d/%b/%y",
+            "%d%b%Y", "%d-%b-%Y", "%d/%b/%Y",
+        ],
+        "mdy" => vec!["%m/%d/%y", "%m-%d-%y", "%m/%d/%Y", "%m-%d-%Y", "%b%d,%Y", "%b%d%Y"],
+        _ => vec!["%Y-%m-%d", "%Y/%m/%d", "%Y.%m.%d", "%Y%m%d"],
+    };
+    let parsed = std::iter::once("%Y-%m-%d").chain(patterns).filter_map(|p| NaiveDate::parse_from_str(&raw, p).ok())
+        // A spreadsheet's serial day number, when a bank's file went through Excel: 46310.
+        .chain((raw.len() == 5).then(|| raw.parse::<i64>().ok()).flatten().filter(|n| (20_000..=80_000).contains(n))
+            .and_then(|n| NaiveDate::from_ymd_opt(1899, 12, 30)?.checked_add_signed(chrono::Duration::days(n))))
+        .chain(worded(day));
+    for d in parsed {
+        let normalized = d.format("%Y-%m-%d").to_string();
+        if d.year() >= 1900 && valid_date(&normalized) {
+            return Ok(normalized);
         }
     }
     Err(format!(
         "Cannot read date ‘{s}’. Select the matching date format."
     ))
 }
+/// A date with its month as a word, in the languages banks write: "15. Okt. 2026", "15-ene-2026",
+/// "2026 oct. 15", "Wed, 15 October 2026". The numbers around the month are the day and the
+/// year, year first only when it has four digits. Without a year ("26 Sep", as FNB writes), it's
+/// the latest such day that isn't more than a month ahead.
+fn worded(s: &str) -> Option<NaiveDate> {
+    let mut month = None;
+    let mut numbers = vec![];
+    for token in s.split(|c: char| !c.is_alphanumeric()).filter(|t| !t.is_empty()) {
+        if token.bytes().all(|b| b.is_ascii_digit()) {
+            numbers.push(token);
+            continue;
+        }
+        if !token.chars().all(char::is_alphabetic) {
+            return None;
+        }
+        let word = bank_csv::plain(token);
+        // An abbreviation by its first three letters, a longer word only as a month's whole name:
+        // "Description 1" isn't a date in December.
+        let found = match word.as_str() {
+            // French June and July share their first three letters; Afrikaans December is "Des".
+            "juin" => Some(6),
+            "juil" => Some(7),
+            "des" => Some(12),
+            short if short.chars().count() <= 5 => {
+                short.get(..3).and_then(|start| MONTHS.iter().position(|names| names.contains(&start))).map(|m| m as u32 + 1)
+            }
+            long => NAMED.iter().position(|names| names.contains(&long)).map(|m| m as u32 + 1),
+        };
+        match found {
+            Some(m) if month.is_none() => month = Some(m),
+            None if month.is_none() && WEEKDAYS.contains(&word.as_str()) => {}
+            _ => return None,
+        }
+    }
+    let (day, year) = match numbers[..] {
+        [a, b] if a.len() == 4 => (b, a),
+        [a, b] => (a, b),
+        [day] if day.len() <= 2 => {
+            let (today, day) = (Utc::now().date_naive(), day.parse().ok()?);
+            let this = NaiveDate::from_ymd_opt(today.year(), month?, day)?;
+            return if this > today + chrono::Duration::days(31) { NaiveDate::from_ymd_opt(today.year() - 1, month?, day) } else { Some(this) };
+        }
+        _ => return None,
+    };
+    let year: i32 = year.parse().ok()?;
+    let year = if year < 100 { 2000 + year } else { year };
+    NaiveDate::from_ymd_opt(year, month?, day.parse().ok()?)
+}
+/// The first three letters of each month's name: English, German, Dutch, French, Spanish,
+/// Italian, Portuguese, Polish, Afrikaans and the Nordic languages.
+const MONTHS: [&[&str]; 12] = [
+    &["jan", "ene", "gen", "sty"],
+    &["feb", "fev", "lut"],
+    &["mar", "mrz", "mrt", "maa"],
+    &["apr", "abr", "avr", "kwi"],
+    &["may", "mai", "mei", "mag", "maj"],
+    &["jun", "giu", "cze"],
+    &["jul", "lug", "lip"],
+    &["aug", "ago", "aou", "sie"],
+    &["sep", "set", "wrz"],
+    &["oct", "okt", "ott", "out", "paz"],
+    &["nov", "lis"],
+    &["dec", "dez", "dic", "gru"],
+];
+/// Months' whole names, after `plain`, in the same languages.
+const NAMED: [&[&str]; 12] = [
+    &["january", "januar", "januari", "janvier", "enero", "gennaio", "janeiro", "stycznia", "styczen", "januarie"],
+    &["february", "februar", "februari", "fevrier", "febrero", "febbraio", "fevereiro", "lutego", "februarie"],
+    &["march", "maart", "marzec"],
+    &["aprile", "kwietnia", "kwiecien"],
+    &["maggio"],
+    &["giugno", "czerwca", "czerwiec"],
+    &["juillet", "luglio", "lipiec"],
+    &["august", "augustus", "augusti", "sierpnia", "sierpien"],
+    &["september", "septembre", "septiembre", "setiembre", "settembre", "setembro", "wrzesnia", "wrzesien"],
+    &["october", "oktober", "octobre", "octubre", "ottobre", "outubro", "pazdziernika", "pazdziernik"],
+    &["november", "novembre", "noviembre", "novembro", "listopada", "listopad"],
+    &["december", "dezember", "decembre", "diciembre", "dicembre", "dezembro", "grudnia", "grudzien", "desember"],
+];
+const WEEKDAYS: [&str; 14] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun", "mo", "di", "mi", "do", "fr", "sa", "so"];
+/// A file's dates in the order chosen, or in the only order they all fit when some don't fit
+/// that one: a file that writes 31/10/2026 isn't month first, whatever was chosen.
+pub(crate) fn dates(raw: &[String], format: &str) -> Result<Vec<String>, String> {
+    let read = |f: &str| raw.iter().map(|s| date(s, f)).collect::<Result<Vec<_>, _>>();
+    let chosen = read(format);
+    if chosen.is_ok() {
+        return chosen;
+    }
+    let mut fits = ["ymd", "dmy", "mdy"].into_iter().filter(|f| *f != format).filter_map(|f| read(f).ok());
+    match (fits.next(), fits.next()) {
+        (Some(only), None) => Ok(only),
+        _ => chosen,
+    }
+}
+/// The order every one of these dates fits, when only one does (or year first, which any order
+/// reads).
+pub(crate) fn date_order(raw: &[&str]) -> Option<&'static str> {
+    let fits = |f| !raw.is_empty() && raw.iter().all(|s| date(s, f).is_ok());
+    if fits("ymd") {
+        return Some("ymd");
+    }
+    match (fits("dmy"), fits("mdy")) {
+        (true, false) => Some("dmy"),
+        (false, true) => Some("mdy"),
+        _ => None,
+    }
+}
 fn tag(s: &str, name: &str) -> Option<String> {
     let upper = s.to_ascii_uppercase();
     let needle = format!("<{name}>");
     let start = upper.find(&needle)? + needle.len();
-    let text = s[start..].split('<').next()?.trim();
+    let rest = &s[start..];
+    let text = match rest.trim_start().strip_prefix("<![CDATA[") {
+        Some(data) => data.split("]]>").next()?.trim(),
+        None => rest.split('<').next()?.trim(),
+    };
     Some(
         text.replace("&amp;", "&")
             .replace("&lt;", "<")
@@ -233,7 +386,19 @@ pub fn preview(
     date_format: &str,
     flip_signs: bool,
 ) -> Result<Vec<Row>, String> {
-    review(b, account, parse_file(b, account, content, format, date_format, flip_signs)?)
+    preview_mapped(b, account, content, format, date_format, flip_signs, None)
+}
+/// A preview reading a CSV's columns as chosen (see `bank_csv::read`).
+pub fn preview_mapped(
+    b: &Budget,
+    account: &str,
+    content: &str,
+    format: &str,
+    date_format: &str,
+    flip_signs: bool,
+    columns: Option<&Columns>,
+) -> Result<Vec<Row>, String> {
+    review(b, account, parse_file(b, account, content, format, date_format, flip_signs, columns)?)
 }
 
 pub fn preview_compact(
@@ -243,8 +408,9 @@ pub fn preview_compact(
     format: &str,
     date_format: &str,
     flip_signs: bool,
+    columns: Option<&Columns>,
 ) -> Result<CompactReview, String> {
-    review_compact(b, account, parse_file(b, account, content, format, date_format, flip_signs)?)
+    review_compact(b, account, parse_file(b, account, content, format, date_format, flip_signs, columns)?)
 }
 
 fn parse_file(
@@ -254,6 +420,7 @@ fn parse_file(
     format: &str,
     date_format: &str,
     flip_signs: bool,
+    columns: Option<&Columns>,
 ) -> Result<Vec<BankTransaction>, String> {
     validate(b)?;
     if !b.accounts.iter().any(|a| a.id == account) {
@@ -263,120 +430,13 @@ fn parse_file(
         return Err("Import a file smaller than 20 MB.".into());
     }
     let mut raw = vec![];
+    // A statement whose content says what it is reads as that, whatever it was chosen as.
+    let format = crate::bank_statements::sniff(content).unwrap_or(format);
     match format {
-        "csv" => {
-            let first = content.lines().next().ok_or("Empty file")?;
-            let delimiter = if first.contains('\t') {
-                b'\t'
-            } else if first.matches(';').count() > first.matches(',').count() {
-                b';'
-            } else {
-                b','
-            };
-            let mut reader = csv::ReaderBuilder::new()
-                .delimiter(delimiter)
-                .trim(csv::Trim::All)
-                .from_reader(content.trim_start_matches('\u{feff}').as_bytes());
-            // Each header without case, spaces or punctuation ("Trans. Date" → "transdate"), and
-            // the currency it names in capitals at the end ("Amount (USD)" → "amount", USD).
-            let h: Vec<(String, Option<String>)> = reader
-                .headers()
-                .map_err(|e| e.to_string())?
-                .iter()
-                .map(|s| {
-                    let named = s.trim().strip_suffix(')').and_then(|s| s.rsplit_once('('));
-                    let (name, code) = match named {
-                        Some((name, c))
-                            if c.len() == 3 && c.bytes().all(|b| b.is_ascii_uppercase()) =>
-                        {
-                            (name, Some(c.to_string()))
-                        }
-                        _ => (s, None),
-                    };
-                    (
-                        name.to_lowercase()
-                            .replace([' ', '_', '-', '.', '(', ')'], ""),
-                        code,
-                    )
-                })
-                .collect();
-            let idx = |names: &[&str]| h.iter().position(|(s, _)| names.contains(&s.as_str()));
-            // A money column that names a currency is read only in the budget's.
-            let money_idx = |names: &[&str]| {
-                h.iter().position(|(s, code)| {
-                    names.contains(&s.as_str()) && code.as_ref().is_none_or(|c| *c == b.currency)
-                })
-            };
-            // A transaction date beats a posting date, wherever each column is.
-            let d = idx(&["date", "transactiondate", "posteddate", "transdate"])
-                .or(idx(&["postingdate", "postdate"]))
-                .ok_or(
-                    "CSV needs Date, Payee/Description, and Amount (or Outflow/Inflow) headers.",
-                )?;
-            let p = idx(&[
-                "payee",
-                "name",
-                "merchant",
-                "description",
-                "transactiondescription",
-            ]);
-            let memo = idx(&["memo", "notes"]);
-            let amounts = ["amount", "transactionamount"];
-            let (outflows, inflows) = (
-                ["outflow", "debit", "withdrawal"],
-                ["inflow", "credit", "deposit"],
-            );
-            let amt = money_idx(&amounts);
-            let out = money_idx(&outflows);
-            let input = money_idx(&inflows);
-            let fit = idx(&["fitid", "transactionid", "id"]);
-            if amt.is_none() && out.is_none() && input.is_none() {
-                let all: Vec<&str> = [amounts.as_slice(), &outflows, &inflows].concat();
-                if let Some(code) = h
-                    .iter()
-                    .find(|(s, _)| all.contains(&s.as_str()))
-                    .and_then(|(_, c)| c.as_ref())
-                {
-                    return Err(format!(
-                        "The file's amounts are in {code}, but this budget uses {}.",
-                        b.currency
-                    ));
-                }
-                return Err("CSV needs Amount or Outflow/Inflow columns.".into());
-            }
-            for result in reader.records() {
-                let r = result.map_err(|e| e.to_string())?;
-                let val = |i: Option<usize>| i.and_then(|i| r.get(i)).unwrap_or("");
-                let amount = if amt.is_some() {
-                    // Some card issuers write purchases as positive numbers in one Amount column.
-                    let n = money(val(amt), &b.currency)?;
-                    if flip_signs {
-                        -n
-                    } else {
-                        n
-                    }
-                } else {
-                    let n = |s: &str| {
-                        if s.is_empty() {
-                            Ok(0)
-                        } else {
-                            money(s, &b.currency)
-                        }
-                    };
-                    n(val(input))? - n(val(out))?
-                };
-                raw.push(BankTransaction {
-                    fit: val(fit).into(),
-                    date: date(r.get(d).unwrap_or(""), date_format)?,
-                    payee: val(p).into(),
-                    memo: val(memo).into(),
-                    amount,
-                });
-            }
-        }
+        "csv" => raw = bank_csv::read(b, account, content, date_format, flip_signs, columns)?,
         "ofx" | "qfx" => {
-            if let Some(currency) = tag(content, "CURDEF") {
-                if currency != b.currency {
+            if let Some(currency) = tag(content, "CURDEF").filter(|c| !c.is_empty()) {
+                if !currency.eq_ignore_ascii_case(&b.currency) {
                     return Err(format!(
                         "File currency {currency} differs from {}.",
                         b.currency
@@ -384,62 +444,122 @@ fn parse_file(
                 }
             }
             let upper = content.to_ascii_uppercase();
-            let starts: Vec<_> = upper.match_indices("<STMTTRN>").map(|(i, _)| i).collect();
+            let mut kinds = vec![];
+            // Earlier lines a correction deletes or replaces.
+            let mut corrected = HashSet::new();
+            // A file with several accounts' statements (a bank's every account in one download):
+            // the first one's transactions.
+            let end = upper.match_indices("<BANKTRANLIST>").nth(1).map_or(content.len(), |(i, _)| i);
+            let starts: Vec<_> = upper[..end].match_indices("<STMTTRN>").map(|(i, _)| i).collect();
             for (i, start) in starts.iter().enumerate() {
-                let block = &content[*start..starts.get(i + 1).copied().unwrap_or(content.len())];
-                let d = tag(block, "DTPOSTED").ok_or("Missing OFX posted date")?;
-                let rawdate = d.get(..8).ok_or("Invalid OFX date")?;
-                let date = NaiveDate::parse_from_str(rawdate, "%Y%m%d")
-                    .map_err(|_| "Invalid OFX posted date")?
-                    .format("%Y-%m-%d")
-                    .to_string();
-                raw.push(BankTransaction {
-                    fit: tag(block, "FITID").unwrap_or_default(),
-                    date,
-                    payee: tag(block, "NAME").unwrap_or_default(),
-                    memo: tag(block, "MEMO").unwrap_or_default(),
-                    amount: money(
-                        &tag(block, "TRNAMT").ok_or("Missing OFX amount")?,
-                        &b.currency,
-                    )?,
-                });
+                let next = starts.get(i + 1).copied().unwrap_or(end);
+                let close = upper[*start..next].find("</STMTTRN>").map_or(next, |j| start + j);
+                let block = &content[*start..close];
+                let action = tag(block, "CORRECTACTION").unwrap_or_default().to_ascii_uppercase();
+                if let Some(id) = tag(block, "CORRECTFITID").filter(|_| action == "DELETE" || action == "REPLACE") {
+                    corrected.insert(id);
+                }
+                if action == "DELETE" {
+                    continue;
+                }
+                let d = tag(block, "DTPOSTED").or_else(|| tag(block, "DTUSER")).ok_or("Missing OFX posted date")?;
+                // YYYYMMDD with a time after it, or now and then a date written another way.
+                let date = d.get(..8).and_then(|day| NaiveDate::parse_from_str(day, "%Y%m%d").ok())
+                    .map(|day| day.format("%Y-%m-%d").to_string())
+                    .map_or_else(|| date(&d, "ymd").map_err(|_| format!("Invalid OFX posted date ‘{d}’")), Ok)?;
+                let amount = money(&tag(block, "TRNAMT").ok_or("Missing OFX amount")?, &b.currency)?;
+                let (payee, memo) = (tag(block, "NAME").unwrap_or_default(), tag(block, "MEMO").unwrap_or_default());
+                if amount != 0 {
+                    let (payee, memo) = if payee.is_empty() { (memo, String::new()) } else { (payee, memo) };
+                    raw.push(BankTransaction { fit: tag(block, "FITID").unwrap_or_default(), date, payee, memo, amount });
+                    kinds.push(tag(block, "TRNTYPE").unwrap_or_default().to_ascii_uppercase());
+                }
+            }
+            let kept: Vec<bool> = raw.iter().map(|t| t.fit.is_empty() || !corrected.contains(&t.fit)).collect();
+            let mut keep = kept.iter();
+            raw.retain(|_| *keep.next().unwrap());
+            let mut keep = kept.iter();
+            kinds.retain(|_| *keep.next().unwrap());
+            // A bank that writes every amount as positive and says which way it went in the type.
+            const OUT: [&str; 9] = ["DEBIT", "PAYMENT", "CHECK", "FEE", "SRVCHG", "POS", "ATM", "DIRECTDEBIT", "CASH"];
+            if raw.iter().all(|t| t.amount > 0) && kinds.iter().any(|k| OUT.contains(&k.as_str())) {
+                for (t, k) in raw.iter_mut().zip(&kinds) {
+                    if OUT.contains(&k.as_str()) {
+                        t.amount = -t.amount;
+                    }
+                }
             }
         }
+        "camt053" => raw = crate::bank_statements::camt(content, &b.currency)?,
+        "mt940" => raw = crate::bank_statements::mt940(content, &b.currency)?,
         "qif" => {
-            let mut fields = HashMap::new();
+            let mut fields: HashMap<char, String> = HashMap::new();
+            let mut days = vec![];
+            // An account's own description (`!Account`) until its transactions' `!Type:` line, and
+            // lists that aren't transactions (categories, classes, memorized payees).
+            let (mut describing, mut other, mut unsupported) = (false, false, false);
+            let mut push = |fields: &mut HashMap<char, String>, days: &mut Vec<String>| -> Result<(), String> {
+                let get = |c| fields.get(&c).map(String::as_str).unwrap_or("");
+                // A record with nothing in it (a ^ straight after the header).
+                if ['D', 'T', 'U'].iter().all(|&c| get(c).is_empty()) {
+                    fields.clear();
+                    return Ok(());
+                }
+                // Newer Quicken writes the amount as U too, and some files only as U.
+                let amount = money(if get('T').is_empty() { get('U') } else { get('T') }, &b.currency)?;
+                if amount != 0 {
+                    days.push(get('D').to_string());
+                    let (payee, memo) = (get('P').to_string(), get('M').to_string());
+                    let (payee, memo) = if payee.is_empty() { (memo, String::new()) } else { (payee, memo) };
+                    raw.push(BankTransaction { fit: String::new(), date: String::new(), payee, memo, amount });
+                }
+                fields.clear();
+                Ok(())
+            };
             for line in content.lines().map(str::trim).filter(|s| !s.is_empty()) {
-                if line.starts_with('!') {
-                    if line.starts_with("!Type:")
-                        && !matches!(line, "!Type:Bank" | "!Type:CCard" | "!Type:Cash")
-                    {
-                        return Err(
-                            "Only bank, cash, and credit-card QIF files are supported.".into()
-                        );
+                if let Some(header) = line.strip_prefix('!') {
+                    let header = header.to_ascii_lowercase();
+                    if header == "account" {
+                        // A file with every account in it: the first one's transactions.
+                        if !days.is_empty() {
+                            fields.clear();
+                            break;
+                        }
+                        describing = true;
+                    } else if let Some(kind) = header.strip_prefix("type:") {
+                        describing = false;
+                        other = !matches!(kind.trim(), "bank" | "ccard" | "cash" | "oth a" | "oth l");
+                        unsupported |= other && matches!(kind.trim(), "invst" | "port");
                     }
                     continue;
                 }
                 if line == "^" {
-                    let get = |c| fields.get(&c).map(String::as_str).unwrap_or("");
-                    raw.push(BankTransaction {
-                        fit: String::new(),
-                        date: date(get('D'), date_format)?,
-                        payee: get('P').into(),
-                        memo: get('M').into(),
-                        amount: money(get('T'), &b.currency)?,
-                    });
-                    fields.clear();
-                } else {
+                    if describing || other {
+                        fields.clear();
+                    } else {
+                        push(&mut fields, &mut days)?;
+                    }
+                } else if !describing && !other {
                     let key = line.chars().next().unwrap();
-                    if ['D', 'P', 'M', 'T'].contains(&key) {
+                    if ['D', 'P', 'M', 'T', 'U'].contains(&key) {
                         fields.insert(key, line[1..].to_string());
                     }
                 }
             }
-            if !fields.is_empty() {
+            // A last record the file didn't close with ^.
+            if fields.contains_key(&'D') && (fields.contains_key(&'T') || fields.contains_key(&'U')) {
+                push(&mut fields, &mut days)?;
+            } else if !fields.is_empty() {
                 return Err("Incomplete QIF record (missing ^ terminator).".into());
             }
+            if days.is_empty() && unsupported {
+                return Err("Only bank, cash, credit-card and other asset or liability QIF files are supported.".into());
+            }
+            for (t, day) in raw.iter_mut().zip(dates(&days, date_format)?) {
+                t.date = day;
+            }
         }
-        _ => return Err("Choose CSV, OFX, QFX, or QIF.".into()),
+        _ => return Err("Choose CSV, OFX, QFX, QIF, CAMT.053 or MT940.".into()),
     }
     if raw.is_empty() || raw.len() > 10000 {
         return Err("Choose a file containing 1–10,000 transactions.".into());
@@ -478,10 +598,39 @@ struct Matches {
     days: HashMap<i64, BTreeMap<NaiveDate, Vec<String>>>,
     targets: HashMap<String, (usize, Option<usize>)>,
     previously_matched: HashSet<String>,
+    /// Transactions in other accounts a row could be the other side of (see `loose`), by the
+    /// amount such a row has and their day, and where each is.
+    transfers: HashMap<i64, BTreeMap<NaiveDate, Vec<String>>>,
+    transfer_targets: HashMap<String, usize>,
+}
+/// How many days apart banks book the two sides of money moved between your own accounts.
+const TRANSFER_DAYS: i64 = 5;
+/// How many of the nearest a row weighs, so a file of one repeated amount stays quick.
+const TRANSFER_CHOICES: usize = 20;
+/// Whether a transaction in another account could be the other side of a transfer with
+/// `account`: one part with no category yet (none, or the Uncategorized an import gives
+/// spending), as a bank file leaves money moved between your own accounts.
+fn loose(b: &Budget, t: &Transaction, account: &str) -> bool {
+    t.account_id != account
+        && t.transfer_account_id.is_none()
+        && !ledger::starting_balance(t)
+        && match t.splits.as_slice() {
+            [s] => ledger::transfer(s).is_none() && match s.category_id.as_deref() {
+                Some(id) => workflows::placeholder(b, id),
+                None => !ledger::explicitly_unassigned(t, s),
+            },
+            _ => false,
+        }
 }
 impl Matches {
     fn new(b: &Budget, account: &str) -> Self {
-        let mut out = Self { days: HashMap::new(), targets: HashMap::new(), previously_matched: HashSet::new() };
+        let mut out = Self {
+            days: HashMap::new(),
+            targets: HashMap::new(),
+            previously_matched: HashSet::new(),
+            transfers: HashMap::new(),
+            transfer_targets: HashMap::new(),
+        };
         let mut reserved: HashSet<String> = b.transactions.iter().map(|t| t.id.clone()).collect();
         for (i, t) in b.transactions.iter().enumerate() {
             let Ok(day) = NaiveDate::parse_from_str(&t.date, "%Y-%m-%d") else { continue };
@@ -513,9 +662,37 @@ impl Matches {
                     }
                     add(id, -part.amount, Some(j), matched);
                 }
+                if loose(b, t, account) {
+                    out.transfers.entry(-t.amount).or_default().entry(day).or_default().push(t.id.clone());
+                    out.transfer_targets.insert(t.id.clone(), i);
+                }
             }
         }
         out
+    }
+    /// The transactions elsewhere a row could be the other side of, nearest first, and how many
+    /// days apart.
+    fn transfers(&self, amount: i64, day: NaiveDate) -> Vec<(i64, &String)> {
+        let mut out = vec![];
+        let Some(days) = self.transfers.get(&amount) else { return out };
+        for apart in 0..=TRANSFER_DAYS {
+            let around = [day - chrono::Duration::days(apart), day + chrono::Duration::days(apart)];
+            for d in &around[..if apart == 0 { 1 } else { 2 }] {
+                for id in days.get(d).into_iter().flatten() {
+                    if out.len() == TRANSFER_CHOICES {
+                        return out;
+                    }
+                    out.push((apart, id));
+                }
+            }
+        }
+        out
+    }
+    /// Whether a transaction here that no bank row has been yet could be this row.
+    fn unmatched(&self, amount: i64, day: NaiveDate) -> bool {
+        self.days.get(&amount).into_iter()
+            .flat_map(|days| days.range(day - chrono::Duration::days(10)..=day + chrono::Duration::days(10)))
+            .any(|(_, ids)| ids.iter().any(|id| !self.previously_matched.contains(id)))
     }
     fn candidates(&self, amount: i64, day: NaiveDate) -> Vec<String> {
         let mut ids: Vec<String> = self.days.get(&amount).into_iter()
@@ -524,25 +701,151 @@ impl Matches {
         ids.sort();
         ids
     }
-    fn candidate_set(&self, b: &Budget, amount: i64, day: NaiveDate) -> CandidateSet {
-        let candidates = self.candidates(amount, day);
+    /// The row's choices: transactions here it could be, and the one elsewhere it was offered as
+    /// the other side of a transfer when none here could be it but an earlier bank row.
+    fn candidate_set(&self, b: &Budget, amount: i64, day: NaiveDate, transfer: Option<(&String, bool)>) -> CandidateSet {
+        let mut candidates = self.candidates(amount, day);
+        let transfer = transfer.filter(|_| candidates.iter().all(|c| self.previously_matched.contains(c)));
+        let transfer_candidates: Vec<String> = transfer.map(|(id, _)| id.clone()).into_iter().collect();
+        candidates.extend(transfer_candidates.iter().cloned());
         let previously_matched_candidates = candidates.iter()
             .filter(|id| self.previously_matched.contains(*id)).cloned().collect();
         let candidate_details = candidates.iter().filter_map(|id| {
             let &(i, split) = self.targets.get(id)?;
             Some(Candidate { id: id.clone(), transaction_id: b.transactions[i].id.clone(), split_index: split? })
         }).collect();
-        CandidateSet { candidates, previously_matched_candidates, candidate_details }
+        CandidateSet { candidates, previously_matched_candidates, candidate_details, transfer_candidates, transfer_sure: transfer.is_some_and(|(_, sure)| sure) }
     }
+}
+/// Words too common in account names and bank text to say which account is meant.
+const COMMON: &[&str] = &[
+    "account", "accounts", "konto", "girokonto", "bank", "the", "and", "for", "from", "my", "card", "credit", "debit",
+    "payment", "transfer", "online", "pay", "current", "checking",
+];
+/// Bank text's words, without case or accents.
+fn words(s: &str) -> Vec<String> {
+    s.split(|c: char| !c.is_alphanumeric()).filter(|w| !w.is_empty()).map(bank_csv::plain).collect()
+}
+/// Bank text without its numbers (references, dates, card digits), to compare one with another.
+fn wording(s: &str) -> String {
+    words(s).into_iter().filter(|w| !w.chars().all(|c| c.is_ascii_digit())).collect::<Vec<_>>().join(" ")
+}
+/// What bank text says about where money went.
+struct Clues {
+    /// Each account's name, as the words that pick it out ("REVOLUT**1234" names Revolut, but
+    /// "shopping" doesn't name ING).
+    names: Vec<(String, Vec<String>)>,
+    /// The wording each account's side of a transfer had, and the accounts it went to or came from.
+    seen: HashMap<(String, String), HashSet<String>>,
+}
+impl Clues {
+    fn new(b: &Budget) -> Self {
+        let names = b.accounts.iter().map(|a| {
+            let words = words(&a.name).into_iter()
+                .filter(|w| w.chars().count() >= 3 && !COMMON.contains(&w.as_str()) && !w.chars().all(|c| c.is_ascii_digit()));
+            (a.id.clone(), words.collect())
+        }).collect();
+        let mut seen: HashMap<(String, String), HashSet<String>> = HashMap::new();
+        for t in &b.transactions {
+            let Some(other) = &t.transfer_account_id else { continue };
+            let here = t.extra.get("importedPayee").and_then(Value::as_str).unwrap_or(&t.payee);
+            let there = t.extra.get("transferImportedPayee").and_then(Value::as_str).unwrap_or("");
+            for (account, text, to) in [(&t.account_id, here, other), (other, there, &t.account_id)] {
+                let w = wording(text);
+                if !w.is_empty() {
+                    seen.entry((account.clone(), w)).or_default().insert(to.clone());
+                }
+            }
+        }
+        Self { names, seen }
+    }
+    /// What one side's bank text (payee and memo) says: the accounts it names, and its payee's
+    /// wording.
+    fn read(&self, payee: &str, memo: &str) -> Said {
+        let words: HashSet<String> = words(payee).into_iter().chain(words(memo)).collect();
+        let named = self.names.iter().filter(|(_, name)| name.iter().any(|w| words.contains(w))).map(|(id, _)| id.clone()).collect();
+        Said { named, wording: wording(payee) }
+    }
+    /// How much a row in account `b` and a transaction in account `a` look like the two sides of
+    /// one move: None when either text names another of your accounts and not this one, else one
+    /// point for each text that names the other's account and each that had this wording in an
+    /// earlier transfer between them.
+    fn fit(&self, b: &str, row: &Said, a: &str, theirs: &Said) -> Option<u8> {
+        let elsewhere = |said: &Said, own: &str, wanted: &str| !said.named.contains(wanted) && said.named.iter().any(|n| n != own);
+        if elsewhere(row, b, a) || elsewhere(theirs, a, b) {
+            return None;
+        }
+        let seen = |account: &str, said: &Said, to: &str| self.seen.get(&(account.to_owned(), said.wording.clone())).is_some_and(|s| s.contains(to));
+        Some([row.named.contains(a), theirs.named.contains(b), seen(b, row, a), seen(a, theirs, b)].into_iter().filter(|&x| x).count() as u8)
+    }
+}
+struct Said {
+    named: HashSet<String>,
+    wording: String,
+}
+/// How many times the same two wordings, between the same two accounts, have to pair up in one
+/// file for the pattern to count as the bank text agreeing: a transfer that recurs (a weekly
+/// top-up) is written the same way each time on both sides, a coincidence seldom so.
+const RECURRING: usize = 5;
+/// Which transaction elsewhere each row is offered as the other side of a transfer, and whether
+/// the bank text agrees, which makes it clear enough to choose; amount and date alone only
+/// suggest it, since a card payment of a round sum can mirror a transfer. Offers where the text
+/// agrees go first, then the nearest in days, then where it agrees more; no two rows are offered
+/// the same one, and none where either text names another of your accounts. Rows that could be a
+/// transaction already in this account (other than one an earlier bank row already is), or may
+/// already be imported, aren't offered one.
+fn transfer_offers<'a>(b: &Budget, account: &str, matches: &'a Matches, rows: &[(Row, NaiveDate)]) -> Vec<Option<(&'a String, bool)>> {
+    let clues = Clues::new(b);
+    let mut said: HashMap<&String, Said> = HashMap::new();
+    // Whether the text doesn't agree, days apart, how little it agrees, row, transaction.
+    let mut pairs: Vec<(bool, i64, u8, usize, &String)> = vec![];
+    // Each pairing's two wordings and the other account, and the rows each such trio pairs.
+    let mut wordings: HashMap<(usize, &String), (String, String, &str)> = HashMap::new();
+    let mut recurring: HashMap<(String, String, &str), HashSet<usize>> = HashMap::new();
+    for (i, (r, day)) in rows.iter().enumerate() {
+        if r.duplicate || r.possible_duplicate || matches.unmatched(r.amount, *day) {
+            continue;
+        }
+        let row = clues.read(&r.payee, &r.memo);
+        for (apart, id) in matches.transfers(r.amount, *day) {
+            let t = &b.transactions[matches.transfer_targets[id]];
+            let theirs = said.entry(id).or_insert_with(|| {
+                clues.read(t.extra.get("importedPayee").and_then(Value::as_str).unwrap_or(&t.payee), &t.memo)
+            });
+            let Some(agrees) = clues.fit(account, &row, &t.account_id, theirs) else { continue };
+            if agrees == 0 && !row.wording.is_empty() && !theirs.wording.is_empty() {
+                let trio = (row.wording.clone(), theirs.wording.clone(), t.account_id.as_str());
+                recurring.entry(trio.clone()).or_default().insert(i);
+                wordings.insert((i, id), trio);
+            }
+            pairs.push((agrees == 0, apart, 4 - agrees, i, id));
+        }
+    }
+    for p in pairs.iter_mut().filter(|p| p.0) {
+        if wordings.get(&(p.3, p.4)).is_some_and(|trio| recurring[trio].len() >= RECURRING) {
+            p.0 = false;
+        }
+    }
+    pairs.sort();
+    let mut offers = vec![None; rows.len()];
+    let mut taken = HashSet::new();
+    for (unsure, _, _, i, id) in pairs {
+        if offers[i].is_none() && taken.insert(id) {
+            offers[i] = Some((id, !unsure));
+        }
+    }
+    offers
 }
 
 pub fn review(b: &Budget, account: &str, raw: Vec<BankTransaction>) -> Result<Vec<Row>, String> {
     let mut rows = Vec::with_capacity(raw.len());
-    review_each(b, account, raw, |mut row, matches, day| {
-        let choices = matches.candidate_set(b, row.amount, day);
+    review_each(b, account, raw, |mut row, matches, day, transfer| {
+        let choices = matches.candidate_set(b, row.amount, day, transfer);
         row.candidates = choices.candidates;
         row.previously_matched_candidates = choices.previously_matched_candidates;
         row.candidate_details = choices.candidate_details;
+        row.transfer_candidates = choices.transfer_candidates;
+        row.transfer_sure = choices.transfer_sure;
         rows.push(row);
     })?;
     Ok(rows)
@@ -552,9 +855,9 @@ pub fn review_compact(b: &Budget, account: &str, raw: Vec<BankTransaction>) -> R
     let mut review = CompactReview { items: Vec::with_capacity(raw.len()), candidate_sets: vec![] };
     let mut windows = HashMap::new();
     let mut buckets: HashMap<u64, Vec<usize>> = HashMap::new();
-    review_each(b, account, raw, |row, matches, day| {
-        let candidate_set = *windows.entry((row.amount, day)).or_insert_with(|| {
-            let choices = matches.candidate_set(b, row.amount, day);
+    review_each(b, account, raw, |row, matches, day, transfer| {
+        let candidate_set = *windows.entry((row.amount, day, transfer.map(|(id, sure)| (id.clone(), sure)))).or_insert_with(|| {
+            let choices = matches.candidate_set(b, row.amount, day, transfer);
             let mut hash = DefaultHasher::new();
             choices.hash(&mut hash);
             let bucket = buckets.entry(hash.finish()).or_default();
@@ -578,7 +881,7 @@ fn review_each(
     b: &Budget,
     account: &str,
     raw: Vec<BankTransaction>,
-    mut emit: impl FnMut(Row, &Matches, NaiveDate),
+    mut emit: impl FnMut(Row, &Matches, NaiveDate, Option<(&String, bool)>),
 ) -> Result<(), String> {
     // File previews and bank-sync snapshots share this boundary. Validate before the
     // match index negates transfer amounts or applies its ten-day date window.
@@ -601,7 +904,9 @@ fn review_each(
         .collect();
     let matches = Matches::new(b, account);
     let mut occurrences = HashMap::new();
+    let mut fits: HashMap<String, usize> = HashMap::new();
     let mut legacy_occurrences = HashMap::new();
+    let mut rows = Vec::with_capacity(raw.len());
     for BankTransaction { fit, date, payee, memo, amount } in raw {
         let idless = fit.is_empty();
         let legacy = if idless {
@@ -620,7 +925,11 @@ fn review_each(
             *n += 1;
             format!("idless:v2:{key}:{n}")
         } else {
-            format!("fit:{fit}")
+            // A bank that gives two transactions in one file the same ID: the second keeps its
+            // place in the file too, so neither is taken for the other.
+            let n = fits.entry(fit.clone()).or_insert(0);
+            *n += 1;
+            if *n == 1 { format!("fit:{fit}") } else { format!("fit:{fit}:{n}") }
         };
         let id = bank_id(account, &signature);
         let duplicate = imported.contains(id.as_str());
@@ -637,6 +946,8 @@ fn review_each(
             candidates: vec![],
             previously_matched_candidates: vec![],
             candidate_details: vec![],
+            transfer_candidates: vec![],
+            transfer_sure: false,
             idless,
             possible_duplicate,
             group_id,
@@ -648,7 +959,11 @@ fn review_each(
         let t = new_transaction(b, account, &row);
         row.rename = Some(t.payee).filter(|p| *p != row.payee);
         row.category_id = t.splits[0].category_id.clone();
-        emit(row, &matches, d);
+        rows.push((row, d));
+    }
+    let offers = transfer_offers(b, account, &matches, &rows);
+    for ((row, d), transfer) in rows.into_iter().zip(offers) {
+        emit(row, &matches, d, transfer);
     }
     Ok(())
 }
@@ -725,19 +1040,25 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
             if !used.insert(id.clone()) {
                 return Err("Two imported rows cannot match the same local transaction. Review the selections.".into());
             }
-            let &(index, split) = matches.targets.get(id)
-                .ok_or("Matching transaction changed or was already matched. Preview again.")?;
+            let (index, split) = match (matches.targets.get(id), matches.transfer_targets.get(id)) {
+                (Some(&target), _) => target,
+                (None, Some(&index)) => (index, None),
+                _ => return Err("Matching transaction changed or was already matched. Preview again.".into()),
+            };
             // A default match from an older preview must not silently consume another
             // payment that was imported meanwhile. Refreshed previews allow explicit matches.
             if matches.previously_matched.contains(id) && !r.previously_matched_candidates.contains(id) {
                 return Err("Matching transaction was imported since this preview. Preview again.".into());
             }
+            let on_budget = |id: &str| b.accounts.iter().any(|a| a.id == id && a.on_budget());
+            let same_side = on_budget(&b.transactions[index].account_id) == on_budget(account);
             let t = &mut b.transactions[index];
             let date_a =
                 NaiveDate::parse_from_str(&t.date, "%Y-%m-%d").map_err(|_| "Invalid date")?;
             let date_b =
                 NaiveDate::parse_from_str(&r.date, "%Y-%m-%d").map_err(|_| "Invalid date")?;
-            if (date_a - date_b).num_days().abs() > 10 {
+            let apart = (date_a - date_b).num_days().abs();
+            if apart > 10 {
                 return Err("Matching transaction is more than ten days apart.".into());
             }
             if let Some(split) = split {
@@ -757,6 +1078,23 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
             } else if t.transfer_account_id.as_deref() == Some(account) && -t.amount == r.amount {
                 if t.transfer_status != Some(Cleared::Reconciled) {
                     t.transfer_status = Some(Cleared::Cleared)
+                }
+            } else if matches.transfer_targets.contains_key(id) && -t.amount == r.amount && apart <= TRANSFER_DAYS {
+                // Its other side, from money moved between your own accounts: they become one
+                // transfer, so the move isn't counted as spending or income. Between budget
+                // accounts it needs no category; across the budget's edge it keeps its own.
+                t.transfer_account_id = Some(account.into());
+                t.transfer_status = Some(Cleared::Cleared);
+                t.payee.clear();
+                if same_side {
+                    t.splits.clear();
+                }
+                if !r.memo.is_empty() {
+                    t.extra.insert("transferSource".into(), json!({"memo": r.memo}));
+                }
+                // This side's bank text, which tells the next transfer between them apart.
+                if !r.payee.trim().is_empty() {
+                    t.extra.insert("transferImportedPayee".into(), json!(r.payee));
                 }
             } else {
                 return Err("Matching account or amount changed. Preview again.".into());
@@ -1054,7 +1392,7 @@ mod tests {
             transaction
         }).collect();
         let content = format!("Date,Payee,Amount,Id\n{}", (0..1000).map(|i| format!("2026-10-15,Shop,-50.00,receipt-{i}\n")).collect::<String>());
-        let compact = preview_compact(&b, "card", &content, "csv", "ymd", false).unwrap();
+        let compact = preview_compact(&b, "card", &content, "csv", "ymd", false, None).unwrap();
         assert_eq!(compact.items.len(), 1000);
         assert_eq!(compact.candidate_sets.len(), 1);
         assert_eq!(compact.candidate_sets[0].candidates.len(), 10_000);
@@ -1249,6 +1587,76 @@ mod tests {
         assert_eq!(r[0].date, "2026-10-15");
         assert!(money("1.001", "SAR").is_err());
     }
+    #[test]
+    fn reads_month_names_in_banks_languages_and_spreadsheet_day_numbers() {
+        for (s, want) in [
+            ("15. Okt. 2026", "2026-10-15"),
+            ("15-ene-2026", "2026-01-15"),
+            ("2026 oct. 15", "2026-10-15"),
+            ("Wed, 15 October 2026", "2026-10-15"),
+            ("15 juin 2026", "2026-06-15"),
+            ("15 juil. 2026", "2026-07-15"),
+            ("15 août 2026", "2026-08-15"),
+            ("15 März 2026", "2026-03-15"),
+            ("15 października 2026", "2026-10-15"),
+            ("15-dic-26", "2026-12-15"),
+            ("15 Oct 2026 10:00", "2026-10-15"),
+            ("46310", "2026-10-15"),
+        ] {
+            assert_eq!(date(s, "dmy").as_deref(), Ok(want), "{s}");
+        }
+        // Words that aren't a month, or a month among other words, aren't a date.
+        for s in ["Rewe 12 2026", "Sept 2026 Rent 1", "SEP12345 01 2026", "Oct", "12345", "Description 1", "Desc 2", "Augusta 12 2026"] {
+            assert!(date(s, "dmy").is_err(), "{s}");
+        }
+        // Without a year, as FNB writes them in quotes: a day in the past eleven months is that day,
+        // and one over a month ahead was last year's.
+        let today = Utc::now().date_naive();
+        for ahead in [-330, -200, -1, 0, 40] {
+            let day = today + chrono::Duration::days(ahead);
+            if (day.month(), day.day()) == (2, 29) {
+                continue;
+            }
+            let want = if ahead > 31 { day.with_year(day.year() - 1).unwrap() } else { day };
+            let read = date(&format!("'{} {}'", day.format("%d"), day.format("%b")), "dmy").unwrap();
+            assert_eq!(read, want.format("%Y-%m-%d").to_string(), "{ahead}");
+        }
+    }
+    #[test]
+    fn reads_ofx_and_qif_the_way_banks_and_quicken_write_them() {
+        let b = sample();
+        let read = |content: &str, format: &str| -> Vec<(String, String, String, i64)> {
+            preview(&b, "cash", content, format, "mdy", false).unwrap().into_iter().map(|r| (r.date, r.payee, r.memo, r.amount)).collect()
+        };
+        let row = |d: &str, p: &str, m: &str, a: i64| (d.to_string(), p.to_string(), m.to_string(), a);
+        // Two accounts in one download: the first one's. A zero line is passed over, a payee
+        // only in the memo is the payee, and two lines with one FITID are both kept.
+        let ofx = "OFXHEADER:100\nDATA:OFXSGML\n<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><CURDEF>sar<BANKTRANLIST>\n\
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261014120000.000[-5:EST]<TRNAMT>-4.50<FITID>1<NAME>Cafe</STMTTRN>\n\
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261014<TRNAMT>-4.50<FITID>1<NAME>Cafe</STMTTRN>\n\
+<STMTTRN><TRNTYPE>OTHER<DTPOSTED>20261015<TRNAMT>0.00<FITID>2<NAME>Card check</STMTTRN>\n\
+<STMTTRN><TRNTYPE>CREDIT<DTPOSTED>20261016<TRNAMT>100.00<FITID>3<NAME><MEMO>Refund 12</STMTTRN>\n\
+</BANKTRANLIST></STMTRS></STMTTRNRS><STMTTRNRS><STMTRS><CURDEF>SAR<BANKTRANLIST>\n\
+<STMTTRN><TRNTYPE>DEBIT<DTPOSTED>20261017<TRNAMT>-9.00<FITID>4<NAME>Savings</STMTTRN>\n</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>";
+        assert_eq!(read(ofx, "ofx"), [
+            row("2026-10-14", "Cafe", "", -450), row("2026-10-14", "Cafe", "", -450), row("2026-10-16", "Refund 12", "", 10000),
+        ]);
+        let ids: HashSet<_> = preview(&b, "cash", ofx, "ofx", "ymd", false).unwrap().into_iter().map(|r| r.id).collect();
+        assert_eq!(ids.len(), 3);
+        // A bank that writes every amount as positive: the type says which way it went.
+        let positive = "<OFX><STMTTRN><TRNTYPE>POS<DTPOSTED>20261014<TRNAMT>4.50<FITID>a<NAME>Cafe</STMTTRN>\
+<STMTTRN><TRNTYPE>DIRECTDEP<DTPOSTED>20261015<TRNAMT>900.00<FITID>b<NAME>Payroll</STMTTRN></OFX>";
+        assert_eq!(read(positive, "qif"), [row("2026-10-14", "Cafe", "", -450), row("2026-10-15", "Payroll", "", 90000)]);
+        // Quicken's every-account export: account list, categories, then each account's own.
+        let qif = "!Option:AutoSwitch\n!Account\nNChecking\nTBank\n^\nNSavings\nTBank\n^\n!Clear:AutoSwitch\n\
+!Type:Cat\nNGroceries\nE\n^\n!Account\nNChecking\nTBank\n^\n!type:bank \nD10/14'26\nU-1,234.50\nT-1,234.50\nPRent\nLHousing\nC*\n^\n\
+D10/15'26\nT12.00\nMInterest\n^\n!Account\nNSavings\nTBank\n^\n!Type:Bank\nD10/16'26\nT-5.00\nPOther account\n^\n";
+        assert_eq!(read(qif, "qif"), [row("2026-10-14", "Rent", "", -123450), row("2026-10-15", "Interest", "", 1200)]);
+        // The last record without its ^, and an amount only as U.
+        assert_eq!(read("!Type:CCard\nD10/14/2026\nU-3.00\nPShop", "qif"), [row("2026-10-14", "Shop", "", -300)]);
+        let investments = preview(&b, "cash", "!Type:Invst\nD10/14/2026\nNBuy\nT-3.00\n^", "qif", "mdy", false);
+        assert!(investments.err().unwrap().contains("Only bank"));
+    }
 
     #[test]
     fn reads_decimal_commas_and_refuses_amounts_it_cannot_tell_apart() {
@@ -1314,7 +1722,9 @@ mod tests {
         // A written code has to be the budget's own currency.
         let wrong = money("12.34 EUR", "USD").unwrap_err();
         assert!(wrong.contains("EUR") && wrong.contains("USD"), "{wrong}");
-        assert!(money("12.34 DR", "USD").is_err());
+        assert!(money("12.34 XY", "USD").is_err());
+        // Debit and credit written after the amount.
+        assert_eq!((money("12.34 DR", "USD"), money("$12.34CR", "USD"), money("-1,234.56 Cr", "USD")), (Ok(-1234), Ok(1234), Ok(123456)));
         let mut b = sample();
         b.currency = "USD".into();
         let r = preview(
@@ -1355,9 +1765,10 @@ mod tests {
             read("Trans. Date,Post Date,Description,Amount\n10/14/2026,10/15/2026,Shop,-50.00"),
             shop()
         );
-        // Apple Card's layout, with the amount column named for its currency.
+        // Apple Card's layout: the merchant's name rather than the description with its address,
+        // and the amount column named for its currency.
         assert_eq!(
-            read("Transaction Date,Clearing Date,Description,Merchant,Category,Type,Amount (USD),Purchased By\n10/14/2026,10/15/2026,Shop,Shop Inc,Other,Purchase,-50.00,Me"),
+            read("Transaction Date,Clearing Date,Description,Merchant,Category,Type,Amount (USD),Purchased By\n10/14/2026,10/15/2026,SHOP 12 MAIN ST SEATTLE WA,Shop,Other,Purchase,-50.00,Me"),
             shop()
         );
         // The column in the budget's currency is the one read.
@@ -1396,5 +1807,142 @@ mod tests {
         )
         .unwrap();
         assert_eq!(r[0].amount, -5000);
+    }
+
+    fn accounts() -> Budget {
+        let mut b = sample();
+        for (id, kind) in [("revolut", AccountKind::Cash), ("pension", AccountKind::Tracking)] {
+            b.accounts.push(Account {
+                extra: Default::default(),
+                id: id.into(),
+                name: id.into(),
+                kind,
+                opening_balance: 0,
+                archived: false,
+            });
+        }
+        b
+    }
+    fn import(b: Budget, account: &str, csv: &str) -> (Budget, Vec<Row>) {
+        let rows = preview(&b, account, csv, "csv", "ymd", false).unwrap();
+        let choices = rows.iter().map(|r| {
+            let only = (r.candidates.len() == 1).then(|| r.candidates[0].clone());
+            Choice { row: r.clone(), action: if only.is_some() { "match" } else { "new" }.into(), match_id: only }
+        }).collect();
+        (apply(b, account, choices).unwrap(), rows)
+    }
+    #[test]
+    fn the_other_side_of_money_moved_between_accounts_becomes_one_transfer() {
+        let main = "Date,Payee,Amount\n2026-10-01,REVOLUT**1234,-200.00\n2026-10-02,Grocer,-50.00\n2026-10-03,Salary,3000.00";
+        let (b, _) = import(accounts(), "cash", main);
+        assert_eq!(b.transactions.len(), 3);
+        let topup = b.transactions.iter().find(|t| t.payee == "REVOLUT**1234").unwrap().id.clone();
+        // A day later in the other bank, and the same amount on a day too far away.
+        let revolut = "Date,Description,Amount\n2026-10-02,Top-Up by *1234,200.00\n2026-10-20,Refund,50.00";
+        let rows = preview(&b, "revolut", revolut, "csv", "ymd", false).unwrap();
+        assert_eq!((rows[0].candidates.clone(), rows[0].transfer_candidates.clone()), (vec![topup.clone()], vec![topup.clone()]));
+        assert!(rows[1].candidates.is_empty() && rows[1].transfer_candidates.is_empty());
+        let (b, _) = import(b, "revolut", revolut);
+        assert_eq!(b.transactions.len(), 4, "the top-up isn't added twice");
+        let t = b.transactions.iter().find(|t| t.id == topup).unwrap();
+        assert_eq!((t.account_id.as_str(), t.transfer_account_id.as_deref()), ("cash", Some("revolut")));
+        assert_eq!((t.payee.as_str(), t.splits.len(), t.transfer_status), ("", 0, Some(Cleared::Cleared)));
+        assert_eq!(t.extra["bankImportMatches"].as_object().unwrap().len(), 2);
+        assert_eq!(t.extra["importedPayee"], "REVOLUT**1234");
+        let balances = crate::engine::calculate(&b, "2026-10").unwrap();
+        let balance = |id: &str| balances.accounts.iter().find(|a| a.id == id).unwrap().balance;
+        assert_eq!((balance("cash"), balance("revolut")), (100_000 - 20_000 - 5_000 + 300_000, 20_000 + 5_000));
+        // Both files are known now, on both sides.
+        assert!(preview(&b, "revolut", revolut, "csv", "ymd", false).unwrap().iter().all(|r| r.duplicate));
+        assert!(preview(&b, "cash", main, "csv", "ymd", false).unwrap().iter().all(|r| r.duplicate));
+    }
+    #[test]
+    fn each_side_is_offered_once_to_the_nearest_row_and_never_over_a_match_here_or_a_category() {
+        let main = "Date,Payee,Amount\n2026-10-01,To Revolut,-100.00\n2026-10-08,To Revolut,-100.00\n2026-10-05,Shop,-30.00";
+        let (mut b, _) = import(accounts(), "cash", main);
+        // Spending someone categorized, and income they assigned, aren't loose.
+        let shop = b.transactions.iter_mut().find(|t| t.payee == "Shop").unwrap();
+        shop.splits[0].category_id = Some("food".into());
+        let mut gift = purchase();
+        (gift.id, gift.account_id, gift.amount, gift.date) = ("gift".into(), "cash".into(), 4_000, "2026-10-05".into());
+        gift.splits = vec![Split { category_id: None, amount: 4_000, extra: json!({"unassigned": true}).as_object().unwrap().clone().into() }];
+        b.transactions.push(gift);
+        // A transaction already in this account wins over one elsewhere.
+        let mut here = purchase();
+        (here.id, here.account_id, here.amount, here.date) = ("here".into(), "revolut".into(), 10_000, "2026-10-16".into());
+        here.splits[0].amount = 10_000;
+        here.splits[0].category_id = None;
+        let revolut = "Date,Description,Amount\n2026-10-07,Top-up,100.00\n2026-10-02,Top-up,100.00\n2026-10-05,Card,30.00\n2026-10-05,Back,-40.00";
+        let rows = preview(&b, "revolut", revolut, "csv", "ymd", false).unwrap();
+        let offered = |r: &Row| b.transactions.iter().find(|t| r.transfer_candidates.first() == Some(&t.id)).map(|t| t.date.clone());
+        assert_eq!(rows.iter().map(offered).collect::<Vec<_>>(), [Some("2026-10-08".into()), Some("2026-10-01".into()), None, None]);
+        b.transactions.push(here);
+        let rows = preview(&b, "revolut", revolut, "csv", "ymd", false).unwrap();
+        assert_eq!((rows[0].candidates.clone(), rows[0].transfer_candidates.len()), (vec!["here".to_string()], 0));
+        assert_eq!(rows[1].transfer_candidates.len(), 1);
+        // The compact review a phone reads carries the same offers.
+        let compact = preview_compact(&b, "revolut", revolut, "csv", "ymd", false, None).unwrap();
+        let sets: Vec<_> = compact.items.iter().map(|i| &compact.candidate_sets[i.candidate_set].transfer_candidates).collect();
+        assert_eq!(sets.iter().map(|s| s.len()).collect::<Vec<_>>(), [0, 1, 0, 0]);
+        // A stale choice can't make a transfer of something no longer loose, or too far away.
+        let mut far = rows[1].clone();
+        far.date = "2026-10-09".into();
+        let id = rows[1].transfer_candidates[0].clone();
+        let error = apply(b.clone(), "revolut", vec![Choice { row: far, action: "match".into(), match_id: Some(id) }]).err().unwrap();
+        assert!(error.contains("Preview again"), "{error}");
+    }
+    #[test]
+    fn a_transfer_across_the_budgets_edge_keeps_its_category() {
+        let (b, _) = import(accounts(), "cash", "Date,Payee,Amount\n2026-10-01,Pension fund,-500.00");
+        let (b, _) = import(b, "pension", "Date,Payee,Amount\n2026-10-03,Contribution,500.00");
+        assert_eq!(b.transactions.len(), 1);
+        let t = &b.transactions[0];
+        assert_eq!((t.transfer_account_id.as_deref(), t.splits.len()), (Some("pension"), 1));
+        assert!(t.splits[0].category_id.as_deref().is_some_and(|c| crate::workflows::placeholder(&b, c)), "still needs a category");
+    }
+    #[test]
+    fn bank_text_decides_which_side_is_chosen_and_which_is_only_suggested() {
+        let mut b = accounts();
+        b.accounts.push(Account { extra: Default::default(), id: "joint".into(), name: "Joint account".into(), kind: AccountKind::Cash, opening_balance: 0, archived: false });
+        let main = "Date,Payee,Amount\n2026-10-01,Grocer,-100.00\n2026-10-01,Top-up REVOLUT**1234,-100.00\n2026-10-01,To Joint,-50.00\n2026-10-08,A. Example,-70.00";
+        let (b, _) = import(b, "cash", main);
+        let id = |b: &Budget, payee: &str| b.transactions.iter().find(|t| t.payee == payee).unwrap().id.clone();
+        let revolut = "Date,Description,Amount\n2026-10-02,Top-up,100.00\n2026-10-01,Payment received,50.00\n2026-10-09,Payment from A. Example,70.00";
+        let rows = preview(&b, "revolut", revolut, "csv", "ymd", false).unwrap();
+        // The side whose text names Revolut wins over the grocer's, and is chosen.
+        assert_eq!((rows[0].transfer_candidates.clone(), rows[0].transfer_sure), (vec![id(&b, "Top-up REVOLUT**1234")], true));
+        // Money sent "To Joint" isn't the other side of a Revolut payment, whatever the amount.
+        assert!(rows[1].transfer_candidates.is_empty());
+        // Amount and date alone only suggest it.
+        assert_eq!((rows[2].transfer_candidates.clone(), rows[2].transfer_sure), (vec![id(&b, "A. Example")], false));
+        let (b, _) = import(b, "revolut", revolut);
+        // Once they've been paired, the same wording between the same accounts is chosen next time.
+        let (b, _) = import(b, "cash", "Date,Payee,Amount\n2026-11-08,A. Example,-80.00");
+        let rows = preview(&b, "revolut", "Date,Description,Amount\n2026-11-09,Payment from A. Example,80.00", "csv", "ymd", false).unwrap();
+        assert_eq!((rows[0].transfer_candidates.len(), rows[0].transfer_sure), (1, true));
+    }
+    #[test]
+    fn an_earlier_bank_row_of_the_same_amount_does_not_hide_a_transfer() {
+        let (b, _) = import(accounts(), "revolut", "Date,Description,Amount,ID\n2026-10-01,Weekly top-up,100.00,a1");
+        let (b, _) = import(b, "cash", "Date,Payee,Amount\n2026-10-07,Revolut,-100.00");
+        let rows = preview(&b, "revolut", "Date,Description,Amount,ID\n2026-10-08,Weekly top-up,100.00,a2", "csv", "ymd", false).unwrap();
+        // Last week's top-up, already a bank row, is still listed, so the row needs a choice; the transfer is there to choose.
+        assert_eq!(rows[0].candidates.len(), 2);
+        assert_eq!((rows[0].previously_matched_candidates.len(), rows[0].transfer_candidates.len()), (1, 1));
+    }
+    #[test]
+    fn a_transfer_written_the_same_way_week_after_week_is_chosen() {
+        let weeks = |n: usize, payee: &str, sign: &str, from: u32| {
+            let mut csv = String::from("Date,Payee,Amount\n");
+            for w in 0..n {
+                csv.push_str(&format!("2026-09-{:02},{payee},{sign}50.00\n", from + 7 * w as u32));
+            }
+            csv
+        };
+        for (n, sure) in [(RECURRING, true), (RECURRING - 1, false)] {
+            let (b, _) = import(accounts(), "cash", &weeks(n, "Weekly saving", "-", 1));
+            let rows = preview(&b, "revolut", &weeks(n, "From A. Example", "", 2), "csv", "ymd", false).unwrap();
+            assert!(rows.iter().all(|r| r.transfer_candidates.len() == 1 && r.transfer_sure == sure), "{n} weeks");
+        }
     }
 }

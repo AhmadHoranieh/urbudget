@@ -201,6 +201,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "chardetng"
+version = "0.1.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14b8f0b65b7b08ae3c8187e8d77174de20cb6777864c6b832d8ad365999cf1ea"
+dependencies = [
+ "cfg-if",
+ "encoding_rs",
+ "memchr",
+]
+
+[[package]]
 name = "chrono"
 version = "0.4.45"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1763,8 +1774,11 @@ name = "urbudget-core"
 version = "1.0.8"
 dependencies = [
  "base64 0.22.1",
+ "calamine",
+ "chardetng",
  "chrono",
  "csv",
+ "encoding_rs",
  "flate2",
  "rusqlite",
  "serde",

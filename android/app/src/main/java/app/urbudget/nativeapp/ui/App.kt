@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.urbudget.nativeapp.AssistantController
 import app.urbudget.nativeapp.BudgetViewModel
 import app.urbudget.nativeapp.NativePreferences
 import app.urbudget.nativeapp.BudgetUiState
@@ -96,6 +97,7 @@ private fun BudgetContent(vm: BudgetViewModel, state: BudgetUiState) {
     var returnTab by rememberSaveable { mutableStateOf(-1) }
     var drawer by remember { mutableStateOf(false) }
     var assistant by rememberSaveable { mutableStateOf(false) }
+    val assistantController: AssistantController = viewModel()
     var editor by remember { mutableStateOf<String?>(null) }
     var selected by remember { mutableStateOf<JSONObject?>(null) }
     var accountFilter by rememberSaveable { mutableStateOf("") }
@@ -289,7 +291,8 @@ private fun BudgetContent(vm: BudgetViewModel, state: BudgetUiState) {
         "loan" -> LoanDialog(selected, budget, state.summary, vm) { editor = null }
         "payee" -> PayeeDialog(selected, budget, vm) { editor = null }
         "rule" -> RuleDialog(selected, budget, vm) { editor = null }
-        "bankImport" -> BankImportDialog(budget, vm) { editor = null }
+        // A PDF statement goes to the assistant, attached to its next message.
+        "bankImport" -> BankImportDialog(budget, vm, askAssistant = { uri -> assistantController.attach(context, uri); editor = null; assistant = true }) { editor = null }
         "ynabImport" -> YnabImportDialog(budget, vm) { editor = null }
     }
     val error = state.error ?: fileError

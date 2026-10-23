@@ -1,5 +1,5 @@
 // Desktop commands use the same accounting implementation as the native phone apps.
-pub use urbudget_core::{domain, engine, ledger, targets, schedules, workflows, reports, loans, patch, store, sync_merge, bank_import, ynab, ynab_files, fresh_start, import_sync, budgets};
+pub use urbudget_core::{domain, engine, ledger, targets, schedules, workflows, reports, loans, patch, store, sync_merge, bank_csv, bank_import, ynab, ynab_files, fresh_start, import_sync, budgets};
 pub mod assistant;
 mod cloud;
 mod credentials;
@@ -350,19 +350,45 @@ fn preview_bank_file(
     format: String,
     date_format: String,
     flip_signs: bool,
-) -> Result<Vec<bank_import::Row>, String> {
+    columns: Option<bank_csv::Columns>,
+) -> Result<bank_import::CompactReview, String> {
     db.read(patch, |b| {
-        bank_import::preview(b, &account, &content, &format, &date_format, flip_signs)
+        bank_import::preview_compact(b, &account, &content, &format, &date_format, flip_signs, columns.as_ref())
     })
 }
+/// A statement that isn't UTF-8, sent as ISO-8859-1 so its bytes cross unchanged: its text in the
+/// encoding they fit.
+#[tauri::command(async)]
+fn decode_statement(latin1: String) -> Result<bank_csv::Decoded, String> {
+    bank_csv::decode_latin1(&latin1)
+}
+/// A CSV's header row, first rows and the columns an import would read, for choosing them.
+#[tauri::command(async)]
+fn bank_file_columns(
+    db: State<'_, Database>,
+    patch: Option<Patch>,
+    account: String,
+    content: String,
+    columns: Option<bank_csv::Columns>,
+) -> Result<bank_csv::Layout, String> {
+    db.read(patch, |b| bank_csv::layout(b, &account, &content, columns.as_ref()))
+}
+/// With `remember`, the account keeps how this file read for its next one.
 #[tauri::command(async)]
 fn import_bank_file(
     db: State<'_, Database>,
     patch: Option<Patch>,
     account: String,
     choices: Vec<bank_import::Choice>,
+    remember: Option<bank_csv::FileSettings>,
 ) -> Result<Patch, String> {
-    db.change(patch, |b| bank_import::apply(b, &account, choices))
+    db.change(patch, |b| {
+        let mut b = bank_import::apply(b, &account, choices)?;
+        if let Some(settings) = remember {
+            bank_csv::remember(&mut b, &account, settings)?;
+        }
+        Ok(b)
+    })
 }
 
 #[tauri::command(async)]
@@ -500,6 +526,8 @@ pub fn run() {
             upsert_transaction,
             source_loan_terms,
             preview_bank_file,
+            bank_file_columns,
+            decode_statement,
             import_bank_file,
             budget_action,
             auto_assign_preview,

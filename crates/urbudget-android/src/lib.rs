@@ -2,8 +2,8 @@
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 use urbudget_core::{
-    bank_import, domain, engine, ledger, loans, patch, reports, schedules, workflows, ynab,
-    ynab_files,
+    bank_csv, bank_import, domain, engine, ledger, loans, patch, reports, schedules, workflows,
+    ynab, ynab_files,
 };
 
 const API_VERSION: u32 = 1;
@@ -178,6 +178,8 @@ fn dispatch(request: Request) -> Result<Value, String> {
         }
         "sampleBudget" => sample_budget(p).and_then(|budget| request.changed(budget)),
         "importYnab" => encode(ynab::import_export(&required::<Value>(p, "export")?)?),
+        // A statement that isn't UTF-8, sent as ISO-8859-1 so its bytes cross unchanged.
+        "decodeStatement" => encode(bank_csv::decode_latin1(&required::<String>(p, "latin1")?)?),
         "importYnabFiles" => encode(ynab_files::import_files(
             &required::<Vec<ynab_files::ExportFile>>(p, "files")?,
             optional::<String>(p, "dateOrder")?.as_deref(),
@@ -306,12 +308,17 @@ fn dispatch(request: Request) -> Result<Value, String> {
                     &required::<String>(p, "format")?,
                     &optional::<String>(p, "dateFormat")?.unwrap_or_else(|| "ymd".into()),
                     optional(p, "flipSigns")?.unwrap_or(false),
+                    optional::<bank_csv::Columns>(p, "columns")?.as_ref(),
                 )?),
-                "bankApply" => request.changed(bank_import::apply(
-                    budget,
-                    &required::<String>(p, "accountId")?,
-                    required(p, "choices")?,
-                )?),
+                // With `remember`, the account keeps how this file read for its next one.
+                "bankApply" => {
+                    let account = required::<String>(p, "accountId")?;
+                    let mut budget = bank_import::apply(budget, &account, required(p, "choices")?)?;
+                    if let Some(settings) = optional(p, "remember")? {
+                        bank_csv::remember(&mut budget, &account, settings)?;
+                    }
+                    request.changed(budget)
+                }
                 // With `ids` or `accountId`, only those transactions (one account's side of a transfer),
                 // newest first as the register lists them; without, the whole register.
                 "exportRegister" => {

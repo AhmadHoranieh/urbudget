@@ -91,7 +91,7 @@ import matches or sync merges.
 | Account | Email-code sign-in, sign-out, account overview/deletion; only sync needs an account |
 | Sync | Existing end-to-end encryption and protocol, passphrase setup/unlock/reset, track/download/remove, per-field and whole-budget conflict review; automatic sync on foreground, after edits and every minute while open |
 | Billing | The monthly sync subscription (`urbudget_sync`, base plan `monthly`) at Play's localized price, pending/cancelled states, account-bound restore, server verification, subscription management |
-| Banks | SimpleFIN setup claim, secure tokens, account links, import range/sign handling, request quotas, download/match/duplicate review, import and disconnect |
+| Banks | SimpleFIN setup claim, secure tokens, account links, import range/sign handling, request quotas, download/match/duplicate review, import and disconnect; bank files (CSV, Excel, OFX, QFX, QIF, CAMT.053, MT940; the format their content says; a PDF goes to the assistant with the file attached) with transfer pairing and the account's remembered date order and signs (its CSV columns are chosen on the desktop) |
 | YNAB | Multiple saved tokens, plans, delta sync with full-download fallback, conflict/discrepancy review, ZIP and Register/Plan CSV imports |
 | Assistant | ChatGPT browser sign-in, OpenAI/Anthropic keys, model/settings, streamed conversations, cancel/history/export, files/photos, context selection, shared tools, review/recheck/apply/undo/refine/discard proposals, bank-file conversion review, workbook generation, report replies/printing/sharing |
 

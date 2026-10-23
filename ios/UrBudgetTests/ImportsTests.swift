@@ -165,8 +165,15 @@ final class ImportYnabTests: XCTestCase {
         XCTAssertThrowsError(try ImportsEngine.importYnabFiles([ImportPickedFile(name: "notes.csv", data: Data("a,b\n1,2".utf8))], dateOrder: "mdy", currency: "SAR"))
     }
 
-    func testStatementTextFallsBackToWindowsLatin() {
-        XCTAssertEqual(ImportFiles.text(Data([0xEF, 0xBB, 0xBF]) + Data("Date".utf8)), "Date")
-        XCTAssertEqual(ImportFiles.text(Data([0x43, 0x61, 0x66, 0xE9])), "Café")
+    func testStatementTextFallsBackToWindowsLatin() throws {
+        XCTAssertEqual(try ImportFiles.text(Data([0xEF, 0xBB, 0xBF]) + Data("Date".utf8)), "Date")
+        XCTAssertEqual(try ImportFiles.text(Data([0x43, 0x61, 0x66, 0xE9])), "Café")
+        // A PDF is the assistant's to read.
+        XCTAssertThrowsError(try ImportFiles.text(Data("%PDF-1.7".utf8)))
+        // The engine tells other encodings apart: Windows-1251, as Russian banks write.
+        let russian = Data([0xC4, 0xE0, 0xF2, 0xE0, 0x3B, 0xD1, 0xF3, 0xEC, 0xEC, 0xE0, 0x3B, 0xCE, 0xEF, 0xE8, 0xF1, 0xE0, 0xED, 0xE8, 0xE5, 0x0A,
+                            0x32, 0x31, 0x2E, 0x31, 0x30, 0x2E, 0x32, 0x30, 0x32, 0x36, 0x3B, 0x2D, 0x31, 0x35, 0x33, 0x34, 0x2C, 0x39, 0x30, 0x3B,
+                            0xD1, 0xF3, 0xEF, 0xE5, 0xF0, 0xEC, 0xE0, 0xF0, 0xEA, 0xE5, 0xF2])
+        XCTAssertEqual(try ImportFiles.text(russian), "Дата;Сумма;Описание\n21.10.2026;-1534,90;Супермаркет")
     }
 }

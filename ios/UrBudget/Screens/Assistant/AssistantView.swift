@@ -23,6 +23,8 @@ struct AssistantRequest: Identifiable {
     let id = UUID()
     var text = ""
     var selected: [String] = []
+    /// Files to attach, such as a PDF statement chosen to import.
+    var files: [URL] = []
 }
 
 /// The assistant: a conversation about the budget whose changes arrive as proposals to review,
@@ -77,6 +79,7 @@ struct AssistantView: View {
             if let request {
                 if !request.selected.isEmpty { selected = request.selected }
                 if !request.text.isEmpty && message.isEmpty { message = request.text }
+                if !request.files.isEmpty { controller.attach(files: request.files) }
                 composing = true
             }
         }

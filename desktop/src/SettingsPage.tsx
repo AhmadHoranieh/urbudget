@@ -211,6 +211,7 @@ export function SettingsPage({
   openBudget,
   onBankSync,
   onCategorize,
+  onAskImport,
   theme,
   setTheme,
   onResetLayout,
@@ -253,6 +254,8 @@ export function SettingsPage({
   onBankSync: () => void;
   /** Offers the assistant an import's new transactions that have no category. */
   onCategorize?: (uncategorized: Uncategorized) => void;
+  /** Hands the assistant a statement to import (a PDF, or one that didn't read), with what went wrong. */
+  onAskImport?: (file: File, problem: string, account: string) => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
 }) {
@@ -468,7 +471,7 @@ export function SettingsPage({
             planId={budget.ynabPlanId}
             onImport={importYnab}
           />
-          <BankImport budget={budget} transform={transform} onCategorize={onCategorize} />
+          <BankImport budget={budget} transform={transform} onCategorize={onCategorize} onAskAssistant={onAskImport} />
         </>
       )}
 

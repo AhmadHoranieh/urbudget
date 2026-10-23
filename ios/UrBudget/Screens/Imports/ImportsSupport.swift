@@ -35,12 +35,49 @@ enum ImportFiles {
         }
     }
 
-    /// A bank statement's text: UTF-8 when it is, else Windows Latin, which many banks still write.
-    static func text(_ data: Data) -> String {
+    /// A bank statement's text: UTF-16 or UTF-8 as the byte-order mark says (Excel saves "Unicode
+    /// text" as UTF-16), else UTF-8, else the encoding the engine finds the bytes fit (Windows-1250 or
+    /// -1252 in Europe, Shift_JIS, GBK, Windows-1251…), as banks still write. The engine gets the bytes
+    /// as ISO-8859-1, a character for each.
+    static func text(_ data: Data) throws -> String {
+        // An Excel or OpenDocument workbook, a ZIP of statements, a PDF: the engine reads a workbook's
+        // sheet as CSV and a ZIP's statements, and says what a PDF needs.
+        let binary: [[UInt8]] = [[0x50, 0x4B, 0x03, 0x04], [0xD0, 0xCF, 0x11, 0xE0], [0x25, 0x50, 0x44, 0x46]]
+        if binary.contains(where: { data.starts(with: $0) }) {
+            let latin1 = String(data: data, encoding: .isoLatin1) ?? ""
+            return try NativeCore.engine("decodeStatement", params: ["latin1": .string(latin1)]).text("text")
+        }
+        if data.starts(with: [0xFF, 0xFE]), let text = String(data: data.dropFirst(2), encoding: .utf16LittleEndian) { return text }
+        if data.starts(with: [0xFE, 0xFF]), let text = String(data: data.dropFirst(2), encoding: .utf16BigEndian) { return text }
         let bom = Data([0xEF, 0xBB, 0xBF])
         let body = data.starts(with: bom) ? data.dropFirst(3) : data
-        return String(data: body, encoding: .utf8) ?? String(data: body, encoding: .windowsCP1252) ?? String(decoding: body, as: UTF8.self)
+        if let text = String(data: body, encoding: .utf8) { return text }
+        if let latin1 = String(data: body, encoding: .isoLatin1),
+           let decoded = try? NativeCore.engine("decodeStatement", params: ["latin1": .string(latin1)]) {
+            return decoded.text("text")
+        }
+        return String(data: body, encoding: .windowsCP1252) ?? String(decoding: body, as: UTF8.self)
     }
+
+    /// The format a statement is in: what its content says, as the engine reads it (an MT940
+    /// statement saved as .txt), else what its extension says.
+    static func statementFormat(name: String, text: String) -> String? {
+        let head = String(text.drop(while: { $0 == "\u{feff}" || $0.isWhitespace }).prefix(4096)).uppercased()
+        let lines = head.split(whereSeparator: \.isNewline).map { $0.drop(while: { $0 == " " || $0 == "\t" }) }.filter { !$0.isEmpty }
+        let ext = (name as NSString).pathExtension.lowercased()
+        if head.hasPrefix("OFXHEADER") || head.contains("<OFX>") { return ext == "qfx" ? "qfx" : "ofx" }
+        if head.contains("CAMT.053") || head.contains("BKTOCSTMRSTMT>") { return "camt053" }
+        if lines.contains(where: { $0.hasPrefix(":20:") }) && lines.contains(where: { $0.hasPrefix(":61:") }) { return "mt940" }
+        if let first = lines.first, ["!TYPE:", "!ACCOUNT", "!OPTION:", "!CLEAR:"].contains(where: { first.hasPrefix($0) }) { return "qif" }
+        switch ext {
+        case "csv", "ofx", "qfx", "qif": return ext
+        case "xlsx", "xlsm", "xlsb", "xls", "ods", "zip": return "csv"
+        case "xml": return "camt053"
+        case "sta", "940", "mt940": return "mt940"
+        default: return nil
+        }
+    }
+
 }
 
 /// Engine requests too large for the JSON value tree.

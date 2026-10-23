@@ -757,6 +757,7 @@ export default function App() {
               openBudget={switchBudget}
               onBankSync={() => setDialog({ type: "bankSync" })}
               onCategorize={categorize}
+              onAskImport={(file, problem, account) => ask({ text: importHelpText(account, problem), files: [file] })}
               theme={theme}
               setTheme={setTheme}
               cloud={cloud}

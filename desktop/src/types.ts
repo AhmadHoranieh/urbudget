@@ -14,6 +14,26 @@ export type Account = {
   archived: boolean;
   /** The SimpleFIN Bridge account this one syncs with (see BankSync.tsx). */
   simplefin?: SimpleFinLink;
+  /** How this account's bank files read, kept when one is imported (bank_csv.rs). */
+  fileImport?: BankFileSettings;
+};
+/** Which of a CSV's columns hold what, by their header text. A column left out isn't read. */
+export type BankColumns = {
+  date?: string | null;
+  payee?: string | null;
+  memo?: string | null;
+  /** One column for money in and out, negative for out. */
+  amount?: string | null;
+  outflow?: string | null;
+  inflow?: string | null;
+  /** The bank's own id for each transaction. */
+  id?: string | null;
+};
+export type BankFileSettings = {
+  /** Without them, the columns are found by their names. */
+  columns?: BankColumns;
+  dateFormat?: string;
+  flipSigns?: boolean;
 };
 export type SimpleFinLink = {
   /** The SimpleFIN account's id. */
