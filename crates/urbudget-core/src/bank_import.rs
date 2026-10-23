@@ -400,22 +400,6 @@ pub(crate) fn date_order(raw: &[&str]) -> Option<&'static str> {
         _ => None,
     }
 }
-fn tag(s: &str, name: &str) -> Option<String> {
-    let upper = s.to_ascii_uppercase();
-    let needle = format!("<{name}>");
-    let start = upper.find(&needle)? + needle.len();
-    let rest = &s[start..];
-    let text = match rest.trim_start().strip_prefix("<![CDATA[") {
-        Some(data) => data.split("]]>").next()?.trim(),
-        None => rest.split('<').next()?.trim(),
-    };
-    Some(
-        text.replace("&amp;", "&")
-            .replace("&lt;", "<")
-            .replace("&gt;", ">")
-            .replace("&quot;", "\""),
-    )
-}
 pub fn preview(
     b: &Budget,
     account: &str,
@@ -467,144 +451,18 @@ fn parse_file(
     if content.len() > 20_000_000 {
         return Err("Import a file smaller than 20 MB.".into());
     }
-    let mut raw = vec![];
     // A statement whose content says what it is reads as that, whatever it was chosen as.
-    let format = crate::bank_statements::sniff(content).unwrap_or(format);
-    match format {
-        "csv" => raw = bank_csv::read(b, account, content, date_format, flip_signs, columns)?,
-        "ofx" | "qfx" => {
-            if let Some(currency) = tag(content, "CURDEF").filter(|c| !c.is_empty()) {
-                if !currency.eq_ignore_ascii_case(&b.currency) {
-                    return Err(format!(
-                        "File currency {currency} differs from {}.",
-                        b.currency
-                    ));
-                }
-            }
-            let upper = content.to_ascii_uppercase();
-            let mut kinds = vec![];
-            // Earlier lines a correction deletes or replaces.
-            let mut corrected = HashSet::new();
-            // A file with several accounts' statements (a bank's every account in one download):
-            // the first one's transactions.
-            let end = upper.match_indices("<BANKTRANLIST>").nth(1).map_or(content.len(), |(i, _)| i);
-            let starts: Vec<_> = upper[..end].match_indices("<STMTTRN>").map(|(i, _)| i).collect();
-            for (i, start) in starts.iter().enumerate() {
-                let next = starts.get(i + 1).copied().unwrap_or(end);
-                let close = upper[*start..next].find("</STMTTRN>").map_or(next, |j| start + j);
-                let block = &content[*start..close];
-                let action = tag(block, "CORRECTACTION").unwrap_or_default().to_ascii_uppercase();
-                if let Some(id) = tag(block, "CORRECTFITID").filter(|_| action == "DELETE" || action == "REPLACE") {
-                    corrected.insert(id);
-                }
-                if action == "DELETE" {
-                    continue;
-                }
-                let d = tag(block, "DTPOSTED").or_else(|| tag(block, "DTUSER")).ok_or("Missing OFX posted date")?;
-                // YYYYMMDD with a time after it, or now and then a date written another way.
-                let date = d.get(..8).and_then(|day| NaiveDate::parse_from_str(day, "%Y%m%d").ok())
-                    .map(|day| day.format("%Y-%m-%d").to_string())
-                    .map_or_else(|| date(&d, "ymd").map_err(|_| format!("Invalid OFX posted date ‘{d}’")), Ok)?;
-                let amount = money(&tag(block, "TRNAMT").ok_or("Missing OFX amount")?, &b.currency)?;
-                let (payee, memo) = (tag(block, "NAME").unwrap_or_default(), tag(block, "MEMO").unwrap_or_default());
-                if amount != 0 {
-                    let (payee, memo) = if payee.is_empty() { (memo, String::new()) } else { (payee, memo) };
-                    raw.push(BankTransaction { fit: tag(block, "FITID").unwrap_or_default(), date, payee, memo, amount });
-                    kinds.push(tag(block, "TRNTYPE").unwrap_or_default().to_ascii_uppercase());
-                }
-            }
-            let kept: Vec<bool> = raw.iter().map(|t| t.fit.is_empty() || !corrected.contains(&t.fit)).collect();
-            let mut keep = kept.iter();
-            raw.retain(|_| *keep.next().unwrap());
-            let mut keep = kept.iter();
-            kinds.retain(|_| *keep.next().unwrap());
-            // A bank that writes every amount as positive and says which way it went in the type.
-            const OUT: [&str; 9] = ["DEBIT", "PAYMENT", "CHECK", "FEE", "SRVCHG", "POS", "ATM", "DIRECTDEBIT", "CASH"];
-            if raw.iter().all(|t| t.amount > 0) && kinds.iter().any(|k| OUT.contains(&k.as_str())) {
-                for (t, k) in raw.iter_mut().zip(&kinds) {
-                    if OUT.contains(&k.as_str()) {
-                        t.amount = -t.amount;
-                    }
-                }
-            }
-        }
-        "camt053" => raw = crate::bank_statements::camt(content, &b.currency)?,
-        "mt940" => raw = crate::bank_statements::mt940(content, &b.currency)?,
-        "qif" => {
-            let mut fields: HashMap<char, String> = HashMap::new();
-            let mut days = vec![];
-            // An account's own description (`!Account`) until its transactions' `!Type:` line, and
-            // lists that aren't transactions (categories, classes, memorized payees).
-            let (mut describing, mut other, mut unsupported) = (false, false, false);
-            let mut push = |fields: &mut HashMap<char, String>, days: &mut Vec<String>| -> Result<(), String> {
-                let get = |c| fields.get(&c).map(String::as_str).unwrap_or("");
-                // A record with nothing in it (a ^ straight after the header).
-                if ['D', 'T', 'U'].iter().all(|&c| get(c).is_empty()) {
-                    fields.clear();
-                    return Ok(());
-                }
-                // Newer Quicken writes the amount as U too, and some files only as U.
-                let amount = money(if get('T').is_empty() { get('U') } else { get('T') }, &b.currency)?;
-                if amount != 0 {
-                    days.push(get('D').to_string());
-                    let (payee, memo) = (get('P').to_string(), get('M').to_string());
-                    let (payee, memo) = if payee.is_empty() { (memo, String::new()) } else { (payee, memo) };
-                    raw.push(BankTransaction { fit: String::new(), date: String::new(), payee, memo, amount });
-                }
-                fields.clear();
-                Ok(())
-            };
-            for line in content.lines().map(str::trim).filter(|s| !s.is_empty()) {
-                if let Some(header) = line.strip_prefix('!') {
-                    let header = header.to_ascii_lowercase();
-                    if header == "account" {
-                        // A file with every account in it: the first one's transactions.
-                        if !days.is_empty() {
-                            fields.clear();
-                            break;
-                        }
-                        describing = true;
-                    } else if let Some(kind) = header.strip_prefix("type:") {
-                        describing = false;
-                        other = !matches!(kind.trim(), "bank" | "ccard" | "cash" | "oth a" | "oth l");
-                        unsupported |= other && matches!(kind.trim(), "invst" | "port");
-                    }
-                    continue;
-                }
-                if line == "^" {
-                    if describing || other {
-                        fields.clear();
-                    } else {
-                        push(&mut fields, &mut days)?;
-                    }
-                } else if !describing && !other {
-                    let key = line.chars().next().unwrap();
-                    if ['D', 'P', 'M', 'T', 'U'].contains(&key) {
-                        fields.insert(key, line[1..].to_string());
-                    }
-                }
-            }
-            // A last record the file didn't close with ^.
-            if fields.contains_key(&'D') && (fields.contains_key(&'T') || fields.contains_key(&'U')) {
-                push(&mut fields, &mut days)?;
-            } else if !fields.is_empty() {
-                return Err("Incomplete QIF record (missing ^ terminator).".into());
-            }
-            if days.is_empty() && unsupported {
-                return Err("Only bank, cash, credit-card and other asset or liability QIF files are supported.".into());
-            }
-            for (t, day) in raw.iter_mut().zip(dates(&days, date_format)?) {
-                t.date = day;
-            }
-        }
-        _ => return Err("Choose CSV, OFX, QFX, QIF, CAMT.053 or MT940.".into()),
-    }
+    let raw = match crate::bank_statements::sniff(content).unwrap_or(format) {
+        "csv" => bank_csv::read(b, account, content, date_format, flip_signs, columns)?,
+        format => crate::bank_statements::transactions(format, content, &b.currency, date_format)?,
+    };
     if raw.is_empty() || raw.len() > 10000 {
         return Err("Choose a file containing 1–10,000 transactions.".into());
     }
     Ok(raw)
 }
 /// One transaction as the bank gave it, before the review.
+#[derive(Debug, Clone, PartialEq)]
 pub struct BankTransaction {
     /// The bank's own id for it (an OFX FITID, a SimpleFIN transaction id), or "" when it has none.
     pub fit: String,
