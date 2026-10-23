@@ -93,21 +93,21 @@ function badge(text, kind = "") {
 /* ---------- Stat tiles ---------- */
 
 /** "↑ 25% more than the 30 days before", or nothing when both periods had none. */
-function trend([now, before]) {
+function trend([now, before], than = "the 30 days before") {
   if (!now && !before) return null;
-  const title = `${num(now)} in the last 30 days, ${num(before)} in the 30 days before`;
-  if (!before) return h("span", { class: "tile-trend is-up", title }, "New: none in the 30 days before");
-  if (now === before) return h("span", { class: "tile-trend", title }, "Same as the 30 days before");
+  const title = `${num(now)} now, ${num(before)} in ${than}`;
+  if (!before) return h("span", { class: "tile-trend is-up", title }, `New: none in ${than}`);
+  if (now === before) return h("span", { class: "tile-trend", title }, `Same as ${than}`);
   const up = now > before;
   return h(
     "span",
     { class: `tile-trend is-${up ? "up" : "down"}`, title },
     h("span", { "aria-hidden": "true" }, up ? "↑ " : "↓ "),
-    `${percent(Math.abs(now - before) / before)} ${up ? "more" : "fewer"} than the 30 days before`,
+    `${percent(Math.abs(now - before) / before)} ${up ? "more" : "fewer"} than ${than}`,
   );
 }
 
-/** Tiles of { label, value, sub?, trend?: [last 30 days, the 30 before] }. */
+/** Tiles of { label, value, sub?, trend?: [now, before], than?: what `before` was (the 30 days before) }. */
 function tiles(container, items) {
   container.replaceChildren(
     ...items.map((item) =>
@@ -117,7 +117,7 @@ function tiles(container, items) {
         h("span", { class: "tile-label" }, item.label),
         h("span", { class: "tile-value" }, item.value),
         item.sub ? h("span", { class: "tile-sub" }, item.sub) : null,
-        item.trend ? trend(item.trend) : null,
+        item.trend ? trend(item.trend, item.than) : null,
       ),
     ),
   );
@@ -374,24 +374,32 @@ loaders.overview = async () => {
   const o = await api("/admin/overview");
   header(o);
   const p = o.previous30;
+  const u = o.usage;
   tiles($("overview-tiles"), [
     {
       label: "Downloads, 30 days",
       value: num(o.downloads.last30),
-      sub: `Windows ${num(o.downloads.windows)} · macOS ${num(o.downloads.macos)}${notPeople(o.downloads.bots, o.downloads.team)}`,
+      sub: `${channelSplit(o.downloads)}${notPeople(o.downloads.bots, o.downloads.team)}`,
       trend: [o.downloads.last30, p.downloads],
+    },
+    {
+      label: "First opens, 30 days",
+      value: num(u.opens30),
+      sub: u.since ? `Copies installed and opened${o.downloads.last30 ? ` · ${percent(Math.min(1, u.opens30 / o.downloads.last30))} of downloads` : ""}` : "None counted yet: copies count themselves from the next desktop release",
+      trend: [u.opens30, p.opens],
+    },
+    {
+      label: "In use last week",
+      value: num(u.lastWeek),
+      sub: `${num(u.thisWeek)} this week so far · ${num(u.yesterday)} yesterday`,
+      trend: [u.lastWeek, u.weekBefore],
+      than: "the week before",
     },
     {
       label: "Page views, 30 days",
       value: num(o.pageViews.last30),
       sub: `${num(o.pageViews.home)} of the home page`,
       trend: [o.pageViews.last30, p.pageViews],
-    },
-    {
-      label: "Update checks, 30 days",
-      value: num(o.launches.last30),
-      sub: "Copies from 1.0.2 on, outside the Store. Not users or installs",
-      trend: [o.launches.last30, p.launches],
     },
     {
       label: "Accounts",
@@ -433,7 +441,7 @@ loaders.overview = async () => {
   if (cleanup) notes.push(attention(cleanup, "warn", "Open Health", () => select("health")));
   $("overview-attention").replaceChildren(...notes);
 
-  funnel(o.funnel, o.countingSince);
+  funnel(o.funnel, o.countingSince, u.since);
   weeks(o.weeks, o.countingSince);
 
   const days = o.daily.days;
@@ -441,14 +449,19 @@ loaders.overview = async () => {
   const tips = days.map(dateOnly);
   columnChart($("chart-downloads"), {
     title: "Downloads per day",
-    sub: "Last 90 days · clicks on urbudget.app's download buttons",
+    sub: `Last 90 days · people only · ${o.downloads.storeSource === "clicks" ? "the Store as clicks on the site's Store button, until Partner Center is connected" : "the Store's acquisitions from Partner Center"}`,
     labels,
     tips,
-    series: [
-      { name: "Windows", values: o.daily.windows, color: "var(--series-1)" },
-      { name: "macOS", values: o.daily.macos, color: "var(--series-2)" },
-    ],
-    empty: "No downloads counted yet. Counting started with the admin page.",
+    series: channelSeries(o.daily),
+    empty: "No downloads counted yet.",
+  });
+  columnChart($("chart-in-use"), {
+    title: "Copies in use per day",
+    sub: "Last 90 days · copies of the app opened that day, as they count themselves",
+    labels,
+    tips,
+    series: [{ name: "In use", values: o.daily.active, color: "var(--series-1)" }],
+    empty: "No copies have counted themselves yet. Usage counts start with the next desktop release.",
   });
   columnChart($("chart-checkouts"), {
     title: "Sync checkouts per day",
@@ -467,11 +480,26 @@ loaders.overview = async () => {
   });
 };
 
+/** "urbudget.app 12 · GitHub 3 · Store 20": a period's downloads by channel. */
+function channelSplit(d) {
+  return `urbudget.app ${num(d.website)} · GitHub ${num(d.github)} · Store ${num(d.store)}${d.storeSource === "clicks" ? " (button clicks)" : ""}`;
+}
+
+/** The three channels as a chart's series, in the same colors on every chart. */
+function channelSeries({ website, github, store }) {
+  return [
+    { name: "urbudget.app", values: website, color: "var(--series-1)" },
+    { name: "GitHub", values: github, color: "var(--series-2)" },
+    { name: "Microsoft Store", values: store, color: "var(--series-3)" },
+  ];
+}
+
 /** The steps from a visit to a Sync checkout, each with its share of the step before. */
-function funnel(f, countingSince) {
+function funnel(f, countingSince, usageSince) {
   const steps = [
     ["Page views", f.views],
-    ["Downloads", f.downloads],
+    ["Downloads, every channel", f.downloads],
+    ["First opens of the app", f.opens],
     ["Sync checkouts opened", f.checkouts],
   ];
   $("funnel").replaceChildren(
@@ -486,7 +514,8 @@ function funnel(f, countingSince) {
     !countingSince || countingSince > daysAgo(29)
       ? ` Checkouts are counted from ${countingSince ? dateOnly(countingSince) : "this version of the Worker"} on.`
       : "";
-  $("funnel-note").textContent = `People only, last 30 days. A step can outnumber the one before it: a download from a link to the installer, or a checkout from someone who downloaded earlier.${since}`;
+  const opens = !usageSince || usageSince > daysAgo(29) ? ` First opens are counted from ${usageSince ? dateOnly(usageSince) : "the next desktop release"} on.` : "";
+  $("funnel-note").textContent = `People only, last 30 days. A step can outnumber the one before it: someone who found UrBudget in the Store, or a checkout from someone who downloaded earlier.${since}${opens}`;
 }
 
 /** YYYY-MM-DD for `n` days before today (UTC), as the API counts days. */
@@ -526,11 +555,12 @@ function weeks(rows, countingSince) {
         {},
         h("td", { class: "mono" }, shortDay(week.start), i === 0 ? h("span", { class: "muted" }, " so far") : null),
         h("td", { class: "num" }, num(week.views)),
-        h("td", { class: "num" }, num(week.downloads)),
+        h("td", { class: "num", title: channelSplit(week) }, num(week.downloads)),
         h("td", { class: "detail" }, week.tags.length ? tagList(week.tags, 5) : h("span", { class: "muted" }, "None")),
+        h("td", { class: "num" }, num(week.opens)),
+        h("td", { class: "num" }, num(week.active)),
         h("td", { class: "num" }, countingSince && addDays(week.start, 6) >= countingSince ? num(week.checkouts) : notCounted()),
         h("td", { class: "num" }, num(week.accounts)),
-        h("td", { class: "num" }, num(week.launches)),
         h(
           "td",
           {},
@@ -706,21 +736,18 @@ function renderAccount({ account, subscriptions, sessions, budgets, syncKeySetAt
 
 loaders.traffic = async () => {
   const t = await api("/admin/traffic");
-  const last30 = (values) => sum(values.slice(-30));
-  const launches30 = last30(t.launches.windows) + last30(t.launches.macos);
   tiles($("traffic-tiles"), [
     { label: "Page views, 30 days", value: num(t.last30.people), sub: `${num(sum(t.views))} in 90 days` },
     {
       label: "Download rate, 30 days",
       value: t.last30.people ? percent(t.last30.downloads / t.last30.people) : "—",
-      sub: `${num(t.last30.downloads)} downloads for ${num(t.last30.people)} page views`,
+      sub: `${num(t.last30.downloads)} clicks on the site's download buttons for ${num(t.last30.people)} page views`,
     },
     {
       label: "Bots and team, 30 days",
       value: num(t.last30.bots + t.last30.team),
       sub: `${num(t.last30.bots)} bots and agents · ${num(t.last30.team)} from this page's browsers`,
     },
-    { label: "Update checks, 30 days", value: num(launches30), sub: `Windows ${num(last30(t.launches.windows))} · macOS ${num(last30(t.launches.macos))}` },
   ]);
   columnChart($("chart-views-90"), {
     title: "Page views per day",
@@ -756,34 +783,9 @@ loaders.traffic = async () => {
     ),
     "No tagged links counted yet. Add ?ref=name to a link you post.",
   );
-  columnChart($("chart-launches-90"), {
-    title: "Update checks per day",
-    sub: "Last 90 days · copies of 1.0.2 and later, outside the Store · about one a launch, not users or installs",
-    labels: t.days.map(shortDay),
-    tips: t.days.map(dateOnly),
-    series: [
-      { name: "Windows", values: t.launches.windows, color: "var(--series-1)" },
-      { name: "macOS", values: t.launches.macos, color: "var(--series-2)" },
-    ],
-    empty: "No update checks yet. Copies from 1.0.2 on are counted.",
-  });
-  fillTable(
-    $("launch-versions-table"),
-    t.versions.map((row) =>
-      h(
-        "tr",
-        {},
-        h("td", {}, row.version),
-        h("td", {}, row.platform === "darwin" ? "macOS" : row.platform === "windows" ? "Windows" : row.platform),
-        h("td", { class: "num" }, num(row.n)),
-        h("td", {}, dateOnly(row.last)),
-      ),
-    ),
-    "No update checks yet.",
-  );
 };
 
-/* ---------- Downloads ---------- */
+/* ---------- Downloads: every channel ---------- */
 
 /** " · plus 6 from bots and the team", or nothing. Only people count as downloads. */
 function notPeople(bots, team) {
@@ -791,66 +793,203 @@ function notPeople(bots, team) {
   return n ? ` · plus ${num(n)} from bots and the team` : "";
 }
 
+/** Series of the same length added up, day by day. */
+const add = (...series) => series[0].map((_, i) => sum(series.map((values) => values[i])));
+/** The last `n` days of a daily series, added up; with `before`, the `n` days before those. */
+const lastDaysOf = (values, n, before = false) => sum(before ? values.slice(-2 * n, -n) : values.slice(-n));
+
+/** A source's state: a badge and what it means. */
+function statusItem(badgeText, kind, ...text) {
+  return h("li", {}, badge(badgeText, kind), h("span", {}, ...text));
+}
+/** How an outside source last answered: never yet, an error, or fine. */
+function fetchedItem(name, fetched, waiting, fine) {
+  if (!fetched) return statusItem("Waiting", "", h("b", {}, name), `: ${waiting}`);
+  if (fetched.error)
+    return statusItem(
+      "Error",
+      "warn",
+      h("b", {}, name),
+      `: ${fetched.error} Last tried ${when(fetched.triedAt)}${fetched.okAt ? `; last answered ${when(fetched.okAt)}` : ""}.`,
+    );
+  return statusItem("Fine", "success", h("b", {}, name), `: ${fine} Last answered ${when(fetched.okAt)}.`);
+}
+
 loaders.downloads = async () => {
   const d = await api("/admin/downloads");
-  const last30 = (values) => sum(values.slice(-30));
+  const website = add(d.website.windows, d.website.macos);
+  const github = add(d.github.windows, d.github.macos);
+  const store = d.store.partnerCenter ? d.store.acquisitions : d.website.store;
+  const opens = add(d.opens.direct, d.opens.store);
+  const total30 = lastDaysOf(d.total, 30);
   tiles($("downloads-tiles"), [
-    { label: "Downloads, 30 days", value: num(last30(d.windows) + last30(d.macos)), sub: `${num(sum(d.windows) + sum(d.macos))} in 90 days` },
-    { label: "Windows, 30 days", value: num(last30(d.windows)) },
-    { label: "macOS, 30 days", value: num(last30(d.macos)) },
+    {
+      label: "Downloads, 30 days",
+      value: num(total30),
+      sub: `Every channel, people only · ${num(sum(d.total))} in 90 days`,
+      trend: [total30, lastDaysOf(d.total, 30, true)],
+    },
+    {
+      label: "urbudget.app, 30 days",
+      value: num(lastDaysOf(website, 30)),
+      sub: `Windows ${num(lastDaysOf(d.website.windows, 30))} · macOS ${num(lastDaysOf(d.website.macos, 30))} · ${num(lastDaysOf(d.website.store, 30))} sent to the Store`,
+    },
+    {
+      label: "GitHub, 30 days",
+      value: num(lastDaysOf(github, 30)),
+      sub: d.github.since ? `Counted day by day since ${dateOnly(d.github.since)}` : "Not counted yet: the Worker notes GitHub's numbers every hour",
+    },
+    {
+      label: "Microsoft Store, 30 days",
+      value: num(lastDaysOf(store, 30)),
+      sub: d.store.partnerCenter
+        ? `Acquisitions, from Partner Center · ${num(lastDaysOf(d.store.installs, 30))} installs`
+        : "Clicks on the site's Store button, until Partner Center is connected",
+    },
+    {
+      label: "First opens, 30 days",
+      value: num(lastDaysOf(opens, 30)),
+      sub: total30 ? `${percent(Math.min(1, lastDaysOf(opens, 30) / total30))} of downloads became a copy in use` : "Copies installed and opened",
+    },
     {
       label: "Bots and team, 30 days",
       value: num(d.others.bots.last30 + d.others.team.last30),
-      sub: `${num(d.others.bots.last30)} bots and agents · ${num(d.others.team.last30)} from this page's browsers`,
+      sub: `Left out of the site's clicks: ${num(d.others.bots.last30)} bots and agents · ${num(d.others.team.last30)} from this page's browsers`,
     },
     d.latest
       ? { label: "Latest release", value: d.latest.version, sub: `Published ${dateOnly(d.latest.date)}` }
       : { label: "Latest release", value: "None", sub: "Nothing published yet" },
   ]);
+
+  $("channel-status").replaceChildren(
+    statusItem(
+      "Every click",
+      "success",
+      h("b", {}, "urbudget.app"),
+      ": clicks on the installers and on the Store button, counted as they happen. Bots, AI agents' browsers and browsers that opened this page are counted apart.",
+    ),
+    d.github.configured
+      ? fetchedItem(
+          "GitHub",
+          d.github.fetched,
+          "the Worker notes each release file's count every hour. The first note is the starting point; downloads count from then on.",
+          "each release file's count, noted every hour; a day's downloads are the rise since the day before.",
+        )
+      : statusItem("Not set", "warn", h("b", {}, "GitHub"), ": set GITHUB_REPO to count downloads from GitHub's releases."),
+    d.store.configured
+      ? fetchedItem(
+          "Microsoft Store",
+          d.store.fetched,
+          "the Worker asks Partner Center once a day.",
+          "acquisitions and installs from Partner Center, fetched daily for the last 30 days. The latest days fill in a few days late.",
+        )
+      : statusItem(
+          "Not connected",
+          "warn",
+          h("b", {}, "Microsoft Store"),
+          ": set the MSSTORE_TENANT_ID, MSSTORE_CLIENT_ID and MSSTORE_CLIENT_SECRET secrets (the Entra application the Store workflow uses, with the Manager role) for the Store's own acquisitions and installs. Until then, clicks on the site's Store button stand in, which miss everyone who finds UrBudget in the Store itself.",
+        ),
+    sum(opens)
+      ? statusItem("Counting", "success", h("b", {}, "The app"), ": copies count themselves once a day, with nothing that identifies them. First opens are copies installed and opened.")
+      : statusItem(
+          "None yet",
+          "",
+          h("b", {}, "The app"),
+          ": copies count themselves from the next desktop release on, unless someone turns it off in Settings → Privacy & data.",
+        ),
+  );
+
   columnChart($("chart-downloads-90"), {
     title: "Downloads per day",
-    sub: "Last 90 days · people's clicks on a download button; bots, AI agents and the team are counted apart",
+    sub: `Last 90 days · people only · ${d.store.partnerCenter ? "the Store's acquisitions from Partner Center" : "the Store as clicks on the site's Store button"}`,
     labels: d.days.map(shortDay),
     tips: d.days.map(dateOnly),
-    series: [
-      { name: "Windows", values: d.windows, color: "var(--series-1)" },
-      { name: "macOS", values: d.macos, color: "var(--series-2)" },
-    ],
-    empty: "No downloads counted yet. Counting started with the admin page.",
+    series: channelSeries({ website, github, store }),
+    empty: "No downloads counted yet.",
   });
+
+  const opened = (label, downloads, firstOpens) =>
+    h(
+      "tr",
+      {},
+      h("td", {}, label),
+      h("td", { class: "num" }, num(downloads)),
+      h("td", { class: "num" }, num(firstOpens)),
+      h("td", { class: "num" }, downloads ? percent(firstOpens / downloads) : "—"),
+    );
   fillTable(
-    $("sources-table"),
-    d.sources.map((row) =>
+    $("opened-table"),
+    [
+      opened("urbudget.app or GitHub", lastDaysOf(website, 30) + lastDaysOf(github, 30), lastDaysOf(d.opens.direct, 30)),
+      opened(d.store.partnerCenter ? "Microsoft Store" : "Microsoft Store (site's button clicks)", lastDaysOf(store, 30), lastDaysOf(d.opens.store, 30)),
+    ],
+    "",
+  );
+
+  const row = (channel, what, values) =>
+    h(
+      "tr",
+      {},
+      h("td", {}, channel),
+      h("td", {}, what),
+      [7, 30, 90].map((n) => h("td", { class: "num" }, num(lastDaysOf(values, n)))),
+    );
+  fillTable(
+    $("channels-table"),
+    [
+      row("urbudget.app", "Windows installer clicks", d.website.windows),
+      row("urbudget.app", "macOS installer clicks", d.website.macos),
+      row("urbudget.app", "Clicks through to the Microsoft Store", d.website.store),
+      row("GitHub", "Windows installers downloaded", d.github.windows),
+      row("GitHub", "macOS installers downloaded", d.github.macos),
+      d.store.configured ? row("Microsoft Store", "Acquisitions, from Partner Center", d.store.acquisitions) : null,
+      d.store.configured ? row("Microsoft Store", "Installs, from Partner Center", d.store.installs) : null,
+      row("The app", "First opens of copies from urbudget.app or GitHub", d.opens.direct),
+      row("The app", "First opens of Store copies", d.opens.store),
       h(
         "tr",
         {},
-        h("td", {}, row.source ? (row.source.startsWith("/") ? h("span", { class: "mono" }, row.source) : row.source) : h("span", { class: "muted" }, "Not known")),
-        h("td", { class: "num" }, num(row.n)),
+        h("th", { scope: "row" }, "Every channel"),
+        h("td", {}, "Downloads, as on the Overview"),
+        [7, 30, 90].map((n) => h("td", { class: "num" }, h("b", {}, num(lastDaysOf(d.total, n))))),
+      ),
+    ].filter(Boolean),
+    "",
+  );
+
+  fillTable(
+    $("sources-table"),
+    d.sources.map((r) =>
+      h(
+        "tr",
+        {},
+        h("td", {}, r.source ? (r.source.startsWith("/") ? h("span", { class: "mono" }, r.source) : r.source) : h("span", { class: "muted" }, "Not known")),
+        h("td", { class: "num" }, num(r.n)),
       ),
     ),
-    "No downloads yet.",
+    "No clicks yet.",
   );
   fillTable(
     $("versions-table"),
-    d.versions.map((row) =>
+    d.versions.map((r) =>
       h(
         "tr",
         {},
-        h("td", {}, row.version),
-        h("td", {}, row.platform === "macos" ? "macOS" : "Windows"),
-        h("td", { class: "num" }, num(row.n)),
-        h("td", {}, dateOnly(row.last)),
+        h("td", {}, r.version),
+        h("td", {}, r.platform === "macos" ? "macOS" : "Windows"),
+        h("td", { class: "num" }, num(r.n)),
+        h("td", {}, dateOnly(r.last)),
       ),
     ),
-    "No downloads yet.",
+    "No clicks yet.",
   );
 
-  const github = $("github");
-  if (!d.github.configured) github.replaceChildren(h("p", { class: "muted small" }, "Set GITHUB_REPO and the GITHUB_TOKEN secret to see these."));
-  else if (d.github.error) github.replaceChildren(h("p", { class: "notice notice-warn" }, d.github.error));
-  else if (!d.github.releases.length) github.replaceChildren(h("p", { class: "muted small" }, "No published releases."));
+  const githubPanel = $("github");
+  if (!d.github.configured) githubPanel.replaceChildren(h("p", { class: "muted small" }, "Set GITHUB_REPO, and optionally the GITHUB_TOKEN secret, to see these."));
+  else if (d.github.error) githubPanel.replaceChildren(h("p", { class: "notice notice-warn" }, d.github.error));
+  else if (!d.github.releases.length) githubPanel.replaceChildren(h("p", { class: "muted small" }, "No published releases."));
   else
-    github.replaceChildren(
+    githubPanel.replaceChildren(
       ...d.github.releases.map((release) =>
         h(
           "div",
@@ -878,6 +1017,193 @@ loaders.downloads = async () => {
       ),
     );
 };
+
+/* ---------- Usage: copies of the app in use ---------- */
+
+const PLATFORM = { windows: "Windows", macos: "macOS", darwin: "macOS", linux: "Linux" };
+const CHANNEL = { direct: "urbudget.app or GitHub", store: "Microsoft Store" };
+/** Copies by where they were installed from; the Store in its color on every chart. */
+const usageSeries = ({ direct, store }) => [
+  { name: "urbudget.app or GitHub", values: direct, color: "var(--series-1)" },
+  { name: "Microsoft Store", values: store, color: "var(--series-3)" },
+];
+/** "October 2026" from YYYY-MM. */
+const monthName = (month) => new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+
+loaders.usage = async () => {
+  const u = await api("/admin/usage");
+  $("usage-note").textContent = u.since
+    ? `Counted since ${dateOnly(u.since)}. Each copy says once a day only whether it's new today, this week or this month, with nothing that identifies it, so these are copies rather than people: someone with two computers is two. Copies from before the usage counts, and people who turned them off in Settings → Privacy & data, aren't in these numbers; the update checks below include the older copies.`
+    : "No copy has counted itself yet. Copies count themselves from the next desktop release on, once a day, with nothing that identifies them; people can turn it off in Settings → Privacy & data. Until then, the update checks below are the only sign of use.";
+  const [thisWeek, lastWeek, weekBefore] = u.weeks;
+  const daily = add(u.daily.direct, u.daily.store);
+  const opens = add(u.opens.direct, u.opens.store);
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const month = u.months.find((m) => m.month === currentMonth);
+  const previousMonth = u.months.find((m) => m.month < currentMonth);
+  // Came back the week after: copies first opened in a week whose next week is over.
+  const settled = u.cohorts.filter((c) => c.back.length >= 2).slice(0, 4);
+  const settledOpens = sum(settled.map((c) => c.opens));
+  const cameBack = sum(settled.map((c) => c.back[0]));
+  tiles($("usage-tiles"), [
+    { label: "In use this week", value: num(thisWeek?.active), sub: "Copies used since Monday (UTC)" },
+    {
+      label: "In use last week",
+      value: num(lastWeek?.active),
+      sub: `Windows ${num(lastWeek?.windows)} · macOS ${num(lastWeek?.macos)} · Store ${num(lastWeek?.store)}`,
+      trend: [lastWeek?.active ?? 0, weekBefore?.active ?? 0],
+      than: "the week before",
+    },
+    { label: "In use yesterday", value: num(daily.at(-2)), sub: `${num(daily.at(-1))} today so far` },
+    {
+      label: "In use this month",
+      value: num(month?.active),
+      sub: previousMonth ? `${num(previousMonth.active)} in ${monthName(previousMonth.month)}` : "Copies used since the 1st (UTC)",
+    },
+    {
+      label: "First opens, 30 days",
+      value: num(lastDaysOf(opens, 30)),
+      sub: "Copies installed and opened",
+      trend: [lastDaysOf(opens, 30), lastDaysOf(opens, 30, true)],
+    },
+    {
+      label: "Came back the week after",
+      value: settledOpens ? percent(cameBack / settledOpens) : "—",
+      sub: settledOpens ? `${num(cameBack)} of ${plural(settledOpens, "copy", "copies")} first opened in the last ${plural(settled.length, "finished week")}` : "Needs a week of first opens and the whole week after it",
+    },
+  ]);
+
+  const labels = u.days.map(shortDay);
+  const tips = u.days.map(dateOnly);
+  const none = "No copies have counted themselves yet.";
+  columnChart($("chart-active-90"), {
+    title: "Copies in use per day",
+    sub: "Last 90 days · by where they were installed from",
+    labels,
+    tips,
+    series: usageSeries(u.daily),
+    empty: none,
+  });
+  columnChart($("chart-opens-90"), {
+    title: "First opens per day",
+    sub: "Last 90 days · copies installed and opened for the first time",
+    labels,
+    tips,
+    series: usageSeries(u.opens),
+    empty: none,
+  });
+  const oldestFirst = [...u.weeks].reverse();
+  columnChart($("chart-weekly"), {
+    title: "Copies in use per week",
+    sub: "Last 12 weeks, Monday to Sunday (UTC) · the last is this week so far",
+    labels: oldestFirst.map((w) => shortDay(w.start)),
+    tips: oldestFirst.map((w, i) => `Week of ${dateOnly(w.start)}${i === oldestFirst.length - 1 ? " (so far)" : ""}`),
+    series: usageSeries({ direct: oldestFirst.map((w) => w.direct), store: oldestFirst.map((w) => w.store) }),
+    empty: none,
+  });
+
+  retention(u.cohorts, thisWeek?.start);
+  fillTable(
+    $("usage-weeks-table"),
+    u.weeks.map((week, i) =>
+      h(
+        "tr",
+        {},
+        h("td", { class: "mono" }, shortDay(week.start), i === 0 ? h("span", { class: "muted" }, " so far") : null),
+        h("td", { class: "num" }, h("b", {}, num(week.active))),
+        h("td", { class: "num" }, num(week.windows)),
+        h("td", { class: "num" }, num(week.macos)),
+        h("td", { class: "num" }, num(week.direct)),
+        h("td", { class: "num" }, num(week.store)),
+        h("td", { class: "num" }, num(week.opens)),
+      ),
+    ),
+    "No weeks yet.",
+  );
+  fillTable(
+    $("usage-versions-table"),
+    u.versions.map((r) =>
+      h(
+        "tr",
+        {},
+        h("td", {}, r.version),
+        h("td", {}, PLATFORM[r.platform] || r.platform),
+        h("td", {}, CHANNEL[r.channel] || r.channel),
+        h("td", { class: "num" }, num(r.thisWeek)),
+        h("td", { class: "num" }, num(r.lastWeek)),
+      ),
+    ),
+    none,
+  );
+
+  columnChart($("chart-launches-90"), {
+    title: "Update checks per day",
+    sub: "Last 90 days · copies of 1.0.2 and later, outside the Store · about one a launch, not users or installs",
+    labels,
+    tips,
+    series: [
+      { name: "Windows", values: u.launches.windows, color: "var(--series-1)" },
+      { name: "macOS", values: u.launches.macos, color: "var(--series-2)" },
+    ],
+    empty: "No update checks yet. Copies from 1.0.2 on are counted.",
+  });
+  fillTable(
+    $("launch-versions-table"),
+    u.launches.versions.map((r) =>
+      h(
+        "tr",
+        {},
+        h("td", {}, r.version),
+        h("td", {}, PLATFORM[r.platform] || r.platform),
+        h("td", { class: "num" }, num(r.n)),
+        h("td", {}, dateOnly(r.last)),
+      ),
+    ),
+    "No update checks yet.",
+  );
+};
+
+/** Each week's new copies, and the share used again in each week after. */
+function retention(cohorts, thisWeek) {
+  const table = $("retention-table");
+  const weeksAfter = Math.max(0, ...cohorts.map((c) => c.back.length));
+  table.tHead.replaceChildren(
+    h(
+      "tr",
+      {},
+      h("th", { scope: "col" }, "First opened"),
+      h("th", { scope: "col", class: "num" }, "Copies"),
+      Array.from({ length: weeksAfter }, (_, k) => h("th", { scope: "col", class: "num" }, `Week ${k + 1}`)),
+    ),
+  );
+  fillTable(
+    table,
+    cohorts.map((cohort) =>
+      h(
+        "tr",
+        {},
+        h("td", { class: "mono" }, `Week of ${shortDay(cohort.week)}`),
+        h("td", { class: "num" }, num(cohort.opens)),
+        Array.from({ length: weeksAfter }, (_, k) => {
+          if (k >= cohort.back.length) return h("td", {});
+          const share = cohort.opens ? Math.min(1, cohort.back[k] / cohort.opens) : 0;
+          const current = addDays(cohort.week, 7 * (k + 1)) === thisWeek;
+          return h(
+            "td",
+            {
+              class: "num share",
+              style: `--share:${share.toFixed(2)}`,
+              title: `${num(cohort.back[k])} of ${plural(cohort.opens, "copy", "copies")} used in week ${k + 1}${current ? " (this week, so far)" : ""}`,
+            },
+            percent(share),
+            h("small", {}, `${num(cohort.back[k])}${current ? " so far" : ""}`),
+          );
+        }),
+      ),
+    ),
+    "No copies first opened yet.",
+  );
+}
 
 /* ---------- Revenue ---------- */
 

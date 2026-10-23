@@ -650,7 +650,7 @@
       </div>
     </section>
 
-    <!-- Last call: a night-violet card with the app running off its edge. -->
+    <!-- Last call: a lavender card (night-violet in dark) with the app running off its edge. -->
     <section class="finale" aria-labelledby="finale-title">
       <div class="container">
         <div class="finale-card">
@@ -658,7 +658,7 @@
             <h2 id="finale-title">Start this month's budget.</h2>
             <p>It's free. No account and no card.</p>
             <div class="cta-row">
-              <a class="btn btn-light btn-lg" href="/download/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg><span data-download-label>Download</span></a>
+              <a class="btn btn-primary btn-lg" href="/download/"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/></svg><span data-download-label>Download</span></a>
             </div>
             <ul class="finale-facts">
               <li>Windows and macOS</li>
@@ -667,10 +667,14 @@
             </ul>
           </div>
 
-          <!-- The app itself, running past the card's edge. Always the dark screenshot: the card is
-               dark in both color schemes. -->
+          <!-- The app itself, running past the card's edge, in the card's color scheme. -->
           <figure class="finale-shot" aria-hidden="true">
-            <img src="/img/budget-dark-1280.webp?v=3de9ceb1" srcset="/img/budget-dark-800.webp?v=4b3a46cd 800w, /img/budget-dark-1280.webp?v=3de9ceb1 1280w, /img/budget-dark-2560.webp?v=10dfc446 2560w" sizes="(min-width: 860px) 820px, 100vw" width="1280" height="800" loading="lazy" decoding="async" alt="">
+            <picture class="theme-light">
+              <img src="/img/budget-light-1280.webp?v=3a5fb97e" srcset="/img/budget-light-800.webp?v=1f1a2778 800w, /img/budget-light-1280.webp?v=3a5fb97e 1280w, /img/budget-light-2560.webp?v=bbb50df6 2560w" sizes="(min-width: 860px) 820px, 100vw" width="1280" height="800" loading="lazy" decoding="async" alt="">
+            </picture>
+            <picture class="theme-dark">
+              <img src="/img/budget-dark-1280.webp?v=3de9ceb1" srcset="/img/budget-dark-800.webp?v=4b3a46cd 800w, /img/budget-dark-1280.webp?v=3de9ceb1 1280w, /img/budget-dark-2560.webp?v=10dfc446 2560w" sizes="(min-width: 860px) 820px, 100vw" width="1280" height="800" loading="lazy" decoding="async" alt="">
+            </picture>
           </figure>
         </div>
       </div>

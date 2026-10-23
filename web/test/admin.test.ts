@@ -2,7 +2,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vite
 import { signWebhook } from "../src/billing/polar";
 import worker, { app } from "../src/index";
 import { normalizeRef } from "../src/releases";
-import { base64url, utf8 } from "../src/util";
+import { base64url, mondayOf, utf8 } from "../src/util";
 import { testEnv, type TestEnv } from "./fakes";
 
 let env: TestEnv;
@@ -176,7 +176,7 @@ describe("admin without licenses", () => {
       expect((await call(path, post({ email: "a@example.com" }))).status, path).toBe(404);
     const overview = await read(call("/api/v1/admin/overview"));
     expect(overview).not.toHaveProperty("licenses");
-    expect(Object.keys(overview.funnel as object)).toEqual(["views", "downloads", "checkouts"]);
+    expect(Object.keys(overview.funnel as object)).toEqual(["views", "downloads", "opens", "checkouts"]);
     const revenue = await read(call("/api/v1/admin/revenue"));
     expect(revenue).not.toHaveProperty("refundedLicenses");
     const asked = new URL(fetches.find((f) => f.url.includes("/v1/metrics/"))!.url);
@@ -206,15 +206,14 @@ describe("admin numbers", () => {
     await call("/download/macos", { headers: { "User-Agent": browser } }); // no macOS build: not a download
 
     const downloads = await read<{
-      windows: number[];
-      macos: number[];
+      website: { windows: number[]; macos: number[] };
       sources: { source: string; n: number }[];
       versions: { version: string; n: number }[];
       latest: { version: string };
       github: { releases: { tag: string; assets: { downloads: number }[] }[] };
     }>(call("/api/v1/admin/downloads"));
-    expect(downloads.windows.at(-1)).toBe(3);
-    expect(downloads.macos.at(-1)).toBe(0);
+    expect(downloads.website.windows.at(-1)).toBe(3);
+    expect(downloads.website.macos.at(-1)).toBe(0);
     expect(downloads.sources).toEqual(
       expect.arrayContaining([{ source: "/download/", n: 1 }, { source: "reddit.com", n: 1 }, { source: "", n: 1 }]),
     );
@@ -241,10 +240,10 @@ describe("admin numbers", () => {
     // The team: a browser that opened the admin page.
     await call("/download/windows", { headers: { ...page, "User-Agent": browser, Cookie: "theme=dark; ub_team=1" } });
 
-    const d = await read<{ windows: number[]; others: { team: { last30: number }; bots: { last30: number } }; sources: { source: string; n: number }[] }>(
+    const d = await read<{ website: { windows: number[] }; others: { team: { last30: number }; bots: { last30: number } }; sources: { source: string; n: number }[] }>(
       call("/api/v1/admin/downloads"),
     );
-    expect(d.windows.at(-1)).toBe(2);
+    expect(d.website.windows.at(-1)).toBe(2);
     expect(d.others).toEqual({ team: { last30: 1, last90: 1 }, bots: { last30: 3, last90: 3 } });
     expect(d.sources.reduce((n, s) => n + s.n, 0)).toBe(2);
     const overview = await read<{ downloads: { last30: number; bots: number; team: number } }>(call("/api/v1/admin/overview"));
@@ -265,7 +264,7 @@ describe("admin numbers", () => {
     expect(sources.reduce((n, s) => n + s.n, 0)).toBe(3);
   });
 
-  it("counts the Microsoft Store button as a Windows download, even before a release", async () => {
+  it("counts the Microsoft Store button apart, as the Store's downloads until Partner Center answers", async () => {
     const page = { "User-Agent": browser, Referer: "http://localhost/download/" };
     const store = await call("/download/store", { headers: page });
     expect(store.status).toBe(302);
@@ -274,10 +273,17 @@ describe("admin numbers", () => {
     await call("/download/store", { method: "HEAD", headers: page });
     await call("/download/store"); // a bare request: a bot
 
-    const d = await read<{ windows: number[]; versions: { version: string; platform: string; n: number }[]; sources: { source: string; n: number }[] }>(
-      call("/api/v1/admin/downloads"),
-    );
-    expect(d.windows.at(-1)).toBe(2);
+    const d = await read<{
+      website: { windows: number[]; store: number[] };
+      total: number[];
+      versions: { version: string; platform: string; n: number }[];
+      sources: { source: string; n: number }[];
+    }>(call("/api/v1/admin/downloads"));
+    expect(d.website.windows.at(-1)).toBe(0);
+    expect(d.website.store.at(-1)).toBe(2);
+    expect(d.total.at(-1)).toBe(2);
+    const overview = await read<{ downloads: { last30: number; store: number; windows: number; storeSource: string } }>(call("/api/v1/admin/overview"));
+    expect(overview.downloads).toMatchObject({ last30: 2, store: 2, windows: 2, storeSource: "clicks" });
     expect(d.versions).toEqual([expect.objectContaining({ version: "Microsoft Store", platform: "windows", n: 2 })]);
     expect(d.sources).toEqual(expect.arrayContaining([{ source: "ref:hn", n: 1 }, { source: "/download/", n: 1 }]));
   });
@@ -323,20 +329,18 @@ describe("admin numbers", () => {
     await call("/api/v1/releases/update/amiga/m68k/1.0.2");
     expect((await call("/api/v1/releases/update/windows/x86_64/latest")).status).toBe(400);
 
-    const t = await read<{ launches: { windows: number[]; macos: number[] }; versions: { version: string; platform: string; n: number }[] }>(
-      call("/api/v1/admin/traffic"),
+    const { launches } = await read<{ launches: { windows: number[]; macos: number[]; versions: { version: string; platform: string; n: number }[] } }>(
+      call("/api/v1/admin/usage"),
     );
-    expect(t.launches.windows.at(-1)).toBe(2);
-    expect(t.launches.macos.at(-1)).toBe(2);
-    expect(t.versions).toEqual(
+    expect(launches.windows.at(-1)).toBe(2);
+    expect(launches.macos.at(-1)).toBe(2);
+    expect(launches.versions).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ version: "1.0.2", platform: "windows", n: 2 }),
         expect.objectContaining({ version: "1.0.2", platform: "darwin", n: 1 }),
         expect.objectContaining({ version: "1.0.3", platform: "darwin", n: 1 }),
       ]),
     );
-    const overview = await read<{ launches: { last30: number } }>(call("/api/v1/admin/overview"));
-    expect(overview.launches.last30).toBe(4);
   });
 
   it("keeps link tags to short lowercase words", () => {
@@ -475,25 +479,28 @@ describe("admin tracking", () => {
     const view = env.DB.sqlite.prepare("INSERT INTO page_views (day, path, source, kind, count) VALUES (?, '/', ?, 'person', ?)");
     view.run(today(), "ref:hn", 6);
     view.run(daysAgo(40), "", 2);
-    const launch = env.DB.sqlite.prepare("INSERT INTO app_launches (day, platform, arch, version, count) VALUES (?, 'windows', 'x86_64', '1.0.3', ?)");
-    launch.run(today(), 2);
-    launch.run(daysAgo(45), 1);
+    const opened = env.DB.sqlite.prepare("INSERT INTO app_usage (day, platform, channel, version, kind, cohort, count) VALUES (?, 'windows', ?, '1.0.9', 'install', '', ?)");
+    opened.run(today(), "direct", 1);
+    opened.run(today(), "store", 1);
+    opened.run(daysAgo(45), "direct", 1);
 
     const o = await read<{
       downloads: { last30: number };
       pageViews: { last30: number };
-      launches: { last30: number };
+      usage: { opens30: number };
       previous30: Record<string, number>;
-      weeks: { start: string; downloads: number; views: number; launches: number; tags: { tag: string; n: number }[] }[];
+      funnel: Record<string, number>;
+      weeks: { start: string; downloads: number; views: number; opens: number; tags: { tag: string; n: number }[] }[];
     }>(call("/api/v1/admin/overview"));
-    expect([o.downloads.last30, o.pageViews.last30, o.launches.last30]).toEqual([4, 6, 2]);
-    expect(o.previous30).toEqual({ downloads: 4, pageViews: 2, launches: 1, checkouts: 0, accounts: 0 });
+    expect([o.downloads.last30, o.pageViews.last30, o.usage.opens30]).toEqual([4, 6, 2]);
+    expect(o.previous30).toEqual({ downloads: 4, pageViews: 2, opens: 1, checkouts: 0, accounts: 0 });
+    expect(o.funnel).toEqual({ views: 6, downloads: 4, opens: 2, checkouts: 0 });
 
     expect(o.weeks).toHaveLength(12);
     const monday = new Date(`${o.weeks[0].start}T00:00:00Z`);
     expect(monday.getUTCDay()).toBe(1);
     expect(Date.now() - monday.getTime()).toBeLessThan(7 * 86_400_000);
-    expect(o.weeks[0]).toMatchObject({ downloads: 4, views: 6, launches: 2, tags: [{ tag: "hn", n: 3 }, { tag: "reddit", n: 1 }] });
+    expect(o.weeks[0]).toMatchObject({ downloads: 4, views: 6, opens: 2, tags: [{ tag: "hn", n: 3 }, { tag: "reddit", n: 1 }] });
     expect(o.weeks.reduce((n, w) => n + w.downloads, 0)).toBe(8);
     expect(o.weeks.reduce((n, w) => n + w.views, 0)).toBe(8);
   });

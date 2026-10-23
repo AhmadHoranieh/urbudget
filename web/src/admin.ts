@@ -4,9 +4,10 @@
 import { Hono } from "hono";
 import { requireAdmin } from "./access";
 import { provider, SYNC_STATUSES } from "./billing";
+import { fetchStatus, githubDaily, githubReleases, storeConfigured } from "./channels";
 import type { AppEnv, Env } from "./env";
 import type { Release } from "./releases";
-import { ApiError, now } from "./util";
+import { ApiError, mondayOf, now } from "./util";
 
 const PAGE = 50;
 const DAY_MS = 86_400_000;
@@ -16,11 +17,14 @@ const since = (days: number) => new Date(Date.now() - days * DAY_MS).toISOString
 /** The last `count` days, oldest first, as YYYY-MM-DD (UTC). */
 const lastDays = (count: number) => Array.from({ length: count }, (_, i) => day(count - 1 - i));
 
-/** Daily rows (`day`, `n`) as one number per day of `days`, 0 where there's no row. */
+/** Daily rows (`day`, `n`) as one number per day of `days`: their sum, 0 where there's no row. */
 function perDay(days: string[], rows: { day: string; n: number }[]) {
-  const counts = new Map(rows.map((r) => [r.day, r.n]));
+  const counts = new Map<string, number>();
+  for (const row of rows) counts.set(row.day, (counts.get(row.day) ?? 0) + row.n);
   return days.map((d) => counts.get(d) ?? 0);
 }
+/** Series of the same length added up, day by day. */
+const add = (...series: number[][]) => series[0].map((_, i) => series.reduce((n, values) => n + values[i], 0));
 
 const text = (value: unknown, max: number) => (typeof value === "string" ? value.trim().slice(0, max) : "");
 
@@ -52,12 +56,6 @@ admin.delete("/assistant-reports/:id", async (c) => {
 
 /* ---------- Overview ---------- */
 
-/** The Monday (UTC) of the week a YYYY-MM-DD day falls in. */
-function mondayOf(date: string) {
-  const d = new Date(`${date}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
-  return d.toISOString().slice(0, 10);
-}
 /** In SQL: the Monday on or before a YYYY-MM-DD day. */
 const weekOf = (column: string) => `date(${column}, '-6 days', 'weekday 1')`;
 const WEEKS = 12;
@@ -85,10 +83,104 @@ async function eventDays(db: D1Database) {
   return { countingSince: row?.first ?? null, lastCleanup: row?.cleanup ?? null };
 }
 
+/**
+ * Downloads from every channel and first openings of the app, as one number per day of `days`:
+ * people's clicks on urbudget.app's installers (bots and the team are left out) and on its Store
+ * button, installers downloaded from GitHub, the Store's acquisitions and installs from Partner
+ * Center, and copies opened for the first time, by where they came from.
+ */
+async function channelSeries(env: Env, days: string[]) {
+  const db = env.DB;
+  const first = days[0];
+  const [website, github, store, opens, status] = await Promise.all([
+    db
+      .prepare(
+        `SELECT day, platform, version = 'Microsoft Store' AS store, SUM(count) AS n FROM download_counts
+         WHERE day >= ?1 AND kind = 'person' GROUP BY day, platform, store`,
+      )
+      .bind(first)
+      .all<{ day: string; platform: string; store: number; n: number }>(),
+    githubDaily(db, first),
+    db.prepare("SELECT day, kind, count AS n FROM store_counts WHERE day >= ?1").bind(first).all<{ day: string; kind: string; n: number }>(),
+    db
+      .prepare("SELECT day, channel, SUM(count) AS n FROM app_usage WHERE day >= ?1 AND kind = 'install' GROUP BY day, channel")
+      .bind(first)
+      .all<{ day: string; channel: string; n: number }>(),
+    fetchStatus(db),
+  ]);
+  const series = {
+    websiteWindows: perDay(days, website.results.filter((r) => !r.store && r.platform === "windows")),
+    websiteMacos: perDay(days, website.results.filter((r) => !r.store && r.platform === "macos")),
+    storeClicks: perDay(days, website.results.filter((r) => r.store)),
+    githubWindows: perDay(days, github.daily.filter((r) => r.platform === "windows")),
+    githubMacos: perDay(days, github.daily.filter((r) => r.platform === "macos")),
+    storeAcquisitions: perDay(days, store.results.filter((r) => r.kind === "acquisitions")),
+    storeInstalls: perDay(days, store.results.filter((r) => r.kind === "installs")),
+    opensDirect: perDay(days, opens.results.filter((r) => r.channel === "direct")),
+    opensStore: perDay(days, opens.results.filter((r) => r.channel === "store")),
+  };
+  // The Store's downloads are its acquisitions once Partner Center has answered. Until then, clicks
+  // on the site's Store button stand in, which miss everyone who found UrBudget in the Store itself.
+  const partnerCenter = storeConfigured(env) && Boolean(status.store?.okAt);
+  const websiteAll = add(series.websiteWindows, series.websiteMacos);
+  const githubAll = add(series.githubWindows, series.githubMacos);
+  const storeAll = partnerCenter ? series.storeAcquisitions : series.storeClicks;
+  return {
+    ...series,
+    website: websiteAll,
+    github: githubAll,
+    store: storeAll,
+    total: add(websiteAll, githubAll, storeAll),
+    windows: add(series.websiteWindows, series.githubWindows, storeAll),
+    macos: add(series.websiteMacos, series.githubMacos),
+    opens: add(series.opensDirect, series.opensStore),
+    partnerCenter,
+    githubSince: github.since,
+    status,
+  };
+}
+
+/** Copies used each day, and each week of `weekStarts` (Mondays), as the app reports them. */
+async function activeSeries(db: D1Database, days: string[], weekStarts: string[]) {
+  const [daily, weekly, since] = await Promise.all([
+    db
+      .prepare("SELECT day, channel, SUM(count) AS n FROM app_usage WHERE day >= ?1 AND kind = 'day' GROUP BY day, channel")
+      .bind(days[0])
+      .all<{ day: string; channel: string; n: number }>(),
+    db
+      .prepare(
+        `SELECT ${weekOf("day")} AS week, channel, platform, SUM(count) AS n FROM app_usage
+         WHERE day >= ?1 AND kind = 'week' GROUP BY week, channel, platform`,
+      )
+      .bind(weekStarts.at(-1) ?? days[0])
+      .all<{ week: string; channel: string; platform: string; n: number }>(),
+    db.prepare("SELECT MIN(day) AS day FROM app_usage").first<{ day: string | null }>(),
+  ]);
+  const inWeek = (start: string, where: (r: { channel: string; platform: string }) => boolean = () => true) =>
+    weekly.results.filter((r) => r.week === start && where(r)).reduce((n, r) => n + r.n, 0);
+  return {
+    direct: perDay(days, daily.results.filter((r) => r.channel === "direct")),
+    store: perDay(days, daily.results.filter((r) => r.channel === "store")),
+    weeks: weekStarts.map((start) => ({
+      start,
+      active: inWeek(start),
+      direct: inWeek(start, (r) => r.channel === "direct"),
+      store: inWeek(start, (r) => r.channel === "store"),
+      windows: inWeek(start, (r) => r.platform === "windows"),
+      macos: inWeek(start, (r) => r.platform === "macos"),
+    })),
+    since: since?.day ?? null,
+  };
+}
+
+/** The last WEEKS weeks (Monday to Sunday, UTC) of `days`, newest first; the first is this week so far. */
+const recentWeeks = (days: string[]) => [...new Set(days.map(mondayOf))].slice(-WEEKS).reverse();
+
 admin.get("/overview", async (c) => {
   const db = c.env.DB;
   const days = lastDays(90);
   const first = days[0];
+  const weekStarts = recentWeeks(days);
   const [
     users,
     active,
@@ -99,10 +191,10 @@ admin.get("/overview", async (c) => {
     webhooks,
     problems,
     signups,
-    daily,
+    channels,
+    inUse,
     views,
     home,
-    launches,
     checkouts,
     tags,
     emails,
@@ -127,10 +219,11 @@ admin.get("/overview", async (c) => {
     db
       .prepare("SELECT COUNT(*) AS budgets, COUNT(DISTINCT user_id) AS users, COALESCE(SUM(size), 0) AS bytes FROM sync_budgets")
       .first<{ budgets: number; users: number; bytes: number }>(),
+    // The site's clicks by kind, for the bots and the team left out of every other number.
     db
-      .prepare("SELECT platform, kind, SUM(count) AS n FROM download_counts WHERE day >= ?1 GROUP BY platform, kind")
+      .prepare("SELECT kind, SUM(count) AS n FROM download_counts WHERE day >= ?1 GROUP BY kind")
       .bind(day(29))
-      .all<{ platform: string; kind: string; n: number }>(),
+      .all<{ kind: string; n: number }>(),
     db.prepare("SELECT type, received_at FROM webhook_events ORDER BY received_at DESC LIMIT 1").first<{ type: string; received_at: string }>(),
     db.prepare("SELECT COUNT(*) AS n FROM webhook_events WHERE received_at >= ?1").bind(since(30)).first<{ n: number }>(),
     db.prepare("SELECT kind, COUNT(*) AS n FROM problems WHERE at >= ?1 GROUP BY kind").bind(since(30)).all<{ kind: string; n: number }>(),
@@ -138,10 +231,8 @@ admin.get("/overview", async (c) => {
       .prepare("SELECT substr(created_at, 1, 10) AS day, COUNT(*) AS n FROM users WHERE created_at >= ?1 GROUP BY day")
       .bind(first)
       .all<{ day: string; n: number }>(),
-    db
-      .prepare("SELECT day, platform, SUM(count) AS n FROM download_counts WHERE day >= ?1 AND kind = 'person' GROUP BY day, platform")
-      .bind(first)
-      .all<{ day: string; platform: string; n: number }>(),
+    channelSeries(c.env, days),
+    activeSeries(db, days, weekStarts),
     db
       .prepare("SELECT day, SUM(count) AS n FROM page_views WHERE day >= ?1 AND kind = 'person' GROUP BY day")
       .bind(first)
@@ -150,13 +241,12 @@ admin.get("/overview", async (c) => {
       .prepare("SELECT SUM(count) AS n FROM page_views WHERE day >= ?1 AND kind = 'person' AND path = '/'")
       .bind(day(29))
       .first<{ n: number | null }>(),
-    db.prepare("SELECT day, SUM(count) AS n FROM app_launches WHERE day >= ?1 GROUP BY day").bind(first).all<{ day: string; n: number }>(),
     // Sync checkouts opened (the app itself is free, so Sync is the only sale).
     db
       .prepare("SELECT day, SUM(count) AS n FROM events WHERE day >= ?1 AND name = 'checkout' AND detail = 'sync' GROUP BY day")
       .bind(first)
       .all<{ day: string; n: number }>(),
-    // People's downloads per week and link tag, for the weekly log.
+    // People's downloads from the site per week and link tag, for the weekly log.
     db
       .prepare(
         `SELECT ${weekOf("day")} AS week, substr(source, 5) AS tag, SUM(count) AS n FROM download_counts
@@ -178,33 +268,37 @@ admin.get("/overview", async (c) => {
   const series = {
     checkouts: perDay(days, checkouts.results),
     signups: perDay(days, signups.results),
-    windows: perDay(days, daily.results.filter((r) => r.platform === "windows")),
-    macos: perDay(days, daily.results.filter((r) => r.platform === "macos")),
     views: perDay(days, views.results),
-    launches: perDay(days, launches.results),
+    downloads: channels.total,
+    website: channels.website,
+    github: channels.github,
+    store: channels.store,
+    opens: channels.opens,
+    active: add(inUse.direct, inUse.store),
   };
-  const downloadsPerDay = series.windows.map((n, i) => n + series.macos[i]);
   const total = (values: number[], from: number, to?: number) => values.slice(from, to).reduce((a, b) => a + b, 0);
   /** Today and the 29 days before; and the 30 days before those. */
   const last30 = (values: number[]) => total(values, -30);
   const prev30 = (values: number[]) => total(values, -60, -30);
 
-  // The last WEEKS weeks (Monday to Sunday, UTC), newest first; the first is this week so far.
   const weekOfDay = days.map(mondayOf);
-  const weekStarts = [...new Set(weekOfDay)].slice(-WEEKS).reverse();
-  const weeks = weekStarts.map((start) => {
-    const inWeek = (values: number[]) => values.reduce((n, v, i) => (weekOfDay[i] === start ? n + v : n), 0);
+  const weeks = weekStarts.map((start, i) => {
+    const inWeek = (values: number[]) => values.reduce((n, v, k) => (weekOfDay[k] === start ? n + v : n), 0);
     return {
       start,
       views: inWeek(series.views),
-      downloads: inWeek(downloadsPerDay),
+      downloads: inWeek(series.downloads),
+      website: inWeek(series.website),
+      github: inWeek(series.github),
+      store: inWeek(series.store),
       tags: tags.results
         .filter((t) => t.week === start)
         .sort((a, b) => b.n - a.n || a.tag.localeCompare(b.tag))
         .map((t) => ({ tag: t.tag, n: t.n })),
+      opens: inWeek(series.opens),
+      active: inUse.weeks[i].active,
       checkouts: inWeek(series.checkouts),
       accounts: inWeek(series.signups),
-      launches: inWeek(series.launches),
     };
   });
 
@@ -226,29 +320,42 @@ admin.get("/overview", async (c) => {
       users: sync?.users ?? 0,
       bytes: sync?.bytes ?? 0,
     },
-    // People's downloads; the team's and bots' are counted apart.
+    // People's downloads from every channel, last 30 days; the site's bots and team are counted apart.
     downloads: {
-      last30: sum(downloads.results, (r) => r.n, (r) => r.kind === "person"),
-      windows: sum(downloads.results, (r) => r.n, (r) => r.kind === "person" && r.platform === "windows"),
-      macos: sum(downloads.results, (r) => r.n, (r) => r.kind === "person" && r.platform === "macos"),
+      last30: last30(series.downloads),
+      website: last30(series.website),
+      github: last30(series.github),
+      store: last30(series.store),
+      storeSource: channels.partnerCenter ? "partner-center" : "clicks",
+      windows: last30(channels.windows),
+      macos: last30(channels.macos),
       team: sum(downloads.results, (r) => r.n, (r) => r.kind === "team"),
       bots: sum(downloads.results, (r) => r.n, (r) => r.kind === "bot"),
     },
-    // People's page views, and app launches (copies from 1.0.2 on, outside the Store), last 30 days.
+    // Copies opened for the first time, and copies used (by week, newest first), as the app reports them.
+    usage: {
+      opens30: last30(series.opens),
+      since: inUse.since,
+      thisWeek: inUse.weeks[0]?.active ?? 0,
+      lastWeek: inUse.weeks[1]?.active ?? 0,
+      weekBefore: inUse.weeks[2]?.active ?? 0,
+      yesterday: series.active.at(-2) ?? 0,
+    },
+    // People's page views, last 30 days.
     pageViews: { last30: last30(series.views), home: home?.n ?? 0 },
-    launches: { last30: last30(series.launches) },
     // The same numbers for the 30 days before, to compare with.
     previous30: {
       checkouts: prev30(series.checkouts),
-      downloads: prev30(downloadsPerDay),
+      downloads: prev30(series.downloads),
+      opens: prev30(series.opens),
       pageViews: prev30(series.views),
-      launches: prev30(series.launches),
       accounts: prev30(series.signups),
     },
     // From a visit to a Sync checkout, last 30 days. Checkouts are counted from `countingSince` on.
     funnel: {
       views: last30(series.views),
-      downloads: last30(downloadsPerDay),
+      downloads: last30(series.downloads),
+      opens: last30(series.opens),
       checkouts: last30(series.checkouts),
     },
     countingSince: counted.countingSince,
@@ -386,67 +493,14 @@ admin.get("/accounts/:id", async (c) => {
   });
 });
 
-/* ---------- Downloads ---------- */
-
-interface GitHubRelease {
-  tag_name: string;
-  name: string | null;
-  draft: boolean;
-  prerelease: boolean;
-  published_at: string | null;
-  assets: { name: string; size: number; download_count: number }[];
-}
-
-/** Download counts of the files on GitHub's releases. A token is optional: it lifts the rate limit. */
-async function githubReleases(env: Env) {
-  if (!env.GITHUB_REPO) return { configured: false as const };
-  try {
-    const response = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/releases?per_page=20`, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "urbudget-admin",
-        "X-GitHub-Api-Version": "2022-11-28",
-        ...(env.GITHUB_TOKEN ? { Authorization: `Bearer ${env.GITHUB_TOKEN}` } : {}),
-      },
-    });
-    if (!response.ok) {
-      const hint =
-        response.status === 404
-          ? " Check GITHUB_REPO."
-          : response.status === 401
-            ? " Check GITHUB_TOKEN."
-            : response.status === 403 || response.status === 429
-              ? " That's GitHub's rate limit: set GITHUB_TOKEN."
-              : "";
-      return { configured: true as const, error: `GitHub answered ${response.status}.${hint}` };
-    }
-    const releases = (await response.json()) as GitHubRelease[];
-    return {
-      configured: true as const,
-      releases: releases
-        .filter((r) => !r.draft)
-        .map((r) => ({
-          tag: r.tag_name,
-          name: r.name || r.tag_name,
-          prerelease: r.prerelease,
-          publishedAt: r.published_at,
-          assets: r.assets.map((a) => ({ name: a.name, size: a.size, downloads: a.download_count })),
-        })),
-    };
-  } catch (error) {
-    return { configured: true as const, error: `GitHub couldn't be reached: ${error instanceof Error ? error.message : String(error)}` };
-  }
-}
+/* ---------- Downloads: every channel ---------- */
 
 admin.get("/downloads", async (c) => {
   const db = c.env.DB;
   const days = lastDays(90);
   const first = days[0];
-  const [daily, versions, sources, others, release, github] = await Promise.all([
-    db
-      .prepare("SELECT day, platform, SUM(count) AS n FROM download_counts WHERE day >= ?1 AND kind = 'person' GROUP BY day, platform")
-      .bind(first)
-      .all<{ day: string; platform: string; n: number }>(),
+  const [channels, versions, sources, others, storeSince, release, github] = await Promise.all([
+    channelSeries(c.env, days),
     db
       .prepare(
         `SELECT version, platform, SUM(count) AS n, MIN(day) AS first, MAX(day) AS last FROM download_counts
@@ -461,6 +515,7 @@ admin.get("/downloads", async (c) => {
       .prepare("SELECT kind, day >= ?2 AS recent, SUM(count) AS n FROM download_counts WHERE day >= ?1 AND kind != 'person' GROUP BY kind, recent")
       .bind(first, days[days.length - 30])
       .all<{ kind: string; recent: number; n: number }>(),
+    db.prepare("SELECT MIN(day) AS day FROM store_counts").first<{ day: string | null }>(),
     c.env.RELEASES.get("latest.json").then((o) => (o ? (o.json() as Promise<Release>) : null)),
     githubReleases(c.env),
   ]);
@@ -468,8 +523,23 @@ admin.get("/downloads", async (c) => {
     rows.filter(where).reduce((n, row) => n + pick(row), 0);
   return c.json({
     days,
-    windows: perDay(days, daily.results.filter((r) => r.platform === "windows")),
-    macos: perDay(days, daily.results.filter((r) => r.platform === "macos")),
+    // People's clicks on urbudget.app: its installers, and its button to the Microsoft Store.
+    website: { windows: channels.websiteWindows, macos: channels.websiteMacos, store: channels.storeClicks },
+    // Installers downloaded from GitHub, per day since the first snapshot; and every file's count now.
+    github: { ...github, windows: channels.githubWindows, macos: channels.githubMacos, since: channels.githubSince, fetched: channels.status.github ?? null },
+    // Partner Center's numbers. Until it has answered, the site's Store button stands in for the Store.
+    store: {
+      configured: storeConfigured(c.env),
+      partnerCenter: channels.partnerCenter,
+      acquisitions: channels.storeAcquisitions,
+      installs: channels.storeInstalls,
+      since: storeSince?.day ?? null,
+      fetched: channels.status.store ?? null,
+    },
+    // Every channel added up: the series the Overview's downloads are.
+    total: channels.total,
+    // Copies opened for the first time: the downloads that became a copy in use.
+    opens: { direct: channels.opensDirect, store: channels.opensStore },
     versions: versions.results,
     sources: sources.results,
     // Not customers: browsers that opened this page, and bots.
@@ -478,18 +548,99 @@ admin.get("/downloads", async (c) => {
       bots: { last30: sum(others.results, (r) => r.n, (r) => r.kind === "bot" && r.recent === 1), last90: sum(others.results, (r) => r.n, (r) => r.kind === "bot") },
     },
     latest: release && { version: release.version, date: release.date },
-    github,
   });
 });
 
-/* ---------- Traffic: page views and app launches ---------- */
+/* ---------- Usage: copies of the app in use ---------- */
+
+/** How many weeks after its first week the retention table follows a group of copies. */
+const RETENTION_WEEKS = 8;
+
+admin.get("/usage", async (c) => {
+  const db = c.env.DB;
+  const days = lastDays(90);
+  const first = days[0];
+  const weekStarts = recentWeeks(days);
+  const [thisWeek, lastWeek] = weekStarts;
+  const [inUse, opens, months, cohorts, versions, launches, launchVersions] = await Promise.all([
+    activeSeries(db, days, weekStarts),
+    db
+      .prepare(`SELECT day, ${weekOf("day")} AS week, channel, SUM(count) AS n FROM app_usage WHERE kind = 'install' GROUP BY day, channel`)
+      .all<{ day: string; week: string; channel: string; n: number }>(),
+    db
+      .prepare(
+        "SELECT substr(day, 1, 7) AS month, SUM(count) AS n FROM app_usage WHERE kind = 'month' GROUP BY month ORDER BY month DESC LIMIT 6",
+      )
+      .all<{ month: string; n: number }>(),
+    // Each group of copies first opened the same week, by the weeks it was used in.
+    db
+      .prepare(`SELECT cohort, ${weekOf("day")} AS week, SUM(count) AS n FROM app_usage WHERE kind = 'week' AND cohort != '' GROUP BY cohort, week`)
+      .all<{ cohort: string; week: string; n: number }>(),
+    db
+      .prepare(
+        `SELECT version, platform, channel, SUM(CASE WHEN day >= ?1 THEN count ELSE 0 END) AS thisWeek,
+           SUM(CASE WHEN day < ?1 THEN count ELSE 0 END) AS lastWeek
+         FROM app_usage WHERE kind = 'week' AND day >= ?2 GROUP BY version, platform, channel
+         ORDER BY thisWeek + lastWeek DESC, version DESC`,
+      )
+      .bind(thisWeek, lastWeek)
+      .all<{ version: string; platform: string; channel: string; thisWeek: number; lastWeek: number }>(),
+    // Update checks: copies installed outside the Store, including those from before usage counts.
+    db
+      .prepare("SELECT day, platform, SUM(count) AS n FROM app_launches WHERE day >= ?1 GROUP BY day, platform")
+      .bind(first)
+      .all<{ day: string; platform: string; n: number }>(),
+    db
+      .prepare(
+        `SELECT version, platform, SUM(count) AS n, MAX(day) AS last FROM app_launches WHERE day >= ?1
+         GROUP BY version, platform ORDER BY last DESC, version DESC`,
+      )
+      .bind(first)
+      .all<{ version: string; platform: string; n: number; last: string }>(),
+  ]);
+
+  const addWeeks = (monday: string, n: number) => new Date(Date.parse(`${monday}T00:00:00Z`) + n * 7 * DAY_MS).toISOString().slice(0, 10);
+  const opened = new Map<string, number>();
+  for (const row of opens.results) opened.set(row.week, (opened.get(row.week) ?? 0) + row.n);
+  const used = new Map(cohorts.results.map((r) => [`${r.cohort}:${r.week}`, r.n]));
+  return c.json({
+    days,
+    since: inUse.since,
+    // Copies used each day, and copies opened for the first time, by where they came from.
+    daily: { direct: inUse.direct, store: inUse.store },
+    opens: {
+      direct: perDay(days, opens.results.filter((r) => r.channel === "direct")),
+      store: perDay(days, opens.results.filter((r) => r.channel === "store")),
+    },
+    weeks: inUse.weeks.map((week) => ({ ...week, opens: opened.get(week.start) ?? 0 })),
+    months: months.results.map((m) => ({ month: m.month, active: m.n })),
+    // Newest first. `back[k]` is how many were used again k + 1 weeks after the week they were first
+    // opened, up to this week (which isn't over).
+    cohorts: [...opened]
+      .sort(([a], [b]) => b.localeCompare(a))
+      .slice(0, 10)
+      .map(([week, n]) => {
+        const back = [];
+        for (let k = 1; k <= RETENTION_WEEKS && addWeeks(week, k) <= thisWeek; k++) back.push(used.get(`${week}:${addWeeks(week, k)}`) ?? 0);
+        return { week, opens: n, back };
+      }),
+    versions: versions.results,
+    launches: {
+      windows: perDay(days, launches.results.filter((r) => r.platform === "windows")),
+      macos: perDay(days, launches.results.filter((r) => r.platform === "darwin")),
+      versions: launchVersions.results,
+    },
+  });
+});
+
+/* ---------- Traffic: page views ---------- */
 
 admin.get("/traffic", async (c) => {
   const db = c.env.DB;
   const days = lastDays(90);
   const first = days[0];
   const recent = days[days.length - 30];
-  const [views, pages, sources, kinds, launches, versions, downloads, tags] = await Promise.all([
+  const [views, pages, sources, kinds, downloads, tags] = await Promise.all([
     db
       .prepare("SELECT day, SUM(count) AS n FROM page_views WHERE day >= ?1 AND kind = 'person' GROUP BY day")
       .bind(first)
@@ -508,17 +659,6 @@ admin.get("/traffic", async (c) => {
       .prepare("SELECT kind, SUM(count) AS n FROM page_views WHERE day >= ?1 GROUP BY kind")
       .bind(recent)
       .all<{ kind: string; n: number }>(),
-    db
-      .prepare("SELECT day, platform, SUM(count) AS n FROM app_launches WHERE day >= ?1 GROUP BY day, platform")
-      .bind(first)
-      .all<{ day: string; platform: string; n: number }>(),
-    db
-      .prepare(
-        `SELECT version, platform, SUM(count) AS n, MAX(day) AS last FROM app_launches WHERE day >= ?1
-         GROUP BY version, platform ORDER BY last DESC, version DESC`,
-      )
-      .bind(first)
-      .all<{ version: string; platform: string; n: number; last: string }>(),
     db
       .prepare("SELECT SUM(count) AS n FROM download_counts WHERE day >= ?1 AND kind = 'person'")
       .bind(recent)
@@ -541,13 +681,9 @@ admin.get("/traffic", async (c) => {
     views: perDay(days, views.results),
     pages: pages.results,
     sources: sources.results,
-    // Last 30 days: people's page views, the team's and bots' apart, and people's downloads.
+    // Last 30 days: people's page views, the team's and bots' apart, and people's clicks on the
+    // site's download buttons (the Store's included).
     last30: { people: of("person"), team: of("team"), bots: of("bot"), downloads: downloads?.n ?? 0 },
-    launches: {
-      windows: perDay(days, launches.results.filter((r) => r.platform === "windows")),
-      macos: perDay(days, launches.results.filter((r) => r.platform === "darwin")),
-    },
-    versions: versions.results,
     tags: tags.results,
   });
 });
@@ -622,6 +758,7 @@ admin.get("/health", async (c) => {
       { name: "GOOGLE_PLAY_PUSH_EMAIL / GOOGLE_PLAY_PUSH_AUDIENCE", ok: Boolean(env.GOOGLE_PLAY_PUSH_EMAIL && env.GOOGLE_PLAY_PUSH_AUDIENCE) },
       { name: "ACCESS_TEAM_DOMAIN / ACCESS_AUD", ok: Boolean(env.ACCESS_TEAM_DOMAIN && env.ACCESS_AUD) },
       { name: "GITHUB_TOKEN", ok: Boolean(env.GITHUB_TOKEN) },
+      { name: "MSSTORE_TENANT_ID / MSSTORE_CLIENT_ID / MSSTORE_CLIENT_SECRET", ok: storeConfigured(env) },
     ],
   });
 });

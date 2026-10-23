@@ -14,6 +14,13 @@ export const now = () => new Date().toISOString();
 export const inSeconds = (seconds: number) => new Date(Date.now() + seconds * 1000).toISOString();
 export const DAY = 86_400;
 
+/** The Monday (UTC) of the week a YYYY-MM-DD day falls in. */
+export function mondayOf(date: string) {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return d.toISOString().slice(0, 10);
+}
+
 const encoder = new TextEncoder();
 export const utf8 = (s: string) => encoder.encode(s);
 

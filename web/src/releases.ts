@@ -52,6 +52,7 @@ function semver(version: string) {
   if (!match) return null;
   return { core: [Number(match[1]), Number(match[2]), Number(match[3])], pre: match[4]?.split(".") ?? [] };
 }
+export const isVersion = (version: string) => version.length <= 32 && semver(version) !== null;
 
 /** Semantic-version precedence: negative when `a` is older than `b`. */
 export function compareVersions(a: string, b: string): number {
@@ -173,8 +174,10 @@ export async function countDownload(db: D1Database, platform: string, version: s
     .run();
 }
 
-/** UrBudget in the Microsoft Store (the Store ID in .github/workflows/store.yml). */
-export const STORE_URL = "https://apps.microsoft.com/detail/9PMQMBZJG06R";
+/** UrBudget's Store ID in Partner Center (as in .github/workflows/store.yml). */
+export const STORE_ID = "9PMQMBZJG06R";
+/** UrBudget in the Microsoft Store. */
+export const STORE_URL = `https://apps.microsoft.com/detail/${STORE_ID}`;
 
 /** Counts a click on a download button. Bots and the team are counted, but apart. */
 async function countClick(c: Context<AppEnv>, platform: Platform, version: string, ref: string | null) {

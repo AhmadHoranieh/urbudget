@@ -12,6 +12,7 @@ pub mod assistant;
 pub mod simplefin;
 pub mod ynab_capture;
 pub mod credentials;
+pub mod usage;
 #[cfg(target_os = "android")]
 pub mod keystore;
 

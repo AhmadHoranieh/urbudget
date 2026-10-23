@@ -56,6 +56,20 @@ fn packaged() -> Result<bool, String> {
     Ok(false)
 }
 
+/// Counts this copy as in use on urbudget.app, with nothing that identifies it, at most once a day
+/// (urbudget_services::usage). The window asks only while the Privacy & data switch is on. Debug
+/// builds count only on a local server (URBUDGET_API), never on urbudget.app.
+#[tauri::command(async)]
+pub async fn report_usage(app: AppHandle, usage: tauri::State<'_, urbudget_services::usage::Usage>) -> Result<(), String> {
+    #[cfg(debug_assertions)]
+    if std::env::var_os("URBUDGET_API").is_none() {
+        return Ok(());
+    }
+    let channel = if packaged()? { "store" } else { "direct" };
+    let version = app.package_info().version.to_string();
+    usage.report(&crate::cloud::site(), std::env::consts::OS, channel, &version).await
+}
+
 #[tauri::command]
 pub async fn check_store_update(window: tauri::WebviewWindow) -> Result<bool, String> {
     #[cfg(windows)]

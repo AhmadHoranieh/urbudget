@@ -24,6 +24,8 @@ export type Prefs = {
   keepBackups: number;
   /** The app's language: "system" follows the operating system's first preferred language. */
   language: "system" | "en" | "ar";
+  /** Count this copy as in use on urbudget.app, anonymously, once a day (usage.ts). */
+  usageCounts: boolean;
 };
 export const DEFAULT_PREFS: Prefs = {
   weekStart: "auto",
@@ -37,6 +39,7 @@ export const DEFAULT_PREFS: Prefs = {
   backupOnClose: false,
   keepBackups: 0,
   language: "system",
+  usageCounts: true,
 };
 const KEY = "lb:prefs";
 /** The window event `setPref` sends, with the changed key and value as its detail. */

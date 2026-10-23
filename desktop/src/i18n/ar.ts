@@ -1893,6 +1893,8 @@ export const ar: Catalog = {
   "Payees appear here as you enter transactions.": "يظهر المستفيدون هنا كلما أدخلت معاملات.",
   "Payees": "المستفيدون",
   "Privacy & data": "الخصوصية والبيانات",
+  "Count this copy as in use": "إحصاء استخدام هذه النسخة",
+  "Once a day, tells urbudget.app that a copy of UrBudget was opened, and whether that's its first time, or its first this week or month, with its version, system and where it was installed from. Nothing identifies you, this computer or your budgets.": "مرة واحدة في اليوم، يُبلغ urbudget.app بأن نسخة من UrBudget فُتحت، وبما إذا كانت هذه أول مرة تُفتح فيها، أو أول مرة هذا الأسبوع أو هذا الشهر، مع إصدارها ونظام التشغيل ومصدر تثبيتها. لا شيء من ذلك يدل عليك أو على هذا الكمبيوتر أو على ميزانياتك.",
   "Privacy policy": "سياسة الخصوصية",
   "Recent transactions": "أحدث المعاملات",
   "Remove bank name {match}": "إزالة الاسم {match}",
