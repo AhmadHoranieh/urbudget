@@ -19,7 +19,9 @@ import { assistant, type Card, type Proposal } from "./assistant/api";
 import { LoanActionsContext, hasLoan, loanTerms, type LoanActions } from "./Planning";
 import { LoanPlanner } from "./LoanPlanner";
 import { LoanPaymentForm } from "./LoanPayment";
-import { ATTACH_LIMIT, BankImport, categorizeText, importHelpText, type Uncategorized } from "./BankImport";
+import { ATTACH_LIMIT, categorizeText, fixImportText, importHelpText, type Uncategorized } from "./BankImport";
+import { ImportPage, type ImportState } from "./import/ImportPage";
+import { applyToLatest } from "./import/model";
 import { BankSync, BankSyncDetails, syncHelpText } from "./BankSync";
 import { Payees } from "./PayeesPage";
 import { Reports } from "./Reports";
@@ -38,7 +40,7 @@ import { localeDefaults } from "./locale";
 import { AccountForm, CategoryForm, Modal, ReconcileForm, TransactionForm } from "./forms";
 import { configureFormat, errorText, formatDate, money, monthName, shiftMonth } from "./format";
 import { groupNames } from "./categories";
-import { HeaderSlotElement, Menu, MonthPicker, useToast } from "./ui";
+import { HeaderSlotElements, Menu, MonthPicker, useToast } from "./ui";
 import { useTheme } from "./theme";
 import { useLearnPayee } from "./useLearnPayee";
 import { useSteady } from "./useSteady";
@@ -58,7 +60,6 @@ type Dialog =
   | { type: "planner"; account: Account }
   | { type: "category"; category?: Category }
   | { type: "transaction"; transaction?: Transaction; isNew?: boolean; repeat?: string }
-  | { type: "import"; account: Account; file?: File; proposal?: { threadId: string; id: string } }
   | { type: "reconcile"; account: Account }
   | { type: "payment"; account: Account }
   | { type: "bankSync"; account?: Account }
@@ -89,6 +90,7 @@ const titles: Record<Page, string> = {
   reports: msg("Reports"),
   payees: msg("Payees & rules"),
   settings: msg("Settings & data"),
+  import: msg("Import a bank file"),
 };
 const kindLabel = (a: Account) =>
   a.kind === "credit" ? t("Credit card") : a.kind === "tracking" ? t("Tracking account") : t("Cash account");
@@ -223,11 +225,24 @@ export default function App() {
   useUsageCounts();
   const startPage = (): Page => (getPref("startPage") === "transactions" ? "transactions" : "budget");
   const [page, setPage] = useState<Page>(startPage);
+  // A bank file being imported, kept while someone looks elsewhere.
+  const [importing, setImporting] = useState<ImportState | null>(null);
+  // The import as it is now, for the assistant's fixes that land after a change of the user's.
+  const importingNow = useRef(importing);
+  importingNow.current = importing;
+  const openImport = (next: ImportState) => {
+    // One import at a time: an unfinished one is where the next starts.
+    if (!importing?.session || next.file) setImporting(next);
+    setPage("import");
+  };
   const [accountId, setAccountId] = useState("all");
   const [registerFilter, setRegisterFilter] = useState<RegisterFilter | undefined>();
   const layout = useSidebarLayout();
-  // A computer's page header: a slot after the title for a page's own controls (HeaderSlot).
+  // A computer's page header: slots for a page's own controls (HeaderSlot), after the title and
+  // beside undo and redo.
   const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
+  const [headerActions, setHeaderActions] = useState<HTMLElement | null>(null);
+  const headerSlots = useMemo(() => ({ title: headerSlot, actions: headerActions }), [headerSlot, headerActions]);
   const [theme, setTheme] = useTheme();
   const fail = (e: unknown, prefix = "") => toast({ message: prefix + errorText(e), tone: "error" });
   const [assistantOpen, setAssistantOpen] = useState(() => {
@@ -247,6 +262,8 @@ export default function App() {
   const assistantWidth = useAssistantWidth();
   // The budget right after the assistant's last applied change, so its Undo only shows while it is the latest edit.
   const lastApplied = useRef<{ id: string; budget: Budget } | null>(null);
+  const budgetNow = useRef(budget);
+  budgetNow.current = budget;
   const showAssistant = (open: boolean) => {
     setAssistantOpen(open);
     try {
@@ -311,6 +328,7 @@ export default function App() {
   // A different budget starts on the start page (Settings › General).
   useEffect(() => {
     setPage(startPage());
+    setImporting(null);
     setAccountId("all");
     setRegisterFilter(undefined);
     setMonth(today().slice(0, 7));
@@ -333,6 +351,7 @@ export default function App() {
     if (!value) return;
     try {
       const path = recovery ? await api.exportRecoveryDraft(value) : await api.export(value);
+      if (!path) return;
       toast({
         message: recovery ? t("Recovery draft exported.") : t("Full backup exported."),
         action: { label: t("Show in folder"), onClick: () => void api.reveal(path).catch(fail) },
@@ -345,12 +364,13 @@ export default function App() {
     if (!budget) return;
     void api
       .exportTransactions(budget, account.id, null)
-      .then((path) =>
-        toast({
-          message: t("Exported {account}.", { account: account.name }),
-          action: { label: t("Show in folder"), onClick: () => void api.reveal(path).catch(fail) },
-        }),
-      )
+      .then((path) => {
+        if (path)
+          toast({
+            message: t("Exported {account}.", { account: account.name }),
+            action: { label: t("Show in folder"), onClick: () => void api.reveal(path).catch(fail) },
+          });
+      })
       .catch((e) => fail(e));
   };
   const reload = () => {
@@ -466,7 +486,41 @@ export default function App() {
   const dialogLoan = dialog && (dialog.type === "planner" || dialog.type === "loanPayment") ? loanTerms(budget, dialog.account.id) : undefined;
 
   /** Applies an assistant proposal as one undoable change; a refreshed card comes back when the budget moved. */
+  /** Fixes the assistant proposed for the import in progress: applied there, where each still fits. */
+  const applyFix = async (threadId: string, p: Proposal): Promise<Proposal> => {
+    const fixes = p.fixes;
+    const open = importing?.session && importing.content !== undefined ? importing : null;
+    if (!fixes || !open?.session || open.content === undefined) throw new Error(t("Open the import these fixes are for."));
+    if (fixes.scope.session !== open.session.scope.session) throw new Error(t("These fixes are for another import."));
+    // Made on the import as it is when they land: a change of the user's meanwhile stays.
+    const applied = await applyToLatest(
+      () => importingNow.current?.session,
+      (base) => api.bankApplyFixes(budget!, open.account, open.content!, base, fixes),
+    );
+    if (!applied) throw new Error(t("These fixes are for another import."));
+    const lines = applied.results.filter((r) => r.applied && r.line).map((r) => r.line!);
+    setImporting((was) =>
+      was?.session === applied.base
+        ? { ...was, session: applied.session, view: "editor", assisted: [...new Set([...(was.assisted ?? []), ...lines])] }
+        : was,
+    );
+    setPage("import");
+    const refused = applied.results.filter((r) => !r.applied);
+    const done = applied.results.length - refused.length;
+    toast({
+      message: refused.length
+        ? `${tn(applied.results.length, "Applied {done} of {count} fixes.", "Applied {done} of {count} fixes.", { done })} ${
+            refused.length === 1 ? t("One no longer fits") : tn(refused.length, "{count} no longer fit", "{count} no longer fit")
+          }: ${refused[0].problem ?? t("the line changed")}`
+        : done === 1
+          ? t("Applied the fix to the import.")
+          : tn(done, "Applied {count} fix to the import.", "Applied {count} fixes to the import."),
+      tone: refused.length && !done ? "error" : undefined,
+    });
+    return done ? assistant.mark(threadId, p.id, "applied") : p;
+  };
   const applyProposal = async (threadId: string, p: Proposal): Promise<Proposal> => {
+    if (p.kind === "fix") return applyFix(threadId, p);
     if (!currentSummary) throw new Error(t("Wait for the budget calculation to finish before applying these changes."));
     let outcome = null as { patch: Patch | null; proposal: Proposal } | null;
     let after: Budget | null = null;
@@ -483,7 +537,17 @@ export default function App() {
       throw e;
     }
     if (after) lastApplied.current = { id: p.id, budget: after };
-    toast({ message: t("Applied: {proposal}", { proposal: p.title }), action: { label: t("Undo"), onClick: () => void undoProposal(threadId, p) } });
+    toast({
+      message: t("Applied: {proposal}", { proposal: p.title }),
+      action: {
+        label: t("Undo"),
+        onClick: () => {
+          // As the card's Undo: only while it's still the latest edit, or this would undo the one made since.
+          if (lastApplied.current?.id === p.id && lastApplied.current.budget === budgetNow.current) void undoProposal(threadId, p);
+          else toast({ message: t("Not undone: the budget has changed since it was applied.") });
+        },
+      },
+    });
     return outcome!.proposal;
   };
   const undoProposal = async (threadId: string, p: Proposal): Promise<Proposal> => {
@@ -501,12 +565,7 @@ export default function App() {
       const file = await assistant.importFile(threadId, p.id);
       const account = budget.accounts.find((a) => a.id === file.account);
       if (!account) throw new Error(t("That account no longer exists."));
-      setDialog({
-        type: "import",
-        account,
-        file: new File([file.csv], file.name, { type: "text/csv" }),
-        proposal: { threadId, id: p.id },
-      });
+      openImport({ account: account.id, file: new File([file.csv], file.name, { type: "text/csv" }), proposal: { threadId, id: p.id } });
     } catch (e) {
       fail(e);
     }
@@ -584,7 +643,7 @@ export default function App() {
   );
 
   return (
-    <HeaderSlotElement.Provider value={headerSlot}>
+    <HeaderSlotElements.Provider value={headerSlots}>
     <LoanActionsContext.Provider value={loanActions}>
     <div
       className={`app-shell${assistantOpen ? " with-assistant" : ""}${customTitleBar ? " has-titlebar" : ""}`}
@@ -607,6 +666,7 @@ export default function App() {
         layout={layout}
         edit={edit}
         onNavigate={setPage}
+        importing={importing ? (budget.accounts.find((a) => a.id === importing.account)?.name ?? "") : undefined}
         onAccount={navigateAccount}
         onAddAccount={() => setDialog({ type: "account" })}
         onEditAccount={(account) => setDialog({ type: "account", account })}
@@ -627,6 +687,7 @@ export default function App() {
           <div className="header-actions">
             {!customTitleBar && cloudChips}
             {!customTitleBar && saveStatus}
+            <div className="header-page-actions" ref={setHeaderActions} />
             <button
               className="icon-button"
               aria-label={t("Undo")}
@@ -747,7 +808,7 @@ export default function App() {
                 setAccountId(account);
                 setRegisterFilter({ focus: id });
               }}
-              onImport={(account) => setDialog({ type: "import", account })}
+              onImport={(account) => openImport({ account: account.id })}
               onSync={(account) => setDialog({ type: "bankSync", account })}
               onEdit={(transaction) => setDialog({ type: "transaction", transaction })}
               onAddDialog={(transaction, repeat) => setDialog({ type: "transaction", transaction, isNew: true, repeat })}
@@ -765,6 +826,37 @@ export default function App() {
             />
           )}
           {page === "payees" && <Payees budget={budget} edit={edit} transform={model.transform} undo={model.undo} />}
+          {page === "import" && importing && (
+            <ImportPage
+              budget={budget}
+              budgetId={budgetId}
+              state={importing}
+              onState={(next) => setImporting((was) => (typeof next === "function" ? (was ? next(was) : was) : next))}
+              transform={model.transform}
+              onImported={(count, uncategorized) => {
+                const from = importing.proposal;
+                if (from) void assistant.mark(from.threadId, from.id, "applied").catch(() => {});
+                setImporting(null);
+                setAccountId(importing.account);
+                setRegisterFilter(undefined);
+                setPage("transactions");
+                toast({
+                  message: tn(count, "Imported {count} transaction for review.", "Imported {count} transactions for review."),
+                  action: { label: t("Undo"), onClick: model.undo },
+                  offer: uncategorized.ids.length ? { label: t("Categorize with the assistant"), onClick: () => categorize(uncategorized) } : undefined,
+                });
+              }}
+              onCancel={() => {
+                setImporting(null);
+                setPage("transactions");
+              }}
+              onAskAssistant={
+                // A file the assistant already converted goes back to it from its own card instead.
+                importing.proposal ? undefined : (file, problem, account) => ask({ text: importHelpText(account, problem), files: [file] })
+              }
+              onFixWithAssistant={() => ask({ text: fixImportText() })}
+            />
+          )}
           {page === "settings" && (
             <SettingsPage
               key={settingsTab?.key}
@@ -774,7 +866,6 @@ export default function App() {
               syncLabel={t(syncLabels[sync])}
               metadata={metadata}
               edit={edit}
-              transform={model.transform}
               flush={model.flush}
               onReload={reload}
               onExport={() => void exportDraft()}
@@ -785,7 +876,7 @@ export default function App() {
               onAsk={(text) => ask({ text })}
               openBudget={switchBudget}
               onBankSync={() => setDialog({ type: "bankSync" })}
-              onCategorize={categorize}
+              onBankImport={() => openImport({ account: accountId !== "all" && budget.accounts.some((a) => a.id === accountId && !a.archived) ? accountId : (budget.accounts.find((a) => !a.archived)?.id ?? "") })}
               theme={theme}
               setTheme={setTheme}
               cloud={cloud}
@@ -808,7 +899,16 @@ export default function App() {
             budget={budget}
             budgetId={budgetId}
             summary={summary}
-            screen={{ page, month, accountId: page === "transactions" ? accountId : null }}
+            screen={{
+              page,
+              month,
+              accountId: page === "transactions" ? accountId : null,
+              // The bank file on the Import page: the assistant is told its lines, as they read when a message is sent.
+              import:
+                page === "import" && importing?.session && importing.content !== undefined
+                  ? { account: importing.account, content: importing.content, session: importing.session }
+                  : undefined,
+            }}
             request={assistantRequest}
             width={assistantWidth.width}
             onResize={assistantWidth.setWidth}
@@ -940,38 +1040,6 @@ export default function App() {
         />
       )}
       {newCategory.dialog}
-      {dialog?.type === "import" && (
-        <Modal title={t("Import into {account}", { account: dialog.account.name })} close={close} wide>
-          <BankImport
-            budget={budget}
-            transform={model.transform}
-            initialAccount={dialog.account.id}
-            initialFile={dialog.file}
-            embedded
-            onImported={(count, uncategorized) => {
-              const from = dialog.proposal;
-              if (from) void assistant.mark(from.threadId, from.id, "applied").catch(() => {});
-              close();
-              toast({
-                message: tn(count, "Imported {count} transaction for review.", "Imported {count} transactions for review."),
-                action: { label: t("Undo"), onClick: model.undo },
-                offer: uncategorized.ids.length
-                  ? { label: t("Categorize with the assistant"), onClick: () => categorize(uncategorized) }
-                  : undefined,
-              });
-            }}
-            onAskAssistant={
-              // A file the assistant already converted goes back to it from its own card instead.
-              dialog.proposal
-                ? undefined
-                : (file, problem) => {
-                    close();
-                    ask({ text: importHelpText(dialog.account.name, problem), files: [file] });
-                  }
-            }
-          />
-        </Modal>
-      )}
       {dialog?.type === "bankSync" && (
         <Modal title={t("Sync with your bank")} close={close} wide>
           <BankSync
@@ -1107,6 +1175,6 @@ export default function App() {
       )}
     </div>
     </LoanActionsContext.Provider>
-    </HeaderSlotElement.Provider>
+    </HeaderSlotElements.Provider>
   );
 }

@@ -1728,6 +1728,37 @@
         <item quantity="many">\u2068%1$s\u2069 صفًّا أعادت قواعدك تسميتها</item>
         <item quantity="other">\u2068%1$s\u2069 صف أعادت قواعدك تسميتها</item>
     </plurals>
+    <plurals name="bank_refunds_count">
+        <item quantity="zero">لا مبالغ مستردة</item>
+        <item quantity="one">مبلغ مسترد واحد</item>
+        <item quantity="two">مبلغان مستردان</item>
+        <item quantity="few">\u2068%1$s\u2069 مبالغ مستردة</item>
+        <item quantity="many">\u2068%1$s\u2069 مبلغًا مستردًا</item>
+        <item quantity="other">\u2068%1$s\u2069 مبلغ مسترد</item>
+    </plurals>
+    <string name="bank_transfers_note">يربط التحويل الصف بالقيد الذي بلا فئة المقابل له في حساب آخر، حتى لا يُحتسب المال الذي نقلته إنفاقًا أو دخلًا. ويُختار لك حين يذكر نص البنك الحساب الآخر أو يطابق تحويلات سابقة بينهما، وإلا فيُقترح عليك لتراجعه.</string>
+    <!-- Transfers matched only by amount and date, still to decide. -->
+    <plurals name="bank_transfers_suggested">
+        <item quantity="zero">لا تحويلات مقترحة.</item>
+        <item quantity="one">اقتُرح تحويل واحد بناءً على مبلغه وتاريخه. راجعه أدناه أو أقرِنه.</item>
+        <item quantity="two">اقتُرح تحويلان بناءً على مبلغيهما وتاريخيهما. راجعهما أدناه أو أقرِنهما كليهما.</item>
+        <item quantity="few">اقتُرحت \u2068%1$s\u2069 تحويلات بناءً على مبالغها وتواريخها. راجعها أدناه أو أقرِنها كلها.</item>
+        <item quantity="many">اقتُرح \u2068%1$s\u2069 تحويلًا بناءً على مبالغها وتواريخها. راجعها أدناه أو أقرِنها كلها.</item>
+        <item quantity="other">اقتُرح \u2068%1$s\u2069 تحويل بناءً على مبالغها وتواريخها. راجعها أدناه أو أقرِنها كلها.</item>
+    </plurals>
+    <string name="bank_pair_it">إقرانه</string>
+    <string name="bank_pair_all">إقران الكل</string>
+    <!-- Money in that may be a refund: the payee of the purchase, its amount and its date. -->
+    <string name="bank_refund_of">مبلغ مسترد من \u2068%1$s\u2069 · \u2068%2$s\u2069 بتاريخ \u2068%3$s\u2069</string>
+    <!-- Money in that several purchases from one payee (%2$s) match; the count is how many. -->
+    <plurals name="bank_possible_refund">
+        <item quantity="zero">مبلغ مسترد محتمل · لا مشتريات من \u2068%2$s\u2069 تطابقه</item>
+        <item quantity="one">مبلغ مسترد محتمل · تطابقه عملية شراء واحدة من \u2068%2$s\u2069</item>
+        <item quantity="two">مبلغ مسترد محتمل · تطابقه عمليتا شراء من \u2068%2$s\u2069</item>
+        <item quantity="few">مبلغ مسترد محتمل · تطابقه \u2068%1$s\u2069 عمليات شراء من \u2068%2$s\u2069</item>
+        <item quantity="many">مبلغ مسترد محتمل · تطابقه \u2068%1$s\u2069 عملية شراء من \u2068%2$s\u2069</item>
+        <item quantity="other">مبلغ مسترد محتمل · تطابقه \u2068%1$s\u2069 عملية شراء من \u2068%2$s\u2069</item>
+    </plurals>
     <string name="bank_matching_note">تُبقي المطابقة على الفئة والبيان، وتجعل المعاملة مُقاصّة. وتنتظر المعاملات المستورَدة اعتمادك.</string>
     <string name="bank_idless_note">لا يحتوي هذا الملف على معرّفات المعاملات البنكية، فقد يكون صف ما مستورَدًا من قبل؛ قارن بيانه ومبلغه. تخطَّه إن كان الدفعة نفسها، أو أضفه منفصلًا إن كان دفعة أخرى.</string>
     <plurals name="bank_rows_need_choice">
@@ -1756,31 +1787,171 @@
     <!-- Which part of a split transaction (1, 2, …). -->
     <string name="bank_match_split">الجزء \u2068%1$s\u2069</string>
     <string name="bank_previously_imported">مستورَدة سابقًا</string>
-    <string name="bank_dates_ymd">السنة ثم الشهر ثم اليوم (\u20662026-10-31\u2069)</string>
-    <string name="bank_dates_dmy">اليوم ثم الشهر ثم السنة (\u206631/10/2026\u2069)</string>
-    <string name="bank_dates_mdy">الشهر ثم اليوم ثم السنة (\u206610/31/2026\u2069)</string>
+    <!-- The other side of money moved from or to another account (%1$s): the transaction, as bank_match describes it. -->
+    <string name="bank_transfer_from_match">تحويل من \u2068%1$s\u2069: %2$s</string>
+    <string name="bank_transfer_to_match">تحويل إلى \u2068%1$s\u2069: %2$s</string>
     <!-- The name shown for a chosen file that has none. -->
     <string name="bank_statement_file">كشف حساب</string>
     <string name="bank_statement_too_large">اختر كشف حساب أصغر من 8 ميغابايت.</string>
     <string name="bank_statement_unopened">تعذّر فتح كشف الحساب المحدد.</string>
-    <string name="bank_budget_changed_preview">تغيّرت ميزانيتك. اعرض معاينة كشف الحساب هذا مجددًا.</string>
-    <string name="bank_file_empty">لا يحتوي الملف على معاملات لاستيرادها.</string>
-    <string name="bank_preview">معاينة</string>
-    <string name="bank_import_lead">استورد المعاملات التي صدّرها بنكك. تراجع كل صف وكيف يطابق ما أدخلته من قبل، قبل أن يُحفظ أي شيء.</string>
+    <string name="bank_import_lead">استورد المعاملات التي صدّرها بنكك. سترى الأسطر التي تتعذّر قراءتها فتصحّحها، ثم تراجع كل معاملة قبل أن يُحفظ أي شيء.</string>
     <string name="bank_into_account">إلى الحساب</string>
     <string name="bank_choose_file">اختر ملفًا</string>
-    <string name="bank_file_formats">ملف CSV أو OFX أو QFX أو QIF</string>
-    <!-- The file's format (CSV, OFX…). -->
-    <string name="bank_choose_another">\u2068%1$s\u2069 · انقر لاختيار ملف آخر</string>
-    <string name="bank_read_as">القراءة بصيغة</string>
-    <string name="bank_dates_in_file">التواريخ في الملف</string>
-    <string name="bank_purchases_positive">المشتريات موجبة (اعكس إشارات المبالغ)</string>
-    <!-- Date, Payee, Description, Amount, Outflow, Inflow and Memo are CSV column names: keep them in English. -->
-    <string name="bank_csv_help">تحتاج ملفات CSV إلى صف عناوين فيه Date وPayee (أو Description)، ومعهما إما Amount (سالب للأموال الصادرة) أو Outflow وInflow. والعمود Memo اختياري.</string>
+    <string name="bank_file_formats">ملف CSV أو Excel أو OFX أو QIF أو CAMT.053 أو MT940، وملف PDF عبر المساعد</string>
     <string name="bank_statement_label">كشف الحساب</string>
     <string name="bank_change_file">تغيير الملف</string>
     <string name="bank_all_in_note">ظهرت كل الصفوف أموالًا واردة. إن كانت مشتريات، فالملف يكتبها أرقامًا موجبة.</string>
     <string name="bank_reverse_signs_action">عكس الإشارات</string>
+    <string name="bank_file_unreadable">تعذّرت قراءة هذا الملف.</string>
+    <string name="bank_change_no_longer_fits">لم يعد هذا التغيير ينطبق على الملف.</string>
+    <string name="bank_budget_changed_review">تغيّرت ميزانيتك. المراجعة محدَّثة من جديد: تحقّق منها ثم استورد.</string>
+    <string name="bank_reading_file">جارٍ قراءة الملف…</string>
+    <!-- The chosen file's name. -->
+    <string name="bank_reading_named">جارٍ قراءة \u2068%1$s\u2069…</string>
+    <string name="bank_reading">جارٍ القراءة…</string>
+    <string name="bank_pdf_choose_another">ملف PDF · انقر لاختيار ملف آخر</string>
+    <string name="bank_pdf_note">تحتاج كشوف الحساب بصيغة PDF إلى المساعد، فهو يقرأ الملف ويجد المعاملات ويتحقق منها مقابل مجاميع الكشف، ثم يعرضها في مراجعة كهذه تقرّر فيها ما يحدث لكل صف.</string>
+    <string name="bank_pdf_read_with_assistant">قراءته عبر المساعد</string>
+    <string name="bank_pdf_attach_note">تحتاج كشوف الحساب بصيغة PDF إلى المساعد. افتح المساعد وأرفق ملف PDF هذا واطلب منه استيراد الكشف.</string>
+    <string name="bank_import_help">تُعرض لك الأسطر التي تتعذّر قراءتها أو التي يستبعدها الاستيراد (الدفعات المعلّقة، وأسطر حساب آخر، والأرصدة) لتصحّحها أو تضمّنها. ويتذكّر الحساب كيف قُرئ ملفه، ويمكنك على سطح المكتب أيضًا اختيار ما يحويه كل عمود.</string>
+    <!-- What is left out of the review: "2 need attention · 1 left out". -->
+    <string name="bank_not_imported">\u2068%1$s\u2069، ولن تُستورد.</string>
+    <plurals name="bank_need_attention">
+        <item quantity="zero">لا أسطر تحتاج إلى انتباه</item>
+        <item quantity="one">سطر واحد يحتاج إلى انتباه</item>
+        <item quantity="two">سطران يحتاجان إلى انتباه</item>
+        <item quantity="few">\u2068%1$s\u2069 أسطر تحتاج إلى انتباه</item>
+        <item quantity="many">\u2068%1$s\u2069 سطرًا يحتاج إلى انتباه</item>
+        <item quantity="other">\u2068%1$s\u2069 سطر يحتاج إلى انتباه</item>
+    </plurals>
+    <string name="bank_check_file">مراجعة الملف</string>
+    <string name="bank_checking_lines">جارٍ التحقق من الأسطر مقابل ميزانيتك…</string>
+    <!-- How the file reads: "2 lines read · 1 needs attention and won't be imported · 1 left out". -->
+    <plurals name="bank_lines_read">
+        <item quantity="zero">لا أسطر مقروءة</item>
+        <item quantity="one">سطر واحد مقروء</item>
+        <item quantity="two">سطران مقروءان</item>
+        <item quantity="few">\u2068%1$s\u2069 أسطر مقروءة</item>
+        <item quantity="many">\u2068%1$s\u2069 سطرًا مقروءًا</item>
+        <item quantity="other">\u2068%1$s\u2069 سطر مقروء</item>
+    </plurals>
+    <plurals name="bank_lines_need_attention">
+        <item quantity="zero">لا أسطر تحتاج إلى انتباه</item>
+        <item quantity="one">سطر واحد يحتاج إلى انتباه ولن يُستورد</item>
+        <item quantity="two">سطران يحتاجان إلى انتباه ولن يُستوردا</item>
+        <item quantity="few">\u2068%1$s\u2069 أسطر تحتاج إلى انتباه ولن تُستورد</item>
+        <item quantity="many">\u2068%1$s\u2069 سطرًا يحتاج إلى انتباه ولن يُستورد</item>
+        <item quantity="other">\u2068%1$s\u2069 سطر يحتاج إلى انتباه ولن يُستورد</item>
+    </plurals>
+    <plurals name="bank_lines_left_out">
+        <item quantity="zero">لا أسطر مستبعَدة</item>
+        <item quantity="one">سطر واحد مستبعَد</item>
+        <item quantity="two">سطران مستبعَدان</item>
+        <item quantity="few">\u2068%1$s\u2069 أسطر مستبعَدة</item>
+        <item quantity="many">\u2068%1$s\u2069 سطرًا مستبعَدًا</item>
+        <item quantity="other">\u2068%1$s\u2069 سطر مستبعَد</item>
+    </plurals>
+    <!-- A workbook's sheet the file is read from. -->
+    <string name="bank_sheet">الورقة</string>
+    <string name="bank_account_in_file">الحساب في الملف</string>
+    <!-- How many lines an account in the file has. -->
+    <plurals name="bank_source_lines">
+        <item quantity="zero">لا أسطر</item>
+        <item quantity="one">سطر واحد</item>
+        <item quantity="two">سطران</item>
+        <item quantity="few">\u2068%1$s\u2069 أسطر</item>
+        <item quantity="many">\u2068%1$s\u2069 سطرًا</item>
+        <item quantity="other">\u2068%1$s\u2069 سطر</item>
+    </plurals>
+    <string name="bank_purchases_in_file">المشتريات في الملف</string>
+    <string name="bank_purchases_negative">سالبة، كما تكتبها الحسابات البنكية</string>
+    <string name="bank_purchases_positive_cards">موجبة، كما تكتبها كشوف بطاقات كثيرة</string>
+    <!-- A currency code (EUR, USD…), both times. -->
+    <string name="bank_amounts_elsewhere">مبالغ الملف بعملة \u2068%1$s\u2069. ضمِّن سطرًا لتُدخل مبلغه بعملة ميزانيتك، أو استورد الملف إلى ميزانية بعملة \u2068%1$s\u2069.</string>
+    <!-- A currency code (EUR, USD…). -->
+    <string name="bank_account_currency">مبالغ هذا الحساب بعملة \u2068%1$s\u2069. اختر حسابًا آخر في الملف، أو ضمِّن أسطره بمبالغها بعملة ميزانيتك.</string>
+    <string name="bank_day_first">اليوم أولًا</string>
+    <string name="bank_month_first">الشهر أولًا</string>
+    <!-- A date as the file writes it, then that date read day first: "Day first (01/02/2026 is 1 February 2026)". -->
+    <string name="bank_day_first_example">اليوم أولًا (\u2068%1$s\u2069 هو \u2068%2$s\u2069)</string>
+    <string name="bank_month_first_example">الشهر أولًا (\u2068%1$s\u2069 هو \u2068%2$s\u2069)</string>
+    <string name="bank_money_out">الأموال الصادرة</string>
+    <string name="bank_signs_by_type">حسب أنواع المعاملات</string>
+    <string name="bank_signs_as_written">كما كُتبت المبالغ</string>
+    <!-- A date as the file writes it; the two ways it can read are the answers below. -->
+    <string name="bank_date_question">لا تُبيّن التواريخ أيهما يأتي أولًا، اليوم أم الشهر. ماذا يعني \u2068%1$s\u2069؟</string>
+    <!-- DEBIT and POS are transaction types as files write them: keep them as they are. -->
+    <string name="bank_signs_question">كل المبالغ المقروءة موجبة. هل تحدّد أنواع المعاملات (مثل DEBIT وPOS…) الأموال الصادرة؟</string>
+    <string name="bank_signs_yes">نعم، بحسب الأنواع</string>
+    <string name="bank_signs_no">لا، كما كُتبت</string>
+    <string name="bank_needs_attention">بحاجة إلى انتباه</string>
+    <string name="bank_needs_attention_detail">لن تُستورد حتى تُصحَّح: انقر سطرًا لتُدخل ما تعذّرت قراءته.</string>
+    <string name="bank_assistant_fix_note">يستطيع المساعد تصحيح هذه الأسطر مما يذكره الملف، ويسألك عن أي شيء غير واضح. وترى كل تصحيح قبل تطبيقه.</string>
+    <string name="bank_fix_with_assistant">التصحيح عبر المساعد</string>
+    <!-- Lines of the file the import leaves out; also a line's state when its reason is unknown. -->
+    <string name="bank_left_out">مستبعَدة</string>
+    <string name="bank_left_out_section_detail">لن تُستورد. ضمِّن سطرًا إن كان يخص هذا الحساب.</string>
+    <!-- Why a line is left out (bank_statement.rs Reason). -->
+    <string name="bank_left_out_pending">لم يُقيَّد بعد</string>
+    <string name="bank_left_out_declined">مرفوض أو ملغى</string>
+    <string name="bank_left_out_other_account">لحساب آخر</string>
+    <string name="bank_left_out_other_currency">بعملة أخرى</string>
+    <string name="bank_left_out_own_balances">بين أرصدتك الخاصة</string>
+    <string name="bank_left_out_balance">رصيد أو مجموع</string>
+    <string name="bank_left_out_above_header">فوق صف العناوين</string>
+    <string name="bank_left_out_no_date">بلا تاريخ</string>
+    <string name="bank_left_out_no_amount">بلا مبلغ</string>
+    <string name="bank_left_out_zero">لم يتحرك أي مال</string>
+    <string name="bank_left_out_corrected">صحّحه البنك</string>
+    <string name="bank_left_out_repeated_header">صف العناوين مكرّرًا</string>
+    <string name="bank_left_out_in_whole_batch">ضمن حزمة مستورَدة كقيد واحد</string>
+    <string name="bank_left_out_imported">مستورَد من قبل</string>
+    <!-- Left out as another account's: the account the file names. -->
+    <string name="bank_left_out_account">الحساب \u2068%1$s\u2069</string>
+    <!-- Left out as in another currency: its code (EUR, USD…). -->
+    <string name="bank_left_out_in_currency">بعملة \u2068%1$s\u2069</string>
+    <!-- Why a line is left out, then its state as the file writes it. -->
+    <string name="bank_left_out_with_detail">\u2068%1$s\u2069 (\u2068%2$s\u2069)</string>
+    <string name="bank_include">تضمين</string>
+    <string name="bank_included">مُضمَّن</string>
+    <string name="bank_batch_as_one">استيرادها كقيد واحد</string>
+    <string name="bank_batch_payments">استيراد دفعاتها</string>
+    <string name="bank_undo_assistant_fix">التراجع عن تصحيح المساعد</string>
+    <string name="bank_changed">معدَّل</string>
+    <string name="bank_changed_detail">تُستورد كما عدّلتها.</string>
+    <string name="bank_fixed_by_assistant">صحّحه المساعد</string>
+    <string name="bank_changed_from_file">معدَّل عمّا في الملف</string>
+    <!-- A line of the file with nothing written on it, by its number. -->
+    <string name="bank_line_number">السطر \u2068%1$s\u2069</string>
+    <string name="bank_fix_line">تصحيح السطر</string>
+    <!-- What the file writes on the line, cell by cell. -->
+    <string name="bank_in_the_file">في الملف: %1$s</string>
+    <string name="bank_nothing">لا شيء</string>
+    <!-- YYYY-MM-DD is how the date is typed: keep it. -->
+    <string name="bank_fix_date">التاريخ (\u2066YYYY-MM-DD\u2069)</string>
+    <string name="bank_fix_amount">المبلغ (سالب للأموال الصادرة)</string>
+    <!-- Put in the assistant's message box, for the person to send or change. -->
+    <string name="bank_fix_import_prompt">صحّح أسطر هذا الاستيراد التي تحتاج إلى انتباه. استخدم فقط ما يدعمه الملف نفسه، واسألني عن أي شيء غير واضح.</string>
+    <!-- The assistant's fixes: how many applied, of how many. -->
+    <string name="bank_fixes_applied_of">التصحيحات المطبَّقة: \u2068%1$s\u2069 من أصل \u2068%2$s\u2069.</string>
+    <!-- Fixes that no longer fit the file, then why the first doesn't. -->
+    <plurals name="bank_fixes_refused">
+        <item quantity="zero">لا يوجد تصحيح لم يعد ينطبق: \u2068%2$s\u2069</item>
+        <item quantity="one">تصحيح واحد لم يعد ينطبق: \u2068%2$s\u2069</item>
+        <item quantity="two">تصحيحان لم يعودا ينطبقان: \u2068%2$s\u2069</item>
+        <item quantity="few">\u2068%1$s\u2069 تصحيحات لم تعد تنطبق: \u2068%2$s\u2069</item>
+        <item quantity="many">\u2068%1$s\u2069 تصحيحًا لم يعد ينطبق: \u2068%2$s\u2069</item>
+        <item quantity="other">\u2068%1$s\u2069 تصحيح لم يعد ينطبق: \u2068%2$s\u2069</item>
+    </plurals>
+    <string name="bank_fix_line_changed">تغيّر السطر</string>
+    <plurals name="bank_fixes_applied">
+        <item quantity="zero">لم يُطبَّق أي تصحيح من المساعد.</item>
+        <item quantity="one">طُبِّق تصحيح المساعد.</item>
+        <item quantity="two">طُبِّق تصحيحا المساعد.</item>
+        <item quantity="few">طُبِّقت \u2068%1$s\u2069 تصحيحات من المساعد.</item>
+        <item quantity="many">طُبِّق \u2068%1$s\u2069 تصحيحًا من المساعد.</item>
+        <item quantity="other">طُبِّق \u2068%1$s\u2069 تصحيح من المساعد.</item>
+    </plurals>
 
     <!-- Import from YNAB -->
     <string name="ynab_method">طريقة الاستيراد</string>
@@ -1936,6 +2107,13 @@
     <string name="assistant_applied">✓ طُبِّق</string>
     <string name="assistant_discarded">تم تجاهله</string>
     <string name="assistant_could_not_apply">تعذّر التطبيق</string>
+    <!-- Fixes the assistant proposes for a bank file being imported. -->
+    <string name="assistant_fix_apply">تطبيق على الاستيراد</string>
+    <string name="assistant_fix_apply_from_import">تطبيق من الاستيراد</string>
+    <string name="assistant_fix_each_line">لا يُطبَّق كل تصحيح إلا على سطر لم يتغيّر.</string>
+    <string name="assistant_fix_open_import">افتح الاستيراد الذي تخصّه هذه التصحيحات.</string>
+    <string name="assistant_fix_other_import">هذه التصحيحات تخصّ استيرادًا آخر.</string>
+    <string name="assistant_fix_applied">✓ طُبِّقت على الاستيراد</string>
     <string name="assistant_export_report_tables">تصدير جداول التقرير إلى Excel</string>
     <string name="assistant_save_text">حفظ النص</string>
     <string name="assistant_share_report">مشاركة التقرير</string>

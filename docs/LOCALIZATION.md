@@ -222,3 +222,9 @@ Use these everywhere. If a term you need isn't here, choose one, use it consiste
 | report a reply | الإبلاغ | |
 | theme; light; dark; System (theme) | السمة؛ فاتح؛ داكن؛ النظام | |
 | inspector | لوحة التفاصيل | desktop |
+| line (of a bank file); header row; sheet | سطر، أسطر؛ صف العناوين؛ ورقة | bank import |
+| fix (the assistant's, an import's) | تصحيح، تصحيحات | |
+| include; leave out | تضمين، مُضمَّن؛ استبعاد، مستبعَد | |
+| needs attention | بحاجة إلى انتباه | |
+| refund; pair (transfers) | عملية استرداد؛ إقران | |
+| batch; entry (a booked line) | حزمة؛ قيد | never مجموعة, which is a category group |

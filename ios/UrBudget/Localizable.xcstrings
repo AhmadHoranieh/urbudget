@@ -11,6 +11,500 @@
         }
       }
     },
+    "%@ (%@)" : {
+      "comment" : "Why a line of a bank file is left out, then what the file says (\"Not booked yet (Pending)\").",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⁨%1$@⁩ (⁨%2$@⁩)"
+          }
+        }
+      }
+    },
+    "%@, not imported." : {
+      "comment" : "\"1 need attention · 2 left out, not imported.\"",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⁨%@⁩، لن تُستورد."
+          }
+        }
+      }
+    },
+    "%lld left out" : {
+      "comment" : "A bank file's lines the import leaves out.",
+      "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "لا أسطر مستبعدة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "سطر واحد مستبعد"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "سطران مستبعدان"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld أسطر مستبعدة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld سطرًا مستبعدًا"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld سطر مستبعد"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld left out"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld left out"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld lines" : {
+      "comment" : "Lines of an account in a bank file.",
+      "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "لا أسطر"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "سطر واحد"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "سطران"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld أسطر"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld سطرًا"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld سطر"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld line"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld lines"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld lines read" : {
+      "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "لا أسطر مقروءة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "سطر واحد مقروء"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "سطران مقروءان"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld أسطر مقروءة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld سطرًا مقروءًا"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld سطر مقروء"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld line reads"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld lines read"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld need attention" : {
+      "comment" : "A bank file's lines that don't read.",
+      "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "لا أسطر بحاجة إلى انتباه"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "سطر واحد بحاجة إلى انتباه"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "سطران بحاجة إلى انتباه"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld أسطر بحاجة إلى انتباه"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld سطرًا بحاجة إلى انتباه"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld سطر بحاجة إلى انتباه"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld need attention"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld need attention"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld need attention and won't be imported" : {
+      "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "لا أسطر بحاجة إلى انتباه"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "سطر واحد بحاجة إلى انتباه ولن يُستورد"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "سطران بحاجة إلى انتباه ولن يُستوردا"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld أسطر بحاجة إلى انتباه ولن تُستورد"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld سطرًا بحاجة إلى انتباه ولن تُستورد"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld سطر بحاجة إلى انتباه ولن تُستورد"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld needs attention and won't be imported"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld need attention and won't be imported"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld no longer fit: %@" : {
+      "comment" : "The assistant's fixes for an import that no longer fit it, and why.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$#@fits@: ⁨%2$@⁩"
+          },
+          "substitutions" : {
+            "fits" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "zero" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "لم يعد أي تصحيح ينطبق"
+                    }
+                  },
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "تصحيح واحد لم يعد ينطبق"
+                    }
+                  },
+                  "two" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "تصحيحان لم يعودا ينطبقان"
+                    }
+                  },
+                  "few" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg تصحيحات لم تعد تنطبق"
+                    }
+                  },
+                  "many" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg تصحيحًا لم تعد تنطبق"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg تصحيح لم تعد تنطبق"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$#@fits@: %2$@"
+          },
+          "substitutions" : {
+            "fits" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "One no longer fits"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg no longer fit"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld refunds" : {
+      "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "لا عمليات استرداد"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "عملية استرداد واحدة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "عمليتا استرداد"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld عمليات استرداد"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld عملية استرداد"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld عملية استرداد"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld refund"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld refunds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     " → " : {
       "comment" : "Between an amount before and after a change; the pair stays left to right.",
       "localizations" : {
@@ -536,16 +1030,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "⁨%1$@⁩ · عُدِّلت في ⁨%2$@⁩"
-          }
-        }
-      }
-    },
-    "%@ · tap to choose another" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "⁨%@⁩ · اضغط لاختيار ملف آخر"
           }
         }
       }
@@ -3275,6 +3759,17 @@
         }
       }
     },
+    "A balance or a total" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "رصيد أو مجموع"
+          }
+        }
+      }
+    },
     "A closed account keeps its history and balance in the budget." : {
       "localizations" : {
         "ar" : {
@@ -3405,6 +3900,16 @@
         }
       }
     },
+    "A transfer joins a row to the uncategorized entry it mirrors in another account, so the money you moved isn't counted as spending or income. It's chosen for you when the bank's text names the other account or matches earlier transfers between them; otherwise it's suggested for you to check." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يربط التحويل الصف بالقيد المقابل له بلا فئة في حساب آخر، فلا يُحتسب المال الذي نقلته إنفاقًا ولا دخلًا. ويُختار لك حين يذكر نص البنك الحساب الآخر أو يطابق تحويلات سابقة بينهما؛ وإلا فيُقترح عليك لتتحقق منه."
+          }
+        }
+      }
+    },
     "API key" : {
       "localizations" : {
         "ar" : {
@@ -3426,12 +3931,34 @@
         }
       }
     },
+    "Above the header" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "فوق صف العناوين"
+          }
+        }
+      }
+    },
     "Account" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "الحساب"
+          }
+        }
+      }
+    },
+    "Account %@" : {
+      "comment" : "Why a line of a bank file is left out: it is another account's; %@ is that account as the file names it.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحساب ⁨%@⁩"
           }
         }
       }
@@ -3452,6 +3979,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "الحساب مغلق"
+          }
+        }
+      }
+    },
+    "Account in the file" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الحساب في الملف"
           }
         }
       }
@@ -4280,6 +4817,17 @@
         }
       }
     },
+    "Another account's" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تخص حسابًا آخر"
+          }
+        }
+      }
+    },
     "Another amount" : {
       "localizations" : {
         "ar" : {
@@ -4381,6 +4929,154 @@
         }
       }
     },
+    "Applied %lld of %lld fixes." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طُبّق %1$lld من أصل %2$#@fixes@."
+          },
+          "substitutions" : {
+            "fixes" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "zero" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg تصحيح"
+                    }
+                  },
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "تصحيح واحد"
+                    }
+                  },
+                  "two" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "تصحيحين"
+                    }
+                  },
+                  "few" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg تصحيحات"
+                    }
+                  },
+                  "many" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg تصحيحًا"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg تصحيح"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Applied %1$lld of %2$#@fixes@."
+          },
+          "substitutions" : {
+            "fixes" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg fixes"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg fixes"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Applied the assistant's %lld fixes." : {
+      "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "لم يُطبَّق أي من تصحيحات المساعد."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "طُبّق تصحيح المساعد."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "طُبّق تصحيحا المساعد."
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "طُبّقت %lld تصحيحات من المساعد."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "طُبّق %lld تصحيحًا من المساعد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "طُبّق %lld تصحيح من المساعد."
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Applied the assistant's fix."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Applied the assistant's %lld fixes."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Applied the rules." : {
       "localizations" : {
         "ar" : {
@@ -4451,6 +5147,16 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "Applied to the import" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "طُبّقت على الاستيراد"
           }
         }
       }
@@ -4707,6 +5413,16 @@
         }
       }
     },
+    "Apply to the import" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تطبيق على الاستيراد"
+          }
+        }
+      }
+    },
     "Approve" : {
       "localizations" : {
         "ar" : {
@@ -4733,6 +5449,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تم اعتماد ⁨%@⁩."
+          }
+        }
+      }
+    },
+    "As the amounts are written" : {
+      "comment" : "How money out is told in a bank file.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كما كُتبت المبالغ"
           }
         }
       }
@@ -5670,6 +6397,17 @@
         }
       }
     },
+    "Between your own balances" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بين أرصدتك الخاصة"
+          }
+        }
+      }
+    },
     "Bigger tiles, more spent" : {
       "localizations" : {
         "ar" : {
@@ -5817,6 +6555,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "استورد المعاملات التي صدّرها بنكك. ستراجع كل صف وطريقة مطابقته لما أدخلته من قبل، قبل حفظ أي شيء."
+          }
+        }
+      }
+    },
+    "Bring in the transactions your bank exported. You see the lines that don't read and fix them, then check every transaction before anything is saved." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استورد المعاملات التي صدّرها بنكك. سترى الأسطر التي تعذّرت قراءتها لتصحّحها، ثم تراجع كل معاملة قبل حفظ أي شيء."
           }
         }
       }
@@ -6061,22 +6809,12 @@
         }
       }
     },
-    "CSV files need a header row with Date, Payee (or Description), and either Amount (negative for money out) or Outflow and Inflow. Memo is optional." : {
+    "CSV, Excel, OFX, QIF, CAMT.053 or MT940; PDF through the assistant" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تحتاج ملفات CSV إلى صف عناوين فيه Date وPayee (أو Description)، ومعهما إما Amount (بالسالب للأموال الصادرة) أو Outflow وInflow. أما Memo فاختياري."
-          }
-        }
-      }
-    },
-    "CSV, OFX, QFX or QIF" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "CSV أو OFX أو QFX أو QIF"
+            "value" : "CSV أو Excel أو OFX أو QIF أو CAMT.053 أو MT940؛ وPDF عبر المساعد"
           }
         }
       }
@@ -6445,6 +7183,28 @@
         }
       }
     },
+    "Changed" : {
+      "comment" : "A bank file's lines changed or included here.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معدَّلة"
+          }
+        }
+      }
+    },
+    "Changed from the file" : {
+      "comment" : "A line of a bank file.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "معدَّل عمّا في الملف"
+          }
+        }
+      }
+    },
     "Changed the memo of %@." : {
       "localizations" : {
         "ar" : {
@@ -6521,6 +7281,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "خطة ChatGPT · تسجيل الدخول عبر المتصفح"
+          }
+        }
+      }
+    },
+    "Check the file" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مراجعة الملف"
           }
         }
       }
@@ -6680,12 +7450,12 @@
         }
       }
     },
-    "Checking the rows…" : {
+    "Checking the lines against your budget…" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "جارٍ التحقق من الصفوف…"
+            "value" : "جارٍ التحقق من الأسطر مقابل ميزانيتك…"
           }
         }
       }
@@ -7460,6 +8230,17 @@
         }
       }
     },
+    "Corrected by the bank" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صحّحها البنك"
+          }
+        }
+      }
+    },
     "Could not apply" : {
       "localizations" : {
         "ar" : {
@@ -7885,12 +8666,12 @@
         }
       }
     },
-    "Dates in the file" : {
+    "Dates as YYYY-MM-DD; amounts negative for money out." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "التواريخ في الملف"
+            "value" : "التواريخ بصيغة YYYY-MM-DD؛ والمبالغ سالبة للأموال الصادرة."
           }
         }
       }
@@ -7901,6 +8682,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "اليوم"
+          }
+        }
+      }
+    },
+    "Day first" : {
+      "comment" : "Dates in a bank file.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اليوم أولًا"
+          }
+        }
+      }
+    },
+    "Day first (%@ is %@)" : {
+      "comment" : "\"Day first (01/02/2026 is 1 February 2026)\"",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "اليوم أولًا (⁨%1$@⁩ هو ⁨%2$@⁩)"
           }
         }
       }
@@ -7921,16 +8724,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يوم الأسبوع"
-          }
-        }
-      }
-    },
-    "Day/month/year (31/10/2026)" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "يوم/شهر/سنة (31/10/2026)"
           }
         }
       }
@@ -8025,6 +8818,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "الفاصل العشري"
+          }
+        }
+      }
+    },
+    "Declined or cancelled" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مرفوضة أو ملغاة"
           }
         }
       }
@@ -8501,12 +9305,12 @@
         }
       }
     },
-    "Discard this review?" : {
+    "Discard this import?" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "تجاهل هذه المراجعة؟"
+            "value" : "تجاهل هذا الاستيراد؟"
           }
         }
       }
@@ -8777,6 +9581,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "رصيد كل حساب في نهاية كل شهر."
+          }
+        }
+      }
+    },
+    "Each applies only to a line that hasn't changed." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا يُطبَّق كل تصحيح إلا على سطر لم يتغيّر."
           }
         }
       }
@@ -9447,6 +10261,16 @@
         }
       }
     },
+    "Every amount that reads is positive. Is money out told by the transaction types (DEBIT, POS…)?" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كل المبالغ المقروءة موجبة. هل تُعرف الأموال الصادرة من أنواع المعاملات (DEBIT وPOS…)؟"
+          }
+        }
+      }
+    },
     "Every downloaded account is reviewed or skipped." : {
       "localizations" : {
         "ar" : {
@@ -9924,6 +10748,48 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بدء الاستيراد من"
+          }
+        }
+      }
+    },
+    "Fix line" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تصحيح السطر"
+          }
+        }
+      }
+    },
+    "Fix the lines of this import that need attention. Use only what the file itself supports, and ask me about anything that isn't clear." : {
+      "comment" : "A message ready for the assistant.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صحّح أسطر هذا الاستيراد التي بحاجة إلى انتباه. لا تعتمد إلا على ما يدعمه الملف نفسه، واسألني عن أي شيء غير واضح."
+          }
+        }
+      }
+    },
+    "Fix with the assistant" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التصحيح عبر المساعد"
+          }
+        }
+      }
+    },
+    "Fixed by the assistant" : {
+      "comment" : "A line of a bank file.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صحّحه المساعد"
           }
         }
       }
@@ -10639,6 +11505,17 @@
         }
       }
     },
+    "Import as one entry" : {
+      "comment" : "A batch's payments, imported as the one entry the bank wrote for them.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استيرادها كقيد واحد"
+          }
+        }
+      }
+    },
     "Import backup" : {
       "localizations" : {
         "ar" : {
@@ -10689,6 +11566,17 @@
         }
       }
     },
+    "Import its payments" : {
+      "comment" : "A batch's payments, each imported again.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استيراد دفعاتها"
+          }
+        }
+      }
+    },
     "Import replaces the budget on this device. A copy of it is kept with its backups in the budget library, and you can undo the import." : {
       "localizations" : {
         "ar" : {
@@ -10715,6 +11603,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "قواعد الاستيراد (%lld)"
+          }
+        }
+      }
+    },
+    "Import this statement into %@. Find the transactions, ask me about anything unclear, and prepare them for the import review." : {
+      "comment" : "A message ready for the assistant, with a PDF statement attached; %@ is the account.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استورد هذا الكشف إلى ⁨%@⁩. ابحث عن المعاملات، واسألني عن أي شيء غير واضح، وجهّزها لمراجعة الاستيراد."
           }
         }
       }
@@ -11025,6 +11924,17 @@
         }
       }
     },
+    "Imported before" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مستورَدة من قبل"
+          }
+        }
+      }
+    },
     "Imported transactions go into one of your accounts. Add it in Accounts, then import its statement." : {
       "localizations" : {
         "ar" : {
@@ -11071,6 +11981,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جارٍ الاستيراد…"
+          }
+        }
+      }
+    },
+    "In %@" : {
+      "comment" : "Why a line of a bank file is left out; %@ is a currency code.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بعملة ⁨%@⁩"
           }
         }
       }
@@ -11189,6 +12110,28 @@
         }
       }
     },
+    "In a batch imported as one entry" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ضمن حزمة مستورَدة كقيد واحد"
+          }
+        }
+      }
+    },
+    "In another currency" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بعملة أخرى"
+          }
+        }
+      }
+    },
     "In the %@ payment category" : {
       "localizations" : {
         "ar" : {
@@ -11209,6 +12152,17 @@
         }
       }
     },
+    "In the file: %@" : {
+      "comment" : "A bank file's line as the file writes it.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "في الملف: ⁨%@⁩"
+          }
+        }
+      }
+    },
     "In use" : {
       "localizations" : {
         "ar" : {
@@ -11219,12 +12173,34 @@
         }
       }
     },
+    "Include" : {
+      "comment" : "Imports a line of a bank file that the import left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تضمين"
+          }
+        }
+      }
+    },
     "Include memo text in budget lookups sent to the provider." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "تضمين نص البيان في استعلامات الميزانية المرسلة إلى المزوّد."
+          }
+        }
+      }
+    },
+    "Included" : {
+      "comment" : "A line of a bank file the import had left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مُضمَّن"
           }
         }
       }
@@ -12166,6 +13142,17 @@
         }
       }
     },
+    "Left out" : {
+      "comment" : "A bank file's lines the import leaves out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مستبعدة"
+          }
+        }
+      }
+    },
     "Legend: %@" : {
       "localizations" : {
         "ar" : {
@@ -12216,6 +13203,17 @@
         }
       }
     },
+    "Line %@" : {
+      "comment" : "A bank file's line by its number, when nothing else names it.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "السطر ⁨%@⁩"
+          }
+        }
+      }
+    },
     "Line of credit" : {
       "localizations" : {
         "ar" : {
@@ -12232,6 +13230,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "خطوط الائتمان"
+          }
+        }
+      }
+    },
+    "Lines that don't read, or that the import leaves out (pending payments, another account's, balances), are shown for you to fix or include. The account remembers how its file read; on the desktop you can also choose which column holds what." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تظهر لك الأسطر التي تعذّرت قراءتها أو التي يستبعدها الاستيراد (الدفعات المعلّقة، وأسطر حساب آخر، والأرصدة) لتصحّحها أو تضمّنها. ويتذكّر الحساب كيف قُرئ ملفه؛ وعلى سطح المكتب يمكنك أيضًا اختيار ما يحويه كل عمود."
           }
         }
       }
@@ -12907,6 +13915,28 @@
         }
       }
     },
+    "Month first" : {
+      "comment" : "Dates in a bank file.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الشهر أولًا"
+          }
+        }
+      }
+    },
+    "Month first (%@ is %@)" : {
+      "comment" : "\"Month first (01/02/2026 is 2 January 2026)\"",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الشهر أولًا (⁨%1$@⁩ هو ⁨%2$@⁩)"
+          }
+        }
+      }
+    },
     "Month first (12/31/2026)" : {
       "localizations" : {
         "ar" : {
@@ -12943,16 +13973,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "أرصدة نهاية الشهر؛ والأدنى والأعلى من بينها."
-          }
-        }
-      }
-    },
-    "Month/day/year (10/31/2026)" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "شهر/يوم/سنة (10/31/2026)"
           }
         }
       }
@@ -13545,6 +14565,17 @@
         }
       }
     },
+    "Needs attention" : {
+      "comment" : "A bank file's lines that don't read.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بحاجة إلى انتباه"
+          }
+        }
+      }
+    },
     "Needs review" : {
       "localizations" : {
         "ar" : {
@@ -13561,6 +14592,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "المصادر السالبة مبالغ أُخذت صراحةً من غير المخصَّص، مثل تعديل تسوية أو تحويل إلى حساب تتبُّع وُجِّه إلى غير المخصَّص."
+          }
+        }
+      }
+    },
+    "Negative, as bank accounts write them" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "سالبة، كما تكتبها الحسابات البنكية"
           }
         }
       }
@@ -13865,6 +14906,17 @@
         }
       }
     },
+    "No amount" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بلا مبلغ"
+          }
+        }
+      }
+    },
     "No assets." : {
       "localizations" : {
         "ar" : {
@@ -13911,6 +14963,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "بلا تغيير"
+          }
+        }
+      }
+    },
+    "No date" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "بلا تاريخ"
           }
         }
       }
@@ -14165,6 +15228,16 @@
         }
       }
     },
+    "No, as written" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا، كما هي مكتوبة"
+          }
+        }
+      }
+    },
     "No-spend days" : {
       "localizations" : {
         "ar" : {
@@ -14181,6 +15254,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا شيء"
+          }
+        }
+      }
+    },
+    "Not booked yet" : {
+      "comment" : "Why a line of a bank file is left out: it is pending.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم تُقيَّد بعد"
           }
         }
       }
@@ -14211,6 +15295,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "دون علامة"
+          }
+        }
+      }
+    },
+    "Not imported until fixed: tap a line to give what doesn't read." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تُستورد حتى تُصحَّح: اضغط على سطر لتُدخل ما تعذّرت قراءته."
+          }
+        }
+      }
+    },
+    "Not imported. Include a line if it belongs in the account." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تُستورد. ضمِّن سطرًا إن كان يخص هذا الحساب."
           }
         }
       }
@@ -14335,12 +15439,12 @@
         }
       }
     },
-    "Nothing has been imported yet. The choices you made are lost." : {
+    "Nothing has been imported yet. The changes and choices you made are lost." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "لم يُستورد شيء بعد، وستضيع الخيارات التي حدّدتها."
+            "value" : "لم يُستورد شيء بعد، وستضيع التغييرات والخيارات التي أجريتها."
           }
         }
       }
@@ -14411,6 +15515,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "لا توجد نتائج تطابق هذا البحث وعوامل التصفية هذه."
+          }
+        }
+      }
+    },
+    "Nothing moved" : {
+      "comment" : "Why a line of a bank file is left out: its amount is zero.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يتحرك أي مال"
           }
         }
       }
@@ -14775,6 +15890,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "فتح جدول البيانات"
+          }
+        }
+      }
+    },
+    "Open the import these fixes are for, and apply them from there." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "افتح الاستيراد الذي تخصه هذه التصحيحات، وطبّقها من هناك."
           }
         }
       }
@@ -15164,6 +16289,26 @@
         }
       }
     },
+    "PDF statements need the assistant. It reads the PDF, finds the transactions, checks them against the statement's totals and brings them to a review like this one, where you decide on each row." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كشوف الحساب بصيغة PDF تحتاج إلى المساعد: فهو يقرأ ملف PDF ويجد المعاملات ويطابقها مع مجاميع الكشف، ثم يحضرها إلى مراجعة كهذه تقرّر فيها ما يحدث لكل صف."
+          }
+        }
+      }
+    },
+    "PDF · tap to choose another" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PDF · اضغط لاختيار ملف آخر"
+          }
+        }
+      }
+    },
     "Page %lld of %lld" : {
       "localizations" : {
         "ar" : {
@@ -15200,6 +16345,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "يُسدَّد في ⁨%@⁩"
+          }
+        }
+      }
+    },
+    "Pair %lld suggested transfers" : {
+      "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "إقران التحويلات المقترحة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "إقران التحويل المقترح"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "إقران التحويلين المقترحين"
+                }
+              },
+              "few" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "إقران %lld تحويلات مقترحة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "إقران %lld تحويلًا مقترحًا"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "إقران %lld تحويل مقترح"
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Pair the suggested transfer"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Pair %lld suggested transfers"
+                }
+              }
+            }
           }
         }
       }
@@ -15725,12 +16934,106 @@
         }
       }
     },
+    "Positive, as many card statements write them" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "موجبة، كما تكتبها كشوف كثير من البطاقات"
+          }
+        }
+      }
+    },
     "Positive-surplus months" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "أشهر الفائض الموجب"
+          }
+        }
+      }
+    },
+    "Possible refund · %lld purchases from %@ match" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استرداد محتمل · تطابقه %1$#@purchases@ من ⁨%2$@⁩"
+          },
+          "substitutions" : {
+            "purchases" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "zero" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg عملية شراء"
+                    }
+                  },
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "عملية شراء واحدة"
+                    }
+                  },
+                  "two" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "عمليتا شراء"
+                    }
+                  },
+                  "few" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg عمليات شراء"
+                    }
+                  },
+                  "many" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg عملية شراء"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg عملية شراء"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Possible refund · %1$#@purchases@ from %2$@ match"
+          },
+          "substitutions" : {
+            "purchases" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg purchases"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg purchases"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -15751,16 +17054,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "جارٍ تجهيز ⁨%@⁩"
-          }
-        }
-      }
-    },
-    "Preview" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "معاينة"
           }
         }
       }
@@ -15926,12 +17219,12 @@
         }
       }
     },
-    "Purchases are positive (reverse amount signs)" : {
+    "Purchases in the file" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "المشتريات موجبة (عكس إشارات المبالغ)"
+            "value" : "المشتريات في الملف"
           }
         }
       }
@@ -16056,12 +17349,12 @@
         }
       }
     },
-    "Read as" : {
+    "Read it with the assistant" : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "القراءة بصيغة"
+            "value" : "قراءته عبر المساعد"
           }
         }
       }
@@ -16584,6 +17877,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تحديث النماذج المتاحة"
+          }
+        }
+      }
+    },
+    "Refund of %@ · %@ on %@" : {
+      "comment" : "\"Refund of Shop · 23.99 on 7 Oct 2026\": the purchase money in may be a refund of.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استرداد لشراء من ⁨%1$@⁩ · ⁨%2$@⁩ بتاريخ ⁨%3$@⁩"
+          }
+        }
+      }
+    },
+    "Refund of %@ · %@ on %@ · %@" : {
+      "comment" : "\"Refund of Shop · 23.99 on 7 Oct 2026 · Shopping\", with the purchase's category.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "استرداد لشراء من ⁨%1$@⁩ · ⁨%2$@⁩ بتاريخ ⁨%3$@⁩ · ⁨%4$@⁩"
           }
         }
       }
@@ -19079,6 +20394,17 @@
         }
       }
     },
+    "Sheet" : {
+      "comment" : "A workbook's sheet that a bank file is read from.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "الورقة"
+          }
+        }
+      }
+    },
     "Shopping" : {
       "comment" : "Starter category.",
       "localizations" : {
@@ -20415,6 +21741,16 @@
         }
       }
     },
+    "That change no longer fits the file." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لم يعد هذا التغيير ينطبق على الملف."
+          }
+        }
+      }
+    },
     "The %lld categories in %@, for %@." : {
       "localizations" : {
         "ar" : {
@@ -20559,6 +21895,16 @@
         }
       }
     },
+    "The assistant can fix these lines from what the file says, and asks you about anything unclear. You see each fix before it's applied." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "يستطيع المساعد تصحيح هذه الأسطر مما يقوله الملف، ويسألك عن أي شيء غير واضح. وترى كل تصحيح قبل تطبيقه."
+          }
+        }
+      }
+    },
     "The assistant could not complete that action." : {
       "localizations" : {
         "ar" : {
@@ -20649,6 +21995,17 @@
         }
       }
     },
+    "The dates don't say whether the day or the month comes first: is %@" : {
+      "comment" : "Followed by two buttons with the date read each way (\"1 February 2026\", \"2 January 2026\").",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "لا تبيّن التواريخ أيهما يأتي أولًا، اليوم أم الشهر: هل ⁨%@⁩ هو"
+          }
+        }
+      }
+    },
     "The engine returned nothing." : {
       "localizations" : {
         "ar" : {
@@ -20669,6 +22026,17 @@
         }
       }
     },
+    "The file's amounts are in %@. Include a line to enter its amount in your budget's currency, or import the file into a budget in %@." : {
+      "comment" : "Both %@ are the same currency code.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مبالغ الملف بعملة ⁨%1$@⁩. ضمِّن سطرًا لتُدخل مبلغه بعملة ميزانيتك، أو استورد الملف إلى ميزانية بعملة ⁨%2$@⁩."
+          }
+        }
+      }
+    },
     "The generated file is unavailable." : {
       "localizations" : {
         "ar" : {
@@ -20685,6 +22053,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "المجموعة فارغة."
+          }
+        }
+      }
+    },
+    "The header row again" : {
+      "comment" : "Why a line of a bank file is left out.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "صف العناوين مكررًا"
           }
         }
       }
@@ -20970,6 +22349,16 @@
         }
       }
     },
+    "These fixes are for another import." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "هذه التصحيحات تخص استيرادًا آخر."
+          }
+        }
+      }
+    },
     "These have nothing left to enter. Delete them, or edit one to give it a new date." : {
       "localizations" : {
         "ar" : {
@@ -21026,6 +22415,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "حُذف هذا الحساب."
+          }
+        }
+      }
+    },
+    "This account's amounts are in %@. Choose another account in the file, or include its lines with their amounts in your budget's currency." : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "مبالغ هذا الحساب بعملة ⁨%@⁩. اختر حسابًا آخر في الملف، أو ضمِّن أسطره بمبالغها بعملة ميزانيتك."
           }
         }
       }
@@ -21512,6 +22911,17 @@
         }
       }
     },
+    "Told by the transaction types" : {
+      "comment" : "How money out is told in a bank file.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تُعرف من أنواع المعاملات"
+          }
+        }
+      }
+    },
     "Tomorrow" : {
       "localizations" : {
         "ar" : {
@@ -21786,6 +23196,17 @@
         }
       }
     },
+    "Transfer from %@: %@" : {
+      "comment" : "\"Transfer from Savings: 2 Oct 2026 · TO EVERYDAY\": the other side of money moved from that account.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحويل من ⁨%1$@⁩: ⁨%2$@⁩"
+          }
+        }
+      }
+    },
     "Transfer from account" : {
       "localizations" : {
         "ar" : {
@@ -21802,6 +23223,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "تحويل إلى ⁨%@⁩"
+          }
+        }
+      }
+    },
+    "Transfer to %@: %@" : {
+      "comment" : "\"Transfer to Savings: 2 Oct 2026 · FROM EVERYDAY\": the other side of money moved to that account.",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تحويل إلى ⁨%1$@⁩: ⁨%2$@⁩"
           }
         }
       }
@@ -22043,6 +23475,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "التراجع عن التقسيم"
+          }
+        }
+      }
+    },
+    "Undo the assistant's fix" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "التراجع عن تصحيح المساعد"
           }
         }
       }
@@ -22373,12 +23815,12 @@
         }
       }
     },
-    "UrBudget opens JSON backups, bank statements (CSV, OFX, QFX or QIF) and YNAB exports." : {
+    "UrBudget opens JSON backups, bank statements (CSV, OFX, QFX, QIF or MT940) and YNAB exports." : {
       "localizations" : {
         "ar" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "يفتح UrBudget النسخ الاحتياطية بصيغة JSON وكشوف الحساب (CSV أو OFX أو QFX أو QIF) وملفات التصدير من YNAB."
+            "value" : "يفتح UrBudget النسخ الاحتياطية بصيغة JSON وكشوف الحساب (CSV أو OFX أو QFX أو QIF أو MT940) وملفات التصدير من YNAB."
           }
         }
       }
@@ -22937,16 +24379,6 @@
         }
       }
     },
-    "Year-month-day (2026-10-31)" : {
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "سنة-شهر-يوم (2026-10-31)"
-          }
-        }
-      }
-    },
     "Yearly" : {
       "localizations" : {
         "ar" : {
@@ -22983,6 +24415,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "نعم"
+          }
+        }
+      }
+    },
+    "Yes, use the types" : {
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "نعم، حسب الأنواع"
           }
         }
       }
@@ -24587,6 +26029,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "الحساب الذي تختاره"
+          }
+        }
+      }
+    },
+    "the line changed" : {
+      "comment" : "Why a fix no longer fits, after \"One no longer fits:\".",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "تغيّر السطر"
           }
         }
       }

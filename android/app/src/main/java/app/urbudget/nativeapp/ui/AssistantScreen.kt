@@ -43,10 +43,15 @@ import kotlinx.coroutines.flow.map
 import org.json.JSONObject
 import java.io.File
 
-/** Native chat and proposal review for the same Rust assistant used by desktop. */
+/**
+ * Native chat and proposal review for the same Rust assistant used by desktop. `importing` is the
+ * bank file being imported when the assistant is open over its import ({account, content,
+ * session}); fixes it proposes for that import go to `applyFix`.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun AssistantScreen(vm: BudgetViewModel, controller: AssistantController = viewModel(), onClose: (() -> Unit)? = null) {
+internal fun AssistantScreen(vm: BudgetViewModel, controller: AssistantController = viewModel(), onClose: (() -> Unit)? = null,
+                             importing: JSONObject? = null, applyFix: ((thread: String, proposal: JSONObject) -> Unit)? = null) {
     // Token updates only recompose the live reply, not history, proposal controls or composer.
     val panel = remember(controller) { controller.state.map { it.copy(streaming = "", thinking = "") }.distinctUntilChanged() }
     val state by panel.collectAsStateWithLifecycle(AssistantState())
@@ -85,6 +90,8 @@ internal fun AssistantScreen(vm: BudgetViewModel, controller: AssistantControlle
             .onSuccess { saveBytes(it.first, it.second) }.onFailure { exportError = it.message }
     } }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { controller.refresh() }
+    // A message put ready to send, such as one asking to fix an import's lines.
+    LaunchedEffect(state.draft) { state.draft?.let { message = it; controller.prefilled() } }
     LaunchedEffect(entries.size, state.running) {
         if (list.layoutInfo.totalItemsCount > 0 && (list.firstVisibleItemIndex >= list.layoutInfo.totalItemsCount - 5 || entries.size < 4))
             list.animateScrollToItem(list.layoutInfo.totalItemsCount - 1)
@@ -124,6 +131,7 @@ internal fun AssistantScreen(vm: BudgetViewModel, controller: AssistantControlle
                         val refinePrompt = stringResource(R.string.assistant_refine_prompt, proposal.text("title"))
                         AssistantProposalCard(proposal, budget.text("currency"), state.busy.contains("proposal"), state.undoProposal == proposal.text("id"),
                             apply = { controller.apply(proposal.text("id"), vm::refresh) },
+                            applyFix = applyFix?.let { fix -> { fix(state.threadId, proposal) } },
                             undo = { controller.undoProposal(proposal.text("id"), vm::refresh) },
                             discard = { controller.discard(proposal.text("id")) },
                             refine = { message = "$refinePrompt " },
@@ -148,7 +156,7 @@ internal fun AssistantScreen(vm: BudgetViewModel, controller: AssistantControlle
                                     else Text(entry.text("text"), color = if (entry.text("kind") == "error") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface)
                                 }
                                 entry.rows("attachments").forEach { Text("📎 ${Money.own(it.text("name"))}", style = MaterialTheme.typography.labelMedium) }
-                                if (entry.text("kind") == "error") TextButton({ controller.retry(budgetState.month) }, enabled = !state.running) { Text(stringResource(R.string.assistant_try_again)) }
+                                if (entry.text("kind") == "error") TextButton({ controller.retry(budgetState.month, importing) }, enabled = !state.running) { Text(stringResource(R.string.assistant_try_again)) }
                                 if (entry.text("kind") == "assistant") TextButton({ reportReply = entry.text("text").take(4000) }) { Text(stringResource(R.string.assistant_report_reply)) }
                             }
                         }
@@ -158,7 +166,7 @@ internal fun AssistantScreen(vm: BudgetViewModel, controller: AssistantControlle
             item(key = "live-reply") { AssistantLiveReply(controller, list) }
             if (state.running) item { Row(verticalAlignment = Alignment.CenterVertically) { CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp); Text(stringResource(R.string.assistant_working), Modifier.padding(start = 4.dp), style = MaterialTheme.typography.labelMedium) } }
             else if (entries.lastOrNull()?.text("kind") == "user") item {
-                TextButton({ controller.retry(budgetState.month) }, enabled = "send" !in state.busy) { Text(stringResource(R.string.assistant_continue_reply)) }
+                TextButton({ controller.retry(budgetState.month, importing) }, enabled = "send" !in state.busy) { Text(stringResource(R.string.assistant_continue_reply)) }
             }
         }
         if (state.attachments.isNotEmpty() || selected.isNotEmpty()) Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -174,7 +182,7 @@ internal fun AssistantScreen(vm: BudgetViewModel, controller: AssistantControlle
             }
             FilledField(message, { message = it.take(20_000) }, Modifier.weight(1f), label = { Text(stringResource(R.string.assistant_ask)) }, maxLines = 6)
             if (state.running) IconButton(controller::stop) { Icon(Icons.Outlined.StopCircle, stringResource(R.string.assistant_stop)) }
-            else IconButton({ controller.send(message, budgetState.month, selected) { message = ""; selected = emptyList() } },
+            else IconButton({ controller.send(message, budgetState.month, selected, importing) { message = ""; selected = emptyList() } },
                 enabled = state.status?.optBoolean("ready") == true && "send" !in state.busy && (message.isNotBlank() || state.attachments.isNotEmpty())) { Icon(Icons.AutoMirrored.Outlined.Send, stringResource(R.string.assistant_send)) }
         }
     }
@@ -201,8 +209,11 @@ internal fun AssistantScreen(vm: BudgetViewModel, controller: AssistantControlle
     }
     deleteId?.let { id -> AlertDialog(onDismissRequest = { deleteId = null }, title = { Text(stringResource(R.string.assistant_delete_conversation_title)) }, text = { Text(stringResource(R.string.assistant_delete_conversation_message)) },
         confirmButton = { TextButton({ controller.deleteThread(id); deleteId = null }) { Text(stringResource(R.string.common_delete)) } }, dismissButton = { TextButton({ deleteId = null }) { Text(stringResource(R.string.common_cancel)) } }) }
-    importFile?.let { file -> BankImportDialog(budget, vm, initialImport = file,
-        onImported = { controller.imported(file.text("assistantThreadId"), file.text("assistantProposalId")) }) { importFile = null } }
+    importFile?.let { file ->
+        var draft by remember(file) { mutableStateOf(preparedBankImport(file, file.text("assistantThreadId"), file.text("assistantProposalId"))) }
+        BankImportDialog(budget, vm, draft, { change -> draft = change(draft) },
+            onImported = { controller.imported(file.text("assistantThreadId"), file.text("assistantProposalId")) }) { importFile = null }
+    }
     report?.let { document -> AssistantReportDialog(document, { report = null }, {
         scope.launch { val bytes = withContext(Dispatchers.Default) { document.text("body").toByteArray() }; saveBytes("${document.text("title").take(60)}.md", bytes) }
     }) }
@@ -253,7 +264,7 @@ private fun AssistantLiveReply(controller: AssistantController, list: LazyListSt
 
 @Composable
 private fun AssistantProposalCard(proposal: JSONObject, currency: String, busy: Boolean, canUndo: Boolean, apply: () -> Unit, undo: () -> Unit, discard: () -> Unit,
-    refine: () -> Unit, reviewImport: () -> Unit, saveImport: () -> Unit, report: () -> Unit, spreadsheet: (Boolean) -> Unit) {
+    refine: () -> Unit, reviewImport: () -> Unit, saveImport: () -> Unit, report: () -> Unit, spreadsheet: (Boolean) -> Unit, applyFix: (() -> Unit)? = null) {
     val card = proposal.optJSONObject("card") ?: JSONObject()
     val rows = remember(card) { card.rows("rows") }
     var page by remember(proposal.text("id")) { mutableIntStateOf(0) }
@@ -290,9 +301,15 @@ private fun AssistantProposalCard(proposal: JSONObject, currency: String, busy: 
             if (card.optInt("more") > 0) Text(countText(R.plurals.assistant_more_rows, card.optInt("more")), style = MaterialTheme.typography.labelSmall)
             card.optJSONArray("check")?.let { Text(if (it.optBoolean(0)) "✓ " + it.optString(1) else stringResource(R.string.assistant_check, it.optString(1)), color = if (it.optBoolean(0)) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error) }
             listOf("warning", "note").forEach { if (card.text(it).isNotEmpty()) Text(card.text(it), style = MaterialTheme.typography.bodySmall) }
-            if (proposal.text("problem").isNotEmpty()) Text(proposal.text("problem"), color = MaterialTheme.colorScheme.error)
+            if (proposal.text("problem").isNotEmpty() && proposal.text("kind") != "fix") Text(proposal.text("problem"), color = MaterialTheme.colorScheme.error)
             if (status == "failed") TextButton(discard, enabled = !busy) { Text(stringResource(R.string.assistant_dismiss)) }
             else when (proposal.text("kind")) {
+                // Fixes for a bank file being imported: the import applies them, each only to a line that hasn't changed.
+                "fix" -> if (status == "proposed" || status == "undone") {
+                    Button(applyFix ?: {}, enabled = !busy && applyFix != null) { Text(stringResource(if (applyFix != null) R.string.assistant_fix_apply else R.string.assistant_fix_apply_from_import)) }
+                    Text(stringResource(if (applyFix != null) R.string.assistant_fix_each_line else R.string.assistant_fix_open_import), style = MaterialTheme.typography.bodySmall)
+                    Row { TextButton(refine, enabled = !busy) { Text(stringResource(R.string.assistant_ask_changes)) }; TextButton(discard, enabled = !busy) { Text(stringResource(R.string.assistant_discard)) } }
+                } else Text(stringResource(if (status == "applied") R.string.assistant_fix_applied else R.string.assistant_discarded), style = MaterialTheme.typography.labelMedium)
                 "report" -> Button(report, enabled = !busy) { Text(stringResource(R.string.assistant_read_report)) }
                 "import" -> { Button(reviewImport, enabled = !busy) { Text(countText(R.plurals.assistant_review_import_rows, proposal.optInt("rows"))) }; TextButton(saveImport) { Text(stringResource(R.string.assistant_export_csv)) } }
                 "spreadsheet" -> { Button({ spreadsheet(true) }, enabled = !busy) { Text(stringResource(R.string.assistant_open_spreadsheet)) }; TextButton({ spreadsheet(false) }) { Text(stringResource(R.string.assistant_export_excel)) } }

@@ -1,30 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
-import {
-  ArrowLeftRight,
-  ChartColumn,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  ChevronsUpDown,
-  CheckCheck,
-  Landmark,
-  LayoutGrid,
-  MoreHorizontal,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Pencil,
-  Plus,
-  Settings2,
-  Tags,
-  ArrowUp,
-  ArrowDown,
-  Archive,
-  ArchiveRestore,
-  FolderOpen,
-  Download,
-  RefreshCw,
-  Info,
-} from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDown, ArrowLeftRight, ArrowUp, ChartColumn, Check, CheckCheck, ChevronDown, ChevronRight, ChevronsUpDown, Download, FileUp, FolderOpen, Info, Landmark, LayoutGrid, MoreHorizontal, PanelLeftClose, PanelLeftOpen, Pencil, Plus, RefreshCw, Settings2, Tags } from "lucide-react";
 import { Menu, startEdge, useContextMenu, useToast, type MenuItem } from "./ui";
 import { accountType, inNetWorth, typeName } from "./accounts";
 import { uncategorizedCounts } from "./uncategorized";
@@ -42,7 +17,8 @@ export type Page =
   | "settings"
   | "loans"
   | "reports"
-  | "payees";
+  | "payees"
+  | "import";
 type Edit = (update: (draft: Budget) => void) => void;
 
 const WIDTH = { min: 200, max: 360, default: 248, collapsed: 52 };
@@ -238,6 +214,7 @@ export function Sidebar({
   onSwitchBudget,
   onNewBudget,
   onManageBudgets,
+  importing,
 }: {
   budget: Budget;
   budgetId: string;
@@ -261,6 +238,8 @@ export function Sidebar({
   onLoan?: (a: Account) => void;
   onSwitchBudget: (id: string) => void;
   onNewBudget: () => void;
+  /** An import in progress, by the account it's into: a way back to it. */
+  importing?: string;
   onManageBudgets: () => void;
 }) {
   const toast = useToast();
@@ -419,6 +398,11 @@ export function Sidebar({
           <NavItem collapsed={collapsed} active={page === "payees"} icon={<Tags size={16} strokeWidth={1.75} />} onClick={() => onNavigate("payees")}>
             {t("Payees & rules")}
           </NavItem>
+          {importing !== undefined && (
+            <NavItem collapsed={collapsed} active={page === "import"} icon={<FileUp size={16} strokeWidth={1.75} />} onClick={() => onNavigate("import")}>
+              {importing ? t("Importing into {account}", { account: importing }) : t("Importing a file")}
+            </NavItem>
+          )}
           {/* All transactions sits last, just above the accounts it covers. */}
           <NavItem
             collapsed={collapsed}

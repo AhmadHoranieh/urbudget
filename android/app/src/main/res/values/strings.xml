@@ -1526,6 +1526,25 @@
         <item quantity="one">%1$s renamed by your payee rules</item>
         <item quantity="other">%1$s renamed by your payee rules</item>
     </plurals>
+    <plurals name="bank_refunds_count">
+        <item quantity="one">%1$s refund</item>
+        <item quantity="other">%1$s refunds</item>
+    </plurals>
+    <string name="bank_transfers_note">A transfer joins a row to the uncategorized entry it mirrors in another account, so the money you moved isn\'t counted as spending or income. It\'s chosen for you when the bank\'s text names the other account or matches earlier transfers between them; otherwise it\'s suggested for you to check.</string>
+    <!-- Transfers matched only by amount and date, still to decide. -->
+    <plurals name="bank_transfers_suggested">
+        <item quantity="one">%1$s transfer is suggested by its amount and date. Check it below, or pair it.</item>
+        <item quantity="other">%1$s transfers are suggested by their amount and date. Check them below, or pair them all.</item>
+    </plurals>
+    <string name="bank_pair_it">Pair it</string>
+    <string name="bank_pair_all">Pair all</string>
+    <!-- Money in that may be a refund: the payee of the purchase, its amount and its date. -->
+    <string name="bank_refund_of">Refund of %1$s · %2$s on %3$s</string>
+    <!-- Money in that several purchases from one payee (%2$s) match; the count is how many. -->
+    <plurals name="bank_possible_refund">
+        <item quantity="one">Possible refund · %1$s purchase from %2$s matches</item>
+        <item quantity="other">Possible refund · %1$s purchases from %2$s match</item>
+    </plurals>
     <string name="bank_matching_note">Matching keeps your category and memo and marks the transaction cleared. Imported transactions wait for your approval.</string>
     <string name="bank_idless_note">This file has no bank transaction IDs. A row may already be imported; compare its memo and amount. Skip it if it\'s the same payment, or add it separately if it\'s a different one.</string>
     <plurals name="bank_rows_need_choice">
@@ -1550,31 +1569,143 @@
     <!-- Which part of a split transaction (1, 2, …). -->
     <string name="bank_match_split">Split %1$s</string>
     <string name="bank_previously_imported">Previously imported</string>
-    <string name="bank_dates_ymd">Year-month-day (2026-10-31)</string>
-    <string name="bank_dates_dmy">Day/month/year (31/10/2026)</string>
-    <string name="bank_dates_mdy">Month/day/year (10/31/2026)</string>
+    <!-- The other side of money moved from or to another account (%1$s): the transaction, as bank_match describes it. -->
+    <string name="bank_transfer_from_match">Transfer from %1$s: %2$s</string>
+    <string name="bank_transfer_to_match">Transfer to %1$s: %2$s</string>
     <!-- The name shown for a chosen file that has none. -->
     <string name="bank_statement_file">Bank statement</string>
     <string name="bank_statement_too_large">Choose a statement smaller than 8 MiB.</string>
     <string name="bank_statement_unopened">The selected statement could not be opened.</string>
-    <string name="bank_budget_changed_preview">Your budget changed. Preview this statement again.</string>
-    <string name="bank_file_empty">The file has no transactions to import.</string>
-    <string name="bank_preview">Preview</string>
-    <string name="bank_import_lead">Bring in the transactions your bank exported. You check every row, and how it matches what you already entered, before anything is saved.</string>
+    <string name="bank_import_lead">Bring in the transactions your bank exported. You see the lines that don\'t read and fix them, then check every transaction before anything is saved.</string>
     <string name="bank_into_account">Into account</string>
     <string name="bank_choose_file">Choose a file</string>
-    <string name="bank_file_formats">CSV, OFX, QFX or QIF</string>
-    <!-- The file's format (CSV, OFX…). -->
-    <string name="bank_choose_another">%1$s · tap to choose another</string>
-    <string name="bank_read_as">Read as</string>
-    <string name="bank_dates_in_file">Dates in the file</string>
-    <string name="bank_purchases_positive">Purchases are positive (reverse amount signs)</string>
-    <!-- Date, Payee, Description, Amount, Outflow, Inflow and Memo are CSV column names: keep them in English. -->
-    <string name="bank_csv_help">CSV files need a header row with Date, Payee (or Description), and either Amount (negative for money out) or Outflow and Inflow. Memo is optional.</string>
+    <string name="bank_file_formats">CSV, Excel, OFX, QIF, CAMT.053 or MT940; PDF through the assistant</string>
     <string name="bank_statement_label">Statement</string>
     <string name="bank_change_file">Change file</string>
     <string name="bank_all_in_note">Every row came out as money in. If these are purchases, the file writes them as positive numbers.</string>
     <string name="bank_reverse_signs_action">Reverse signs</string>
+    <string name="bank_file_unreadable">This file couldn\'t be read.</string>
+    <string name="bank_change_no_longer_fits">That change no longer fits the file.</string>
+    <string name="bank_budget_changed_review">Your budget changed. The review is up to date again: check it and import.</string>
+    <string name="bank_reading_file">Reading the file…</string>
+    <!-- The chosen file's name. -->
+    <string name="bank_reading_named">Reading %1$s…</string>
+    <string name="bank_reading">Reading…</string>
+    <string name="bank_pdf_choose_another">PDF · tap to choose another</string>
+    <string name="bank_pdf_note">PDF statements need the assistant. It reads the PDF, finds the transactions, checks them against the statement\'s totals and brings them to a review like this one, where you decide on each row.</string>
+    <string name="bank_pdf_read_with_assistant">Read it with the assistant</string>
+    <string name="bank_pdf_attach_note">PDF statements need the assistant. Open the assistant, attach this PDF and ask it to import the statement.</string>
+    <string name="bank_import_help">Lines that don\'t read, or that the import leaves out (pending payments, another account\'s, balances), are shown for you to fix or include. The account remembers how its file read; on the desktop you can also choose which column holds what.</string>
+    <!-- What is left out of the review: "2 need attention · 1 left out". -->
+    <string name="bank_not_imported">%1$s, not imported.</string>
+    <plurals name="bank_need_attention">
+        <item quantity="one">%1$s need attention</item>
+        <item quantity="other">%1$s need attention</item>
+    </plurals>
+    <string name="bank_check_file">Check the file</string>
+    <string name="bank_checking_lines">Checking the lines against your budget…</string>
+    <!-- How the file reads: "2 lines read · 1 needs attention and won't be imported · 1 left out". -->
+    <plurals name="bank_lines_read">
+        <item quantity="one">%1$s line reads</item>
+        <item quantity="other">%1$s lines read</item>
+    </plurals>
+    <plurals name="bank_lines_need_attention">
+        <item quantity="one">%1$s needs attention and won\'t be imported</item>
+        <item quantity="other">%1$s need attention and won\'t be imported</item>
+    </plurals>
+    <plurals name="bank_lines_left_out">
+        <item quantity="one">%1$s left out</item>
+        <item quantity="other">%1$s left out</item>
+    </plurals>
+    <!-- A workbook's sheet the file is read from. -->
+    <string name="bank_sheet">Sheet</string>
+    <string name="bank_account_in_file">Account in the file</string>
+    <!-- How many lines an account in the file has. -->
+    <plurals name="bank_source_lines">
+        <item quantity="one">%1$s line</item>
+        <item quantity="other">%1$s lines</item>
+    </plurals>
+    <string name="bank_purchases_in_file">Purchases in the file</string>
+    <string name="bank_purchases_negative">Negative, as bank accounts write them</string>
+    <string name="bank_purchases_positive_cards">Positive, as many card statements write them</string>
+    <!-- A currency code (EUR, USD…), both times. -->
+    <string name="bank_amounts_elsewhere">The file\'s amounts are in %1$s. Include a line to enter its amount in your budget\'s currency, or import the file into a budget in %1$s.</string>
+    <!-- A currency code (EUR, USD…). -->
+    <string name="bank_account_currency">This account\'s amounts are in %1$s. Choose another account in the file, or include its lines with their amounts in your budget\'s currency.</string>
+    <string name="bank_day_first">Day first</string>
+    <string name="bank_month_first">Month first</string>
+    <!-- A date as the file writes it, then that date read day first: "Day first (01/02/2026 is 1 February 2026)". -->
+    <string name="bank_day_first_example">Day first (%1$s is %2$s)</string>
+    <string name="bank_month_first_example">Month first (%1$s is %2$s)</string>
+    <string name="bank_money_out">Money out</string>
+    <string name="bank_signs_by_type">Told by the transaction types</string>
+    <string name="bank_signs_as_written">As the amounts are written</string>
+    <!-- A date as the file writes it; the two ways it can read are the answers below. -->
+    <string name="bank_date_question">The dates don\'t say whether the day or the month comes first: is %1$s</string>
+    <!-- DEBIT and POS are transaction types as files write them: keep them as they are. -->
+    <string name="bank_signs_question">Every amount that reads is positive. Is money out told by the transaction types (DEBIT, POS…)?</string>
+    <string name="bank_signs_yes">Yes, use the types</string>
+    <string name="bank_signs_no">No, as written</string>
+    <string name="bank_needs_attention">Needs attention</string>
+    <string name="bank_needs_attention_detail">Not imported until fixed: tap a line to give what doesn\'t read.</string>
+    <string name="bank_assistant_fix_note">The assistant can fix these lines from what the file says, and asks you about anything unclear. You see each fix before it\'s applied.</string>
+    <string name="bank_fix_with_assistant">Fix with the assistant</string>
+    <!-- Lines of the file the import leaves out; also a line's state when its reason is unknown. -->
+    <string name="bank_left_out">Left out</string>
+    <string name="bank_left_out_section_detail">Not imported. Include a line if it belongs in the account.</string>
+    <!-- Why a line is left out (bank_statement.rs Reason). -->
+    <string name="bank_left_out_pending">Not booked yet</string>
+    <string name="bank_left_out_declined">Declined or cancelled</string>
+    <string name="bank_left_out_other_account">Another account\'s</string>
+    <string name="bank_left_out_other_currency">In another currency</string>
+    <string name="bank_left_out_own_balances">Between your own balances</string>
+    <string name="bank_left_out_balance">A balance or a total</string>
+    <string name="bank_left_out_above_header">Above the header</string>
+    <string name="bank_left_out_no_date">No date</string>
+    <string name="bank_left_out_no_amount">No amount</string>
+    <string name="bank_left_out_zero">Nothing moved</string>
+    <string name="bank_left_out_corrected">Corrected by the bank</string>
+    <string name="bank_left_out_repeated_header">The header row again</string>
+    <string name="bank_left_out_in_whole_batch">In a batch imported as one entry</string>
+    <string name="bank_left_out_imported">Imported before</string>
+    <!-- Left out as another account's: the account the file names. -->
+    <string name="bank_left_out_account">Account %1$s</string>
+    <!-- Left out as in another currency: its code (EUR, USD…). -->
+    <string name="bank_left_out_in_currency">In %1$s</string>
+    <!-- Why a line is left out, then its state as the file writes it. -->
+    <string name="bank_left_out_with_detail">%1$s (%2$s)</string>
+    <string name="bank_include">Include</string>
+    <string name="bank_included">Included</string>
+    <string name="bank_batch_as_one">Import as one entry</string>
+    <string name="bank_batch_payments">Import its payments</string>
+    <string name="bank_undo_assistant_fix">Undo the assistant\'s fix</string>
+    <string name="bank_changed">Changed</string>
+    <string name="bank_changed_detail">Imported as you changed them.</string>
+    <string name="bank_fixed_by_assistant">Fixed by the assistant</string>
+    <string name="bank_changed_from_file">Changed from the file</string>
+    <!-- A line of the file with nothing written on it, by its number. -->
+    <string name="bank_line_number">Line %1$s</string>
+    <string name="bank_fix_line">Fix line</string>
+    <!-- What the file writes on the line, cell by cell. -->
+    <string name="bank_in_the_file">In the file: %1$s</string>
+    <string name="bank_nothing">nothing</string>
+    <!-- YYYY-MM-DD is how the date is typed: keep it. -->
+    <string name="bank_fix_date">Date (YYYY-MM-DD)</string>
+    <string name="bank_fix_amount">Amount (negative for money out)</string>
+    <!-- Put in the assistant's message box, for the person to send or change. -->
+    <string name="bank_fix_import_prompt">Fix the lines of this import that need attention. Use only what the file itself supports, and ask me about anything that isn\'t clear.</string>
+    <!-- The assistant's fixes: how many applied, of how many. -->
+    <string name="bank_fixes_applied_of">Applied %1$s of %2$s fixes.</string>
+    <!-- Fixes that no longer fit the file, then why the first doesn't. -->
+    <plurals name="bank_fixes_refused">
+        <item quantity="one">One no longer fits: %2$s</item>
+        <item quantity="other">%1$s no longer fit: %2$s</item>
+    </plurals>
+    <string name="bank_fix_line_changed">the line changed</string>
+    <plurals name="bank_fixes_applied">
+        <item quantity="one">Applied the assistant\'s fix.</item>
+        <item quantity="other">Applied the assistant\'s %1$s fixes.</item>
+    </plurals>
 
     <!-- Import from YNAB -->
     <string name="ynab_method">Import method</string>
@@ -1718,6 +1849,13 @@
     <string name="assistant_applied">✓ Applied</string>
     <string name="assistant_discarded">Discarded</string>
     <string name="assistant_could_not_apply">Could not apply</string>
+    <!-- Fixes the assistant proposes for a bank file being imported. -->
+    <string name="assistant_fix_apply">Apply to the import</string>
+    <string name="assistant_fix_apply_from_import">Apply from the import</string>
+    <string name="assistant_fix_each_line">Each applies only to a line that hasn\'t changed.</string>
+    <string name="assistant_fix_open_import">Open the import these fixes are for.</string>
+    <string name="assistant_fix_other_import">These fixes are for another import.</string>
+    <string name="assistant_fix_applied">✓ Applied to the import</string>
     <string name="assistant_export_report_tables">Export report tables to Excel</string>
     <string name="assistant_save_text">Save text</string>
     <string name="assistant_share_report">Share report</string>

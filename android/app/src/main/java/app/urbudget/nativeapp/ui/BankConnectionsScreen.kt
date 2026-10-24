@@ -290,6 +290,7 @@ private fun BankConnectionReview(entry: SyncEntry, through: String, reviewedBudg
         if (loading || rows == null) item(key = "sync:loading") { LinearProgressIndicator(Modifier.fillMaxWidth(), color = ur.accent) }
         error?.let { item(key = "sync:error") { FormError(it) } }
         ready?.second?.let { bankReviewNotes(it, undecided) }
+        rows?.let { suggestedTransfers(it, decisions, !loading) }
         if (rows?.isEmpty() == true) item(key = "sync:none") { Text(stringResource(R.string.bank_no_new, Money.date(through)), color = ur.text2) }
         bankReviewRows(rows.orEmpty(), decisions, !loading) { index, value -> decisions[index] = value }
     }

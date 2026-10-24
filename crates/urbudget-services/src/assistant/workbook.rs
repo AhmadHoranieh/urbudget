@@ -686,7 +686,7 @@ pub fn build(title: String, sheets: Vec<Sheet>, b: &Budget) -> Result<Proposal, 
         note: Some(if from_budget {
             t!("Rows from your budget are filled in when you open or save it, so they're exact.")
         } else {
-            t!("Open it in your spreadsheet app, or save it in the budget's exports folder.")
+            t!("Open it in your spreadsheet app, or save a copy.")
         }),
         ..Card::default()
     };
@@ -704,6 +704,8 @@ pub fn build(title: String, sheets: Vec<Sheet>, b: &Budget) -> Result<Proposal, 
         card,
         summary: json!({ "title": title, "sheets": summary }),
         problem: None,
+        fixes: None,
+        review: None,
     })
 }
 
@@ -983,9 +985,7 @@ fn money_total<'a>(cells: impl Iterator<Item = &'a Cell>) -> String {
 
 /// A file name for the title that isn't taken yet in `dir`: "Title.xlsx", "Title (2).xlsx", …
 pub fn free_path(dir: &Path, title: &str) -> PathBuf {
-    let stem: String = title.chars().map(|c| if c.is_alphanumeric() || " -_()".contains(c) { c } else { ' ' }).collect();
-    let stem: String = stem.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(80).collect();
-    let stem = if stem.trim().is_empty() { "Spreadsheet".to_owned() } else { stem.trim().to_owned() };
+    let stem = stem(title);
     let mut path = dir.join(format!("{stem}.xlsx"));
     let mut n = 2;
     while path.exists() && n < 1000 {
@@ -993,6 +993,17 @@ pub fn free_path(dir: &Path, title: &str) -> PathBuf {
         n += 1;
     }
     path
+}
+
+/// The file name a workbook with this title is saved under: "Title.xlsx".
+pub fn file_name(title: &str) -> String {
+    format!("{}.xlsx", stem(title))
+}
+
+fn stem(title: &str) -> String {
+    let stem: String = title.chars().map(|c| if c.is_alphanumeric() || " -_()".contains(c) { c } else { ' ' }).collect();
+    let stem: String = stem.split_whitespace().collect::<Vec<_>>().join(" ").chars().take(80).collect();
+    if stem.trim().is_empty() { "Spreadsheet".to_owned() } else { stem.trim().to_owned() }
 }
 
 #[cfg(test)]

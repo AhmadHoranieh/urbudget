@@ -880,6 +880,7 @@ export function Register({
       const filtered = anyFilter(filters);
       const listed = filtered ? [...new Set(rows.map((r) => r.t.id))] : null;
       const path = await api.exportTransactions(budget, all ? null : accountId, listed);
+      if (!path) return;
       const n = listed ? listed.length : null;
       toast({
         message:

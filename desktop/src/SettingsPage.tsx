@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
-import { ArrowDownLeft, Check, Database, Download, FolderOpen, RefreshCw, RotateCcw } from "lucide-react";
+import { ArrowDownLeft, Check, Database, Download, FileUp, FolderOpen, RefreshCw, RotateCcw } from "lucide-react";
 import { api, desktop } from "./bridge";
-import { BankImport, type Uncategorized } from "./BankImport";
 import { BankSyncSettings } from "./BankSync";
 import { YnabImport } from "./YnabImport";
 import { YnabFileImport } from "./YnabFileImport";
@@ -261,7 +260,6 @@ export function SettingsPage({
   syncLabel,
   metadata,
   edit,
-  transform,
   flush,
   onReload,
   onExport,
@@ -272,7 +270,7 @@ export function SettingsPage({
   onAsk,
   openBudget,
   onBankSync,
-  onCategorize,
+  onBankImport,
   theme,
   setTheme,
   onResetLayout,
@@ -299,7 +297,6 @@ export function SettingsPage({
   syncLabel: string;
   metadata: DatabaseStatus | null;
   edit: (update: (draft: Budget) => void) => void;
-  transform: (fn: (b: Budget) => Promise<Budget>) => Promise<void>;
   flush: () => Promise<boolean>;
   onReload: () => void;
   onExport: () => void;
@@ -313,8 +310,8 @@ export function SettingsPage({
   openBudget: (id: string) => Promise<void>;
   /** Syncs every account linked to a bank. */
   onBankSync: () => void;
-  /** Offers the assistant an import's new transactions that have no category. */
-  onCategorize?: (uncategorized: Uncategorized) => void;
+  /** Opens the page that imports a bank file. */
+  onBankImport: () => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
 }) {
@@ -328,8 +325,9 @@ export function SettingsPage({
   }, []);
   const reveal = (path: string) => () =>
     void api.reveal(path).catch((e) => toast({ message: errorText(e), tone: "error" }));
-  const saved = (message: string, path: string) =>
-    toast({ message, action: { label: t("Show in folder"), onClick: reveal(path) } });
+  // A null path is a cancelled save panel.
+  const saved = (message: string, path: string | null) =>
+    path && toast({ message, action: { label: t("Show in folder"), onClick: reveal(path) } });
   const fail = (e: unknown) => toast({ message: errorText(e), tone: "error" });
 
   return (
@@ -529,7 +527,17 @@ export function SettingsPage({
             planId={budget.ynabPlanId}
             onImport={importYnab}
           />
-          <BankImport budget={budget} transform={transform} onCategorize={onCategorize} />
+          <section className="panel">
+            <h2>{t("Import a bank file")}</h2>
+            <p className="help">
+              {t("Your bank's CSV or Excel file, or its OFX, QFX, QIF, CAMT.053 or MT940 statement; a PDF through the assistant. You see every line of the file and fix what doesn't read, then check what each transaction does, before anything is saved.")}
+            </p>
+            <div className="form-actions start">
+              <button className="primary" onClick={onBankImport} disabled={!budget.accounts.some((a) => !a.archived)}>
+                <FileUp size={15} /> {t("Import a bank file")}
+              </button>
+            </div>
+          </section>
         </>
       )}
 

@@ -2,7 +2,7 @@
   "sourceLanguage" : "en",
   "strings" : {
     "Bank statement" : {
-      "comment" : "Document type: CSV, OFX, QFX and QIF files UrBudget can open.",
+      "comment" : "Document type: CSV, OFX, QFX, QIF and MT940 files UrBudget can open.",
       "localizations" : {
         "ar" : {
           "stringUnit" : {
@@ -36,6 +36,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "UrBudget"
+          }
+        }
+      }
+    },
+    "MT940 bank statement" : {
+      "comment" : "File type description (MT940).",
+      "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "كشف حساب MT940"
           }
         }
       }

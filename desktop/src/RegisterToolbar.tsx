@@ -1,6 +1,6 @@
 import { useRef, useState, type FormEvent, type RefObject } from "react";
 import { CalendarClock, Check, CheckCheck, Copy, Download, Flag, ListFilter, MessageSquareText, MoreHorizontal, Plus, RefreshCw, Tag, Trash2, Upload, X } from "lucide-react";
-import { CategoryPicker, DateRangePicker, Menu, Popover, type DateRange } from "./ui";
+import { CategoryPicker, DateRangePicker, HeaderSlot, Menu, Popover, type DateRange } from "./ui";
 import { FlagIcon, flagsOf } from "./TransactionRow";
 import { SearchBox } from "./SearchBox";
 import { parseAmountTerm, type Term } from "./search";
@@ -127,30 +127,36 @@ export function RegisterToolbar({
   const chips = terms.filter((t) => t.field !== "text").length;
   return (
     <div className="register-toolbar">
-      <button className="primary" disabled={!canAdd} onClick={onAdd}>
-        <Plus size={15} /> {t("Add transaction")}
+      <button className="primary add-button" disabled={!canAdd} onClick={onAdd}>
+        <Plus size={15} aria-hidden /> <span className="toolbar-label">{t("Add transaction")}</span>
       </button>
       <button
         className="secondary schedules-button"
         onClick={onSchedules}
         title={t("Transactions dated ahead or repeating, entered on their dates")}
       >
-        <CalendarClock size={14} /> {t("Scheduled")}
+        <CalendarClock size={14} aria-hidden /> <span className="toolbar-label">{t("Scheduled")}</span>
         {upcoming > 0 && <span className="schedules-count">{upcoming}</span>}
       </button>
-      {onSync && (
-        <button className="secondary" onClick={onSync} title={t("Get new transactions from the bank")}>
-          <RefreshCw size={14} /> {tc("command", "Sync")}
+      {/* What brings transactions in or takes them out sits up in the page header, by undo and redo. */}
+      <HeaderSlot actions>
+        {onSync && (
+          <button className="header-button" onClick={onSync} title={t("Get new transactions from the bank")}>
+            <RefreshCw size={15} aria-hidden />
+            <span className="header-label">{tc("command", "Sync")}</span>
+          </button>
+        )}
+        {onImport && (
+          <button className="header-button" onClick={onImport} title={t("Bring in a file your bank exported")}>
+            <Upload size={15} aria-hidden />
+            <span className="header-label">{t("Import")}</span>
+          </button>
+        )}
+        <button className="header-button" onClick={onExport} title={t("Save these transactions as a CSV file")}>
+          <Download size={15} aria-hidden />
+          <span className="header-label">{t("Export")}</span>
         </button>
-      )}
-      {onImport && (
-        <button className="secondary" onClick={onImport}>
-          <Upload size={14} /> {t("Import file")}
-        </button>
-      )}
-      <button className="secondary export-button" onClick={onExport} title={t("Save these transactions as a CSV file")}>
-        <Download size={14} /> {t("Export")}
-      </button>
+      </HeaderSlot>
       <SearchBox
         budget={budget}
         text={filters.text}
@@ -166,11 +172,12 @@ export function RegisterToolbar({
       />
       <button
         ref={button}
-        className={chips ? "secondary active" : "secondary"}
+        className={chips ? "secondary filters-button active" : "secondary filters-button"}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        <ListFilter size={14} /> {t("Filters")}{chips ? ` · ${chips}` : ""}
+        <ListFilter size={14} aria-hidden /> <span className="toolbar-label">{t("Filters")}{chips ? " ·" : ""}</span>
+        {chips ? chips : null}
       </button>
       {anyFilter(filters) && (
         <button className="link-button" onClick={() => onChange({ ...emptyFilters() })}>

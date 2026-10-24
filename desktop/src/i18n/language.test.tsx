@@ -117,7 +117,7 @@ function Window() {
         syncLabel="Saved"
         metadata={null}
         edit={vi.fn()}
-        transform={vi.fn()}
+        onBankImport={vi.fn()}
         flush={vi.fn(async () => true)}
         onReload={vi.fn()}
         onExport={vi.fn()}
