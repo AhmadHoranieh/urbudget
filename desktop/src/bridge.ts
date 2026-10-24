@@ -202,9 +202,12 @@ export const api = {
    */
   decodeStatement: (latin1: string, sheet: string | null = null) =>
     invoke<{ text: string; encoding: string; sheet?: string; sheets?: string[] }>("decode_statement", { latin1, sheet }),
-  /** An import of a file into an account, read as the account's last file was (bank_statement.rs). */
-  bankSession: (budget: Budget, account: string, content: string, session: string, budgetId: string, sheet: string | null) =>
-    read<BankSession>(budget, "bank_session", { account, content, session, budget: budgetId, sheet }),
+  /**
+   * An import of a file into an account, read as the account's last file was (bank_statement.rs);
+   * one the assistant `prepared` reads the standard way.
+   */
+  bankSession: (budget: Budget, account: string, content: string, session: string, budgetId: string, sheet: string | null, prepared = false) =>
+    read<BankSession>(budget, "bank_session", { account, content, session, budget: budgetId, sheet, prepared }),
   /** The file as lines, each with what became of it. */
   bankStatement: (budget: Budget, account: string, content: string, session: BankSession, signal?: AbortSignal) =>
     read<Statement>(budget, "bank_statement", { account, content, session }, signal),

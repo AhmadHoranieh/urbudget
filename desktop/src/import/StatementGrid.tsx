@@ -253,7 +253,12 @@ export function StatementGrid({
             <MessageSquareText size={14} /> Fix with the assistant
           </button>
         )}
-        <button className="primary" disabled={busy || !statement.counts.ready} onClick={onContinue}>
+        <button
+          className="primary"
+          disabled={busy || !statement.counts.ready || !!question}
+          title={question ? "Say first whether the day or the month comes first" : undefined}
+          onClick={onContinue}
+        >
           Continue to the review
         </button>
       </div>

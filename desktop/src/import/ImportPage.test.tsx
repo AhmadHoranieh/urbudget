@@ -120,7 +120,7 @@ it("opens the file at the lines that need attention, and a cell fixed there is s
   // Only the line that needs attention is shown to begin with; the rest are a tab away.
   expect(screen.queryByText("Bakery")).toBeNull();
   expect(screen.getByText(/2 lines read · 1 needs attention and won't be imported/)).toBeTruthy();
-  expect(api.bankSession).toHaveBeenCalledWith(expect.anything(), "checking", expect.stringContaining("Bakery"), expect.any(String), "b", null);
+  expect(api.bankSession).toHaveBeenCalledWith(expect.anything(), "checking", expect.stringContaining("Bakery"), expect.any(String), "b", null, false);
   fireEvent.click(screen.getByRole("button", { name: "Amount of line 30: n/a" }));
   const cell = screen.getByLabelText("Cell");
   fireEvent.change(cell, { target: { value: "-12.40" } });
@@ -154,6 +154,17 @@ it("goes straight to the review when every line reads, says what's left out, and
   expect(screen.getByText("Not booked yet (Pending)")).toBeTruthy();
 });
 
+it("reads a file the assistant prepared the standard way, and leaves what the account keeps alone", async () => {
+  engine((s) => statement(s, [bakery], { remember: { dateFormat: "ymd", dateConfirmed: true, flipSigns: false } }));
+  const onImported = vi.fn();
+  const b = demoBudget();
+  render(<Page budget={b} onImported={onImported} initial={{ account: "checking", file: csv("assistant.csv"), proposal: { threadId: "t1", id: "p1" } }} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Import 1 transaction" }));
+  await waitFor(() => expect(onImported).toHaveBeenCalled());
+  expect(api.bankSession).toHaveBeenCalledWith(expect.anything(), "checking", expect.any(String), expect.any(String), "b", null, true);
+  expect(api.importBank).toHaveBeenCalledWith(b, "checking", [expect.objectContaining({ action: "new" })], null);
+});
+
 it("includes a line left out, and asks for its amount in the budget's currency", async () => {
   const london = line("40", ["2026-10-05", "London", "-9.99"], { kind: "leftOut", reason: "otherCurrency", detail: "GBP" });
   engine((s) =>
@@ -180,9 +191,12 @@ it("asks once whether the day or the month comes first, when the dates don't say
   choose(csv());
   const question = await screen.findByRole("group", { name: "Date order" });
   expect(within(question).getByText("01/02/2026")).toBeTruthy();
+  // Nothing goes on to the review on a guessed date.
+  expect((screen.getByRole("button", { name: "Continue to the review" }) as HTMLButtonElement).disabled).toBe(true);
   fireEvent.click(within(question).getByRole("button", { name: "2 January 2026" }));
   await waitFor(() => expect(sent().structure).toMatchObject({ dateOrder: { order: "mdy", confirmed: true } }));
   await waitFor(() => expect(screen.queryByRole("group", { name: "Date order" })).toBeNull());
+  await waitFor(() => expect((screen.getByRole("button", { name: "Continue to the review" }) as HTMLButtonElement).disabled).toBe(false));
 });
 
 it("reads another account of the file, a card's purchases as positive, and another sheet", async () => {
@@ -203,11 +217,11 @@ it("reads another account of the file, a card's purchases as positive, and anoth
   await waitFor(() => expect(sent().structure).toMatchObject({ source: "B2" }));
   fireEvent.click(screen.getByLabelText("Purchases are positive"));
   await waitFor(() => expect(sent().structure).toMatchObject({ flipSigns: true }));
-  expect(api.bankSession).toHaveBeenLastCalledWith(expect.anything(), "checking", expect.any(String), expect.any(String), "b", "Movimientos");
+  expect(api.bankSession).toHaveBeenLastCalledWith(expect.anything(), "checking", expect.any(String), expect.any(String), "b", "Movimientos", false);
   // Another sheet is another reading of the file: a new session.
   fireEvent.click(screen.getByRole("tab", { name: "Resumen" }));
   await waitFor(() => expect(api.decodeStatement).toHaveBeenLastCalledWith(expect.any(String), "Resumen"));
-  await waitFor(() => expect(api.bankSession).toHaveBeenLastCalledWith(expect.anything(), "checking", expect.any(String), expect.any(String), "b", "Resumen"));
+  await waitFor(() => expect(api.bankSession).toHaveBeenLastCalledWith(expect.anything(), "checking", expect.any(String), expect.any(String), "b", "Resumen", false));
 });
 
 it("chooses what a column holds, imports a batch as one entry, and puts a line back as the file has it", async () => {

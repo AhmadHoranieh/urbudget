@@ -1331,7 +1331,6 @@ struct Sheet {
     hidden: Vec<bool>,
     /// Where the header row starts, or the first record where there's none.
     start: usize,
-    numbered: bool,
     picked: Picked,
     /// The columns are the ones chosen.
     saved: bool,
@@ -1462,7 +1461,7 @@ impl Sheet {
         } else {
             headers
         };
-        Ok(Self { headers, records, offsets, hidden, start, numbered, picked, saved, separator })
+        Ok(Self { headers, records, offsets, hidden, start, picked, saved, separator })
     }
     /// The records today's reader saw, which say what the columns hold.
     fn visible(&self) -> std::borrow::Cow<'_, [csv::StringRecord]> {

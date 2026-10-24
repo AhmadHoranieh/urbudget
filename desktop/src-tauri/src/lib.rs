@@ -372,7 +372,12 @@ fn bank_session(
     session: String,
     budget: String,
     sheet: Option<String>,
+    // A file the assistant wrote the standard way.
+    prepared: Option<bool>,
 ) -> Result<bank_statement::Session, String> {
+    if prepared == Some(true) {
+        return Ok(bank_statement::start_prepared(&content, &account, &session, &budget));
+    }
     db.read(patch, |b| bank_statement::start(b, &account, &content, &session, &budget, sheet))
 }
 /// The file as lines, each with what became of it.

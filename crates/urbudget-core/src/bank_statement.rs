@@ -213,6 +213,18 @@ pub fn start(b: &Budget, account: &str, content: &str, id: &str, budget: &str, s
     }
     Ok(session)
 }
+/// A new import of a file the assistant prepared, written the standard way (Date, Payee, Memo,
+/// Amount; ISO dates; money out negative): read so, whatever the account's last file was like.
+pub fn start_prepared(content: &str, account: &str, id: &str, budget: &str) -> Session {
+    let columns = Columns { date: Some("Date".into()), payee: Some("Payee".into()), memo: Some("Memo".into()), amount: Some("Amount".into()), ..Columns::default() };
+    let structure = Structure {
+        format: "csv".into(),
+        columns: Some(columns),
+        date_order: DateOrder { order: "ymd".into(), confirmed: true },
+        ..Structure::default()
+    };
+    Session::new(id, budget, account, content, structure)
+}
 
 /// Changes to an import, made against one revision of it: applied together where they still
 /// fit it, never to another import.
@@ -527,6 +539,7 @@ fn reading(b: &Budget, account: &str, content: &str, session: &Session) -> Resul
             }
         };
         let r = &read.records;
+        let order = read.dates.order;
         let cell = |cells: &[String], i: Option<usize>| i.and_then(|i| cells.get(i)).cloned().unwrap_or_default();
         for l in read.lines {
             let id = l.offset.to_string();
@@ -534,7 +547,11 @@ fn reading(b: &Budget, account: &str, content: &str, session: &Session) -> Resul
             let fields = match &l.transaction {
                 Some(t) => Fields { date: t.date.clone(), payee: t.payee.clone(), memo: t.memo.clone(), amount: cents(t.amount) },
                 None => Fields {
-                    date: given(Field::Date).unwrap_or_else(|| cell(&l.cells, Some(r.date_column))),
+                    // A date that reads, as it reads, though another part of the line doesn't.
+                    date: given(Field::Date).unwrap_or_else(|| {
+                        let written = cell(&l.cells, Some(r.date_column));
+                        crate::bank_import::date(&written, order).unwrap_or(written)
+                    }),
                     payee: given(Field::Payee).unwrap_or_else(|| cell(&l.cells, r.payee_column)),
                     memo: given(Field::Memo).unwrap_or_else(|| cell(&l.cells, r.memo_column)),
                     amount: given(Field::Amount)
@@ -952,10 +969,11 @@ pub struct BriefLine {
     pub status: Status,
 }
 impl Statement {
-    /// The lines that don't read, for a phone that shows only those: a batch keeps the lines of
-    /// its that are left.
+    /// The lines that don't read, and those someone changed (to undo), for a phone that shows only
+    /// those: a batch keeps the lines of its that are left.
     pub fn problems(mut self) -> Statement {
-        let kept: Vec<usize> = (0..self.lines.len()).filter(|&i| self.lines[i].status != Status::Ready).collect();
+        let shown = |l: &Line| l.status != Status::Ready || l.fixed || l.included;
+        let kept: Vec<usize> = (0..self.lines.len()).filter(|&i| shown(&self.lines[i])).collect();
         let at: HashMap<usize, usize> = kept.iter().enumerate().map(|(new, &old)| (old, new)).collect();
         for b in &mut self.batches {
             b.line = b.line.and_then(|l| at.get(&l).copied());
@@ -1319,6 +1337,20 @@ mod tests {
     }
 
     #[test]
+    fn a_file_the_assistant_prepared_reads_the_standard_way_whatever_the_account_kept() {
+        let mut b = eur();
+        let kept = FileSettings { date_format: Some("dmy".into()), date_confirmed: Some(true), flip_signs: Some(true), ..FileSettings::default() };
+        bank_csv::remember(&mut b, "card", kept).unwrap();
+        let file = "Date,Payee,Memo,Amount\n2026-10-01,Shop,,-3.00\n2026-10-02,Refund,,2.50\n";
+        // As the account's own file, its signs would be turned.
+        assert!(start(&b, "card", file, "s1", "budget", None).unwrap().structure.flip_signs);
+        let s = start_prepared(file, "card", "s2", "budget");
+        let st = statement(&b, "card", file, &s).unwrap();
+        assert_eq!(st.lines.iter().map(|l| l.fields.amount.as_str()).collect::<Vec<_>>(), ["-3.00", "2.50"]);
+        assert!(st.date_order.is_none_or(|d| !d.unconfirmed) && st.signs.is_none());
+    }
+
+    #[test]
     fn a_file_whose_columns_arent_found_shows_its_lines_to_choose_them() {
         let b = eur();
         // Two columns of unsigned amounts: which is the transaction's can't be told.
@@ -1348,6 +1380,19 @@ mod tests {
         assert_eq!(problems.lines.iter().map(|l| l.id.as_str()).collect::<Vec<_>>(), ["e2.1", "e2.2"]);
         assert_eq!(problems.batches[0].payments, [0, 1]);
         assert_eq!(problems.counts.attention, 2);
+        // A line fixed since still shows, to be undone.
+        let file = "Date,Payee,Amount\n2026-10-01,Shop,-3.00\n2026-10-02,Cafe,n/a\n";
+        let s = open(file, csv());
+        let cafe = statement(&b, "cash", file, &s).unwrap().lines[1].id.clone();
+        let fix = FieldFix { line: cafe.clone(), line_version: 0, field: Field::Amount, from: "n/a".into(), to: "-2.00".into() };
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.fields = vec![fix]));
+        let problems = statement(&b, "cash", file, &s).unwrap().problems();
+        assert_eq!(problems.lines.iter().map(|l| (l.id.as_str(), l.fixed)).collect::<Vec<_>>(), [(cafe.as_str(), true)]);
+        assert_eq!((problems.counts.ready, problems.counts.attention), (2, 0));
+        // A line whose amount doesn't read gives its date as it reads, to fix the rest in the same form.
+        let file = "Date,Payee,Amount\n31/10/2026,Shop,-3.00\n01/10/2026,Cafe,n/a\n";
+        let st = statement(&b, "cash", file, &open(file, csv())).unwrap();
+        assert_eq!((st.lines[1].fields.date.as_str(), st.lines[1].fields.amount.as_str()), ("2026-10-01", "n/a"));
     }
 
     #[test]

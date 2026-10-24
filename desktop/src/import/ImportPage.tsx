@@ -80,7 +80,9 @@ export function ImportPage({
   const started = useRef<File | null>(null);
   const start = async (next: File, sheet: string | null = null) => {
     started.current = next;
-    onState({ account, file: next });
+    // The assistant's file, read again (another sheet), is still the assistant's.
+    const proposal = state.file === next ? state.proposal : undefined;
+    onState({ account, file: next, proposal });
     setStatement(null);
     setReview(null);
     setMessage("");
@@ -89,7 +91,8 @@ export function ImportPage({
     try {
       // A workbook opens at the sheet the account's last one was read from, when it has one by that name.
       const read = await statementFile(next, sheet ?? budget.accounts.find((a) => a.id === account)?.fileImport?.sheet ?? null);
-      const fresh = await api.bankSession(budget, account, read.text, crypto.randomUUID(), budgetId, read.sheet ?? null);
+      // A file the assistant prepared is written the standard way, whatever the account's last one was like.
+      const fresh = await api.bankSession(budget, account, read.text, crypto.randomUUID(), budgetId, read.sheet ?? null, !!proposal);
       onState((was) => (was.file === next ? { ...was, content: read.text, sheets: read.sheets, sheet: read.sheet ?? null, session: fresh, view: undefined } : was));
     } catch (e) {
       setMessage(errorText(e));
@@ -160,7 +163,8 @@ export function ImportPage({
       let uncategorized: Uncategorized = { ids: [], accounts: [] };
       await transform(async (b) => {
         if (b !== review.base) throw Error("Your budget changed. The review is up to date again: check it and import.");
-        const after = await api.importBank(b, account, choices, review.statement.remember);
+        // The account keeps how its own file read, not the assistant's.
+        const after = await api.importBank(b, account, choices, state.proposal ? null : review.statement.remember);
         uncategorized = uncategorizedImports(b, after);
         return after;
       });
