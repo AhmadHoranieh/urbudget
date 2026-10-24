@@ -4,6 +4,8 @@ Notable changes to UrBudget, organized using [Keep a Changelog](https://keepacha
 
 ## [Unreleased]
 
+## [1.0.9] - 2026-10-24
+
 ### Added
 
 - Importing a bank file no longer stops at a line it can't read. Every line of the file is shown with what became of it: it reads, it needs attention (a date or an amount that doesn't read, and why), or it's left out (pending, declined, another account's, in another currency, a balance or a total, a correction). Lines that need attention stay out of the import until they're fixed; the rest go ahead. On the desktop, importing is a page of its own with every line in a table like the register's: click a line and click it again (or press Enter) to edit its cells, saved with Enter; select several (with Ctrl, Shift or their checkboxes) to include, leave out or put them back together; choose what a column holds; and each line's actions (Fix, Include, Leave out, Use as the header row, Undo) sit at its right end, opening when the line is pointed at. It opens by itself only when something needs it; otherwise the review says what was left out, a click away. On the phones, the lines that need attention, those left out and those changed are listed, to fix a line's date, payee, memo or amount, include it, or undo the change.
@@ -183,5 +185,6 @@ Also
 - Quick Assign's Underfunded now funds "maintain a balance" targets.
 - Notifications are easier to read in dark mode.
 
-[Unreleased]: https://github.com/urbudget/urbudget/compare/desktop-v1.0.8...HEAD
+[Unreleased]: https://github.com/urbudget/urbudget/compare/desktop-v1.0.9...HEAD
+[1.0.9]: https://github.com/urbudget/urbudget/releases/tag/desktop-v1.0.9
 [1.0.8]: https://github.com/urbudget/urbudget/releases/tag/desktop-v1.0.8
