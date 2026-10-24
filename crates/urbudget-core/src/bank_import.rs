@@ -60,6 +60,14 @@ pub struct Row {
     /// transaction was added. A file gives no time; its rows are added when they're imported.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub at: Option<String>,
+    /// More IDs it's known by: a line that read only once fixed is known by the line as the file
+    /// wrote it too, so the same file again finds it imported.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub aliases: Vec<String>,
+    /// The batch it belongs to, by the ID of its entry as one transaction (which is this row's
+    /// own ID when it's that): a batch's payments and the whole entry are never both imported.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub batch: Option<String>,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -370,7 +378,17 @@ const ORDERS: [&str; 3] = ["ymd", "dmy", "mdy"];
 /// it; 01/02/2026 alone doesn't, unless `confirmed` says the chosen order is right. Unlike `dates`,
 /// nothing here fails: a date that doesn't read is None.
 pub fn read_dates(raw: &[&str], chosen: &str, confirmed: bool) -> DateReading {
-    let read: Vec<Vec<Option<String>>> = ORDERS.iter().map(|f| raw.iter().map(|s| date(s, f).ok()).collect()).collect();
+    // A statement's dates repeat (a day has several transactions): each is read once an order.
+    let mut seen: HashMap<&str, usize> = HashMap::new();
+    let mut distinct = vec![];
+    let at: Vec<usize> = raw.iter().map(|s| *seen.entry(s).or_insert_with(|| {
+        distinct.push(*s);
+        distinct.len() - 1
+    })).collect();
+    let read: Vec<Vec<Option<String>>> = ORDERS.iter().map(|f| {
+        let once: Vec<Option<String>> = distinct.iter().map(|s| date(s, f).ok()).collect();
+        at.iter().map(|&k| once[k].clone()).collect()
+    }).collect();
     let counts: Vec<usize> = read.iter().map(|dates| dates.iter().filter(|d| d.is_some()).count()).collect();
     let most = counts.iter().copied().max().unwrap_or(0);
     let best: Vec<usize> = (0..ORDERS.len()).filter(|&i| counts[i] == most).collect();
@@ -481,7 +499,7 @@ fn bank_id(account: &str, signature: &str) -> String {
     format!("bank:{:x}", Sha256::digest(format!("{account}|{signature}").as_bytes()))
 }
 
-fn import_ids(b: &Budget) -> HashSet<String> {
+pub(crate) fn import_ids(b: &Budget) -> HashSet<String> {
     b.transactions.iter().flat_map(|t| {
         std::iter::once(t.id.as_str()).chain(t.extra.get("bankImportIds")
             .and_then(Value::as_array).into_iter().flatten().filter_map(Value::as_str))
@@ -733,9 +751,77 @@ fn transfer_offers<'a>(b: &Budget, account: &str, matches: &'a Matches, rows: &[
     offers
 }
 
+/// How a row is known: what its ID is made from, and for a row without the bank's ID, what an
+/// older import's ID and identical rows' shared one are made from.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Identity {
+    pub signature: String,
+    pub legacy: Option<String>,
+    pub group: Option<String>,
+    pub idless: bool,
+    /// More IDs it's known by (see `Row::aliases`).
+    pub aliases: Vec<String>,
+    /// Its batch's ID (see `Row::batch`).
+    pub batch: Option<String>,
+}
+/// What a file's rows share, counted in the order they come: a bank ID given twice keeps each
+/// row's place (`fit:X`, then `fit:X:2`), and identical rows without one are told apart by theirs.
+#[derive(Default)]
+pub(crate) struct Counter {
+    fits: HashMap<String, usize>,
+    keys: HashMap<String, usize>,
+    legacy: HashMap<String, usize>,
+}
+impl Counter {
+    /// The identity a transaction takes here; when not `counted`, the one it would take, leaving
+    /// the next for whatever comes after.
+    pub(crate) fn identity(&mut self, t: &BankTransaction, counted: bool) -> Identity {
+        let next = |seen: &mut HashMap<String, usize>, key: &str| {
+            let n = seen.get(key).copied().unwrap_or(0) + 1;
+            if counted {
+                seen.insert(key.to_string(), n);
+            }
+            n
+        };
+        if t.fit.is_empty() {
+            let old = format!("{}|{}|{}", t.date, t.payee, t.amount);
+            let legacy = format!("{old}|{}", next(&mut self.legacy, &old));
+            // Structured encoding avoids delimiter collisions; memo distinguishes independent
+            // receipts. Only truly identical rows share the per-file occurrence counter.
+            let key = json!([t.date, t.payee, t.memo, t.amount]).to_string();
+            let n = next(&mut self.keys, &key);
+            Identity {
+                signature: format!("idless:v2:{key}:{n}"),
+                legacy: Some(legacy),
+                group: Some(format!("idless:group:v2:{key}")),
+                idless: true,
+                aliases: vec![],
+                batch: None,
+            }
+        } else {
+            // A bank that gives two transactions in one file the same ID: the second keeps its
+            // place in the file too, so neither is taken for the other.
+            let n = next(&mut self.fits, &t.fit);
+            let signature = if n == 1 { format!("fit:{}", t.fit) } else { format!("fit:{}:{n}", t.fit) };
+            Identity { signature, legacy: None, group: None, idless: false, aliases: vec![], batch: None }
+        }
+    }
+}
+/// Rows as a file gives them, each known as its place among them makes it.
+fn identified(raw: Vec<BankTransaction>) -> Vec<(BankTransaction, Identity)> {
+    let mut counter = Counter::default();
+    raw.into_iter().map(|t| {
+        let who = counter.identity(&t, true);
+        (t, who)
+    }).collect()
+}
+pub(crate) fn bank_id_of(account: &str, signature: &str) -> String {
+    bank_id(account, signature)
+}
+
 pub fn review(b: &Budget, account: &str, raw: Vec<BankTransaction>) -> Result<Vec<Row>, String> {
     let mut rows = Vec::with_capacity(raw.len());
-    review_each(b, account, raw, |mut row, matches, day, transfer| {
+    review_each(b, account, identified(raw), |mut row, matches, day, transfer| {
         let choices = matches.candidate_set(b, row.amount, day, transfer);
         row.candidates = choices.candidates;
         row.previously_matched_candidates = choices.previously_matched_candidates;
@@ -748,6 +834,10 @@ pub fn review(b: &Budget, account: &str, raw: Vec<BankTransaction>) -> Result<Ve
 }
 
 pub fn review_compact(b: &Budget, account: &str, raw: Vec<BankTransaction>) -> Result<CompactReview, String> {
+    review_identified(b, account, identified(raw))
+}
+/// A compact review of rows already known (see `Identity`).
+pub(crate) fn review_identified(b: &Budget, account: &str, raw: Vec<(BankTransaction, Identity)>) -> Result<CompactReview, String> {
     let mut review = CompactReview { items: Vec::with_capacity(raw.len()), candidate_sets: vec![] };
     let mut windows = HashMap::new();
     let mut buckets: HashMap<u64, Vec<usize>> = HashMap::new();
@@ -776,7 +866,7 @@ pub fn review_compact(b: &Budget, account: &str, raw: Vec<BankTransaction>) -> R
 fn review_each(
     b: &Budget,
     account: &str,
-    raw: Vec<BankTransaction>,
+    raw: Vec<(BankTransaction, Identity)>,
     mut emit: impl FnMut(Row, &Matches, NaiveDate, Option<(&String, bool)>),
 ) -> Result<(), String> {
     // File previews and bank-sync snapshots share this boundary. Validate before the
@@ -785,7 +875,7 @@ fn review_each(
     if !b.accounts.iter().any(|a| a.id == account) {
         return Err("Choose an account.".into());
     }
-    if raw.iter().any(|t| !valid_date(&t.date)
+    if raw.iter().any(|(t, _)| !valid_date(&t.date)
         || !(-1_000_000_000_000..=1_000_000_000_000).contains(&t.amount)) {
         return Err("A bank transaction has an invalid date or amount.".into());
     }
@@ -799,36 +889,17 @@ fn review_each(
         .chain(crate::fresh_start::bank_import_ids(b))
         .collect();
     let matches = Matches::new(b, account);
-    let mut occurrences = HashMap::new();
-    let mut fits: HashMap<String, usize> = HashMap::new();
-    let mut legacy_occurrences = HashMap::new();
     let mut rows = Vec::with_capacity(raw.len());
-    for BankTransaction { fit, date, payee, memo, amount } in raw {
-        let idless = fit.is_empty();
-        let legacy = if idless {
-            let key = format!("{date}|{payee}|{amount}");
-            let n = legacy_occurrences.entry(key.clone()).or_insert(0);
-            *n += 1;
-            Some(bank_id(account, &format!("{key}|{n}")))
-        } else { None };
-        let mut group_id = None;
-        let signature = if idless {
-            // Structured encoding avoids delimiter collisions; memo distinguishes independent
-            // receipts. Only truly identical rows share the per-file occurrence counter.
-            let key = json!([date, payee, memo, amount]).to_string();
-            group_id = Some(bank_id(account, &format!("idless:group:v2:{key}")));
-            let n = occurrences.entry(key.clone()).or_insert(0);
-            *n += 1;
-            format!("idless:v2:{key}:{n}")
-        } else {
-            // A bank that gives two transactions in one file the same ID: the second keeps its
-            // place in the file too, so neither is taken for the other.
-            let n = fits.entry(fit.clone()).or_insert(0);
-            *n += 1;
-            if *n == 1 { format!("fit:{fit}") } else { format!("fit:{fit}:{n}") }
-        };
+    for (BankTransaction { date, payee, memo, amount, .. }, who) in raw {
+        let Identity { signature, legacy, group, idless, aliases, batch } = who;
+        let legacy = legacy.map(|l| bank_id(account, &l));
+        let group_id = group.map(|g| bank_id(account, &g));
         let id = bank_id(account, &signature);
-        let duplicate = imported.contains(id.as_str());
+        // A batch's payments once the whole entry is imported, or the entry once a payment is.
+        let batch_taken = batch.as_ref().is_some_and(|whole| {
+            if *whole == id { imported.contains(format!("camt-batch:{whole}").as_str()) } else { imported.contains(whole.as_str()) }
+        });
+        let duplicate = imported.contains(id.as_str()) || aliases.iter().any(|a| imported.contains(a.as_str())) || batch_taken;
         let possible_duplicate = !duplicate && (legacy.is_some_and(|id| imported.contains(id.as_str()))
             || group_id.as_ref().is_some_and(|id| imported.contains(id.as_str())));
         let d = NaiveDate::parse_from_str(&date, "%Y-%m-%d").map_err(|_| "Invalid bank transaction date")?;
@@ -851,6 +922,8 @@ fn review_each(
             rename: None,
             category_id: None,
             at: None,
+            aliases,
+            batch,
         };
         let t = new_transaction(b, account, &row);
         row.rename = Some(t.payee).filter(|p| *p != row.payee);
@@ -863,12 +936,16 @@ fn review_each(
     }
     Ok(())
 }
+/// The IDs a row is kept under besides its own: identical rows' shared one, its aliases, and its
+/// batch's mark on a payment.
+fn more_ids(r: &Row) -> Vec<String> {
+    let batch = r.batch.as_ref().filter(|whole| **whole != r.id).map(|whole| format!("camt-batch:{whole}"));
+    r.group_id.iter().chain(&r.aliases).cloned().chain(batch).collect()
+}
 /// A new transaction for an imported row, keeping the bank's payee text, with the payee rules applied.
 fn new_transaction(b: &Budget, account: &str, r: &Row) -> Transaction {
     let mut extra = json!({"approved": false, "bankImportIds": [r.id], "bankImportMatches": {account: r.id}});
-    if let Some(group) = &r.group_id {
-        extra["bankImportIds"].as_array_mut().unwrap().push(json!(group));
-    }
+    extra["bankImportIds"].as_array_mut().unwrap().extend(more_ids(r).into_iter().map(Value::from));
     if !r.payee.trim().is_empty() {
         extra["importedPayee"] = json!(r.payee);
     }
@@ -927,6 +1004,12 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
         let identity = r.import_id.as_deref().unwrap_or(&r.id);
         if imported.contains(identity) {
             continue;
+        }
+        // A batch's payments and the whole entry are never both imported.
+        if let Some(whole) = &r.batch {
+            if if *whole == r.id { imported.contains(&format!("camt-batch:{whole}")) } else { imported.contains(whole) } {
+                continue;
+            }
         }
         if c.action == "match" {
             let id = c
@@ -1005,9 +1088,9 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
                 .as_array_mut()
                 .ok_or("Invalid bank identifiers")?
                 .push(json!(r.id));
-            if let Some(group) = &r.group_id {
-                let ids = t.extra.get_mut("bankImportIds").and_then(Value::as_array_mut).expect("checked above");
-                if !ids.iter().any(|id| id.as_str() == Some(group)) { ids.push(json!(group)); }
+            let ids = t.extra.get_mut("bankImportIds").and_then(Value::as_array_mut).expect("checked above");
+            for more in more_ids(&r) {
+                if !ids.iter().any(|id| id.as_str() == Some(more.as_str())) { ids.push(json!(more)); }
             }
             if t.account_id == account && !r.payee.trim().is_empty() {
                 t.extra.entry("importedPayee").or_insert_with(|| json!(r.payee));
@@ -1046,7 +1129,7 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
             return Err("Review every imported row before saving.".into());
         }
         imported.insert(identity.to_owned());
-        if let Some(group) = r.group_id { imported.insert(group); }
+        imported.extend(more_ids(&r));
         imported.insert(r.id);
     }
     validate(&b)?;

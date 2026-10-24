@@ -2,7 +2,7 @@
 //! SWIFT MT940, and which format a file is in, whatever it was chosen as. Each reads as lines, one
 //! for each transaction record, saying what became of it (see `bank_statement`).
 use crate::bank_import::{dates, money, read_dates, BankTransaction, DateReading};
-use crate::bank_statement::{Field, Reason, Status};
+use crate::bank_statement::{Field, Fields, Reason, Status};
 use chrono::NaiveDate;
 use std::collections::{HashMap, HashSet};
 
@@ -224,9 +224,12 @@ pub(crate) struct RecordLine {
     /// Where it is among the file's records: `t1` (the first OFX transaction, or MT940 `:61:`),
     /// `r1` (QIF record), `e1` (CAMT entry), `e1.2` (that entry's second payment).
     pub key: String,
-    /// Its account (see `StatementLines::sources`).
-    pub source: usize,
     pub written: Written,
+    /// Its fields as they read now, with any values given for them; as written where they don't read.
+    pub fields: Fields,
+    /// The bank's ID for it, when the file gives one apart from its date and amount (OFX), so it's
+    /// known even when the line doesn't read.
+    pub bank_id: String,
     pub status: Status,
     /// What it imports as, with any values given for its fields, when it does.
     pub transaction: Option<BankTransaction>,
@@ -272,6 +275,9 @@ pub(crate) struct Batch {
     /// Whether the payments add up to the entry, when they and it all read.
     pub adds_up: Option<bool>,
     pub as_one: bool,
+    /// Today's import reads it as its payments (they read and add up as the file has them);
+    /// otherwise it reads it as the one entry.
+    pub splits_today: bool,
 }
 /// How an OFX whose amounts are all positive gets its signs.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -378,7 +384,7 @@ pub(crate) fn transactions(format: &str, content: &str, currency: &str, date_for
 
 /// A line with what the editor was told: values given for its fields, and whether to include it.
 fn finish(p: Parts, o: &LineOptions, currency: &str, order: &str) -> RecordLine {
-    let Parts { key, source, written, date, amount, payee, memo, fit, left_out, batch } = p;
+    let Parts { key, written, date, amount, payee, memo, fit, left_out, batch, .. } = p;
     let make = |date: &str, amount: i64, payee: &str, memo: &str| BankTransaction {
         fit: match &fit {
             Fit::Plain(f) => f.clone(),
@@ -407,6 +413,17 @@ fn finish(p: Parts, o: &LineOptions, currency: &str, order: &str) -> RecordLine 
             Field::Memo => memo = value.trim().to_string(),
         }
     }
+    let typed = |field: Field| o.fields.get(&key).and_then(|f| f.iter().rev().find(|(g, _)| *g == field)).map(|(_, v)| v.trim().to_string());
+    let fields = Fields {
+        date: date.clone().unwrap_or_else(|_| typed(Field::Date).unwrap_or_else(|| written.date.clone())),
+        payee: payee.clone(),
+        memo: memo.clone(),
+        amount: amount.as_ref().map_or_else(|_| typed(Field::Amount).unwrap_or_else(|| written.amount.clone()), |a| cents(*a)),
+    };
+    let bank_id = match &fit {
+        Fit::Plain(f) => f.clone(),
+        Fit::Dated(_) => String::new(),
+    };
     let attention = |field, reason: &str| Status::Attention { field, column: None, reason: reason.to_string() };
     let status = match &left_out {
         Some((reason, detail)) if !(o.include.contains(&key) && reason.includable()) => {
@@ -425,7 +442,7 @@ fn finish(p: Parts, o: &LineOptions, currency: &str, order: &str) -> RecordLine 
         (Status::Ready, Ok(d), Ok(a)) => Some(make(d, *a, &payee, &memo)),
         _ => None,
     };
-    RecordLine { key, source, written, status, transaction, original, reserves: left_out.is_none(), batch }
+    RecordLine { key, written, fields, bank_id, status, transaction, original, reserves: left_out.is_none(), batch }
 }
 
 /// A batch's payments that don't add up to its entry, as the file has them or with a value given
@@ -454,7 +471,8 @@ fn settle(batch: &mut Batch, lines: &mut [RecordLine]) {
         }
     }
 }
-fn cents(n: i64) -> String {
+/// An amount in cents as a number with a decimal point: -1240 is "-12.40".
+pub(crate) fn cents(n: i64) -> String {
     format!("{}{}.{:02}", if n < 0 { "-" } else { "" }, n.abs() / 100, n.abs() % 100)
 }
 
@@ -489,7 +507,10 @@ fn foreign(s: &Source, currency: &str) -> Option<String> {
 
 /// The text of an OFX element (`<NAME>…`, closed or not), or None when there's none.
 pub(crate) fn tag(s: &str, name: &str) -> Option<String> {
-    let upper = s.to_ascii_uppercase();
+    tag_in(s, &s.to_ascii_uppercase(), name)
+}
+/// The same, with the text in capitals already: its tags are found whatever their case.
+fn tag_in(s: &str, upper: &str, name: &str) -> Option<String> {
     let needle = format!("<{name}>");
     let start = upper.find(&needle)? + needle.len();
     let rest = &s[start..];
@@ -497,6 +518,9 @@ pub(crate) fn tag(s: &str, name: &str) -> Option<String> {
         Some(data) => data.split("]]>").next()?.trim(),
         None => rest.split('<').next()?.trim(),
     };
+    if !text.contains('&') {
+        return Some(text.to_string());
+    }
     Some(text.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\""))
 }
 
@@ -530,24 +554,26 @@ fn ofx_lines(content: &str, currency: &str, o: &LineOptions) -> Parsed {
     for (k, account) in sources.iter().enumerate() {
         let (_, (start, end)) = bounds(k);
         let starts: Vec<usize> = upper[start..end].match_indices("<STMTTRN>").map(|(i, _)| start + i).collect();
-        let blocks: Vec<&str> = starts
+        let blocks: Vec<(&str, &str, String)> = starts
             .iter()
             .enumerate()
             .map(|(i, &s)| {
                 let next = starts.get(i + 1).copied().unwrap_or(end);
-                &content[s..upper[s..next].find("</STMTTRN>").map_or(next, |j| s + j)]
+                let close = upper[s..next].find("</STMTTRN>").map_or(next, |j| s + j);
+                let action = tag_in(&content[s..close], &upper[s..close], "CORRECTACTION").unwrap_or_default().to_ascii_uppercase();
+                (&content[s..close], &upper[s..close], action)
             })
             .collect();
-        let action = |b: &str| tag(b, "CORRECTACTION").unwrap_or_default().to_ascii_uppercase();
         // Earlier lines a correction deletes or replaces.
         let corrected: HashSet<String> = blocks
             .iter()
-            .filter(|b| matches!(action(b).as_str(), "DELETE" | "REPLACE"))
-            .filter_map(|b| tag(b, "CORRECTFITID"))
+            .filter(|(.., action)| matches!(action.as_str(), "DELETE" | "REPLACE"))
+            .filter_map(|(block, upper, _)| tag_in(block, upper, "CORRECTFITID"))
             .collect();
-        for block in blocks {
-            let deletes = action(block) == "DELETE";
-            let posted = tag(block, "DTPOSTED").or_else(|| tag(block, "DTUSER"));
+        for (block, upper, action) in blocks {
+            let tag = |name: &str| tag_in(block, upper, name);
+            let deletes = action == "DELETE";
+            let posted = tag("DTPOSTED").or_else(|| tag("DTUSER"));
             // YYYYMMDD with a time after it, or now and then a date written another way.
             let date = match &posted {
                 None => Err("Missing OFX posted date".to_string()),
@@ -555,18 +581,18 @@ fn ofx_lines(content: &str, currency: &str, o: &LineOptions) -> Parsed {
                     .map(|day| day.format("%Y-%m-%d").to_string())
                     .map_or_else(|| crate::bank_import::date(d, "ymd").map_err(|_| format!("Invalid OFX posted date ‘{d}’")), Ok),
             };
-            let written = tag(block, "TRNAMT");
+            let written = tag("TRNAMT");
             let amount = written.as_deref().ok_or_else(|| "Missing OFX amount".to_string()).and_then(|a| money(a, currency));
             if k == source && !deletes && stop.is_none() {
                 stop = date.as_ref().err().or(amount.as_ref().err()).cloned();
             }
-            let (payee, memo) = (tag(block, "NAME").unwrap_or_default(), tag(block, "MEMO").unwrap_or_default());
+            let (payee, memo) = (tag("NAME").unwrap_or_default(), tag("MEMO").unwrap_or_default());
             let (payee, memo) = if payee.is_empty() { (memo, String::new()) } else { (payee, memo) };
-            let fit = tag(block, "FITID").unwrap_or_default();
+            let fit = tag("FITID").unwrap_or_default();
             let left_out = if k != source {
                 Some((Reason::OtherAccount, account.label.clone()))
             } else if deletes {
-                Some((Reason::Corrected, tag(block, "CORRECTFITID").unwrap_or_default()))
+                Some((Reason::Corrected, tag("CORRECTFITID").unwrap_or_default()))
             } else if let Some(code) = foreign(account, currency) {
                 Some((Reason::OtherCurrency, code))
             } else if !fit.is_empty() && corrected.contains(&fit) {
@@ -576,7 +602,7 @@ fn ofx_lines(content: &str, currency: &str, o: &LineOptions) -> Parsed {
             } else {
                 None
             };
-            kinds.push(tag(block, "TRNTYPE").unwrap_or_default().to_ascii_uppercase());
+            kinds.push(tag("TRNTYPE").unwrap_or_default().to_ascii_uppercase());
             parts.push(Parts {
                 key: format!("t{}", parts.len() + 1),
                 source: k,
@@ -885,6 +911,7 @@ fn camt_lines(content: &str, currency: &str, o: &LineOptions) -> Result<Parsed, 
                 line: None,
                 adds_up,
                 as_one,
+                splits_today: adds_up == Some(true),
             };
             if as_one {
                 batch.line = Some(parts.len());
@@ -1303,8 +1330,10 @@ mod tests {
         let first: Vec<_> = all.lines.iter().filter_map(|l| l.transaction.as_ref()).map(|t| (t.date.clone(), t.amount)).collect();
         assert_eq!(first, today);
         let second = lines("qif", &qif, "USD", &LineOptions { source: Some(&all.sources[1].label), ..LineOptions::default() }).unwrap();
-        assert!(second.lines.iter().any(|l| l.source == 1 && l.status == Status::Ready));
-        assert!(second.lines.iter().filter(|l| l.source == 0).all(|l| matches!(l.status, Status::LeftOut { reason: Reason::OtherAccount, .. })));
+        assert_eq!(second.source, 1);
+        assert!(second.lines.iter().any(|l| l.status == Status::Ready));
+        let elsewhere = second.lines.iter().filter(|l| matches!(l.status, Status::LeftOut { reason: Reason::OtherAccount, .. })).count();
+        assert_eq!(elsewhere, second.sources.iter().enumerate().filter(|(i, _)| *i != 1).map(|(_, s)| s.lines).sum::<usize>());
 
         // CAMT: one statement a day for one account, another account's in USD.
         let usd_account = CAMT.replace("DE00123456780000000000", "US00999").replace("EUR", "USD");

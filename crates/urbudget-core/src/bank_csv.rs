@@ -5,6 +5,7 @@ use crate::bank_import::{dates, money, read_dates, BankTransaction, DateReading}
 use crate::bank_statement::{Field, Reason, Status, DECLINED};
 use crate::domain::Budget;
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 
 /// Which of a CSV's columns hold what, by their header text, as someone chose them. A column
@@ -295,6 +296,9 @@ pub(crate) struct Options<'a> {
     pub include: HashSet<usize>,
     /// Cells someone fixed, by where their record starts: (column, value).
     pub cells: HashMap<usize, Vec<(usize, String)>>,
+    /// Values someone gave a record's fields, whatever its columns say, by where it starts: a
+    /// date (YYYY-MM-DD), an amount (positive for money in), a payee, a memo.
+    pub fields: HashMap<usize, Vec<(Field, String)>>,
     /// Keep each record's cells, to show them (today's import doesn't need them).
     pub shown: bool,
 }
@@ -307,6 +311,13 @@ pub(crate) struct Record {
     pub offset: usize,
     /// Its cells, with any fixes.
     pub cells: Vec<String>,
+    /// Its cells as the file writes them, when some were fixed.
+    pub written: Vec<String>,
+    /// The bank's ID for it as the file writes it, or "".
+    pub bank_id: String,
+    /// What it read as without help (its date as written, and its fate), when it's read again with
+    /// fixes or included.
+    pub first: Option<(Option<String>, Fate)>,
     /// Its date as written (with any fix), where it got that far.
     pub day: Option<String>,
     /// Its date as the file writes it, where today's reader would read it: what the file's dates
@@ -331,12 +342,18 @@ pub(crate) enum Fate {
 pub(crate) struct Records {
     pub headers: Vec<String>,
     pub columns: Columns,
+    /// The columns are the account's saved choice.
     pub saved: bool,
     /// Where the header row (or, without one, the first record) starts.
     pub start: usize,
-    pub numbered: bool,
     pub separator: u8,
     pub date_column: usize,
+    /// Where the payee, memo and amounts are read from (amount, money out, money in), and the
+    /// bank's ID.
+    pub payee_column: Option<usize>,
+    pub memo_column: Option<usize>,
+    pub amount_columns: [Option<usize>; 3],
+    pub id_column: Option<usize>,
     /// The accounts in a file with several (labels and how many dated rows each has), and which
     /// is read.
     pub sources: Vec<(String, usize)>,
@@ -412,17 +429,21 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
             && values.iter().filter(|v| **v == first).count() >= 2;
         ok.then(|| (i, blocks.iter().map(|b| (b.to_string(), values.iter().filter(|v| *v == b).count())).collect::<Vec<_>>()))
     });
-    // A record as it reads, someone having included it or not.
-    let classify = |r: &csv::StringRecord, included: bool| -> (Option<String>, Fate) {
+    // A record as it reads, someone having included it or not, with any values given for its
+    // fields.
+    let classify = |r: &csv::StringRecord, included: bool, given: &[(Field, String)]| -> (Option<String>, Fate) {
         let lift = |reason: Reason| included && reason.includable();
         let left = |reason: Reason, detail: &str| Fate::LeftOut { reason, detail: detail.to_string() };
         let attention = |field: Field, column: Option<usize>, reason: String| Fate::Attention { field, column, reason };
+        let value = |field: Field| given.iter().rev().find(|(f, _)| *f == field).map(|(_, v)| v.trim());
         // A note, a total, or a pending row without its date yet: no digits where the date goes.
         let day = cell(r, Some(d));
-        if !dated(r) {
+        // (Included, with a date given, it reads.)
+        if !(dated(r) || lift(Reason::NoDate) && value(Field::Date).is_some()) {
             return (None, if lift(Reason::NoDate) { attention(Field::Date, Some(d), "This line has no date.".into()) } else { left(Reason::NoDate, day) });
         }
-        let day = Some(day.to_string());
+        let day = Some(value(Field::Date).unwrap_or(day).to_string());
+        let given_amount = value(Field::Amount);
         // An opening or closing balance, or a turnover total, written as a row.
         if let Some(c) = r.iter().find(|c| BALANCES.contains(&plain(c).as_str())) {
             if !lift(Reason::Balance) {
@@ -446,11 +467,12 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
             c.len() == 3 && c.bytes().all(|b| b.is_ascii_alphabetic()) && !c.eq_ignore_ascii_case(&b.currency)
         }) {
             let code = code.to_ascii_uppercase();
-            return (day, if lift(Reason::OtherCurrency) {
-                attention(Field::Amount, p.amount.or(p.outflow).or(p.inflow), format!("This line is in {code}: enter the amount in {}.", b.currency))
-            } else {
-                left(Reason::OtherCurrency, &code)
-            });
+            if !lift(Reason::OtherCurrency) {
+                return (day, left(Reason::OtherCurrency, &code));
+            }
+            if given_amount.is_none() {
+                return (day, attention(Field::Amount, p.amount.or(p.outflow).or(p.inflow), format!("This line is in {code}: enter the amount in {}.", b.currency)));
+            }
         }
         // Money moved between the holder's own balances, by the file's own account.
         if let Some(way) = p.direction.map(|i| cell(r, Some(i))).filter(|w| *w == "/" || NEUTRAL.contains(&plain(w).as_str())) {
@@ -460,10 +482,22 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
         }
         // A row whose amount is empty states something (a balance) rather than moving money.
         if [p.amount, p.outflow, p.inflow].iter().all(|&i| blank(cell(r, i))) {
-            return (day, if lift(Reason::NoAmount) { attention(Field::Amount, p.amount.or(p.outflow).or(p.inflow), "This line has no amount.".into()) } else { left(Reason::NoAmount, "") });
+            if !lift(Reason::NoAmount) {
+                return (day, left(Reason::NoAmount, ""));
+            }
+            if given_amount.is_none() {
+                return (day, attention(Field::Amount, p.amount.or(p.outflow).or(p.inflow), "This line has no amount.".into()));
+            }
         }
+        // An amount given for the line is what it moved, whatever its columns and signs say.
+        let amount = if let Some(given) = given_amount {
+            match money(given, &b.currency) {
+                Err(e) => return (day, attention(Field::Amount, None, e)),
+                Ok(0) => return (day, attention(Field::Amount, None, "Enter an amount other than zero.".into())),
+                Ok(n) => n,
+            }
         // An empty amount, with money out and in in columns of their own, is read from those.
-        let amount = if p.amount.is_some() && !(blank(cell(r, p.amount)) && (p.outflow.is_some() || p.inflow.is_some())) {
+        } else if p.amount.is_some() && !(blank(cell(r, p.amount)) && (p.outflow.is_some() || p.inflow.is_some())) {
             match money(cell(r, p.amount), &b.currency) {
                 Err(e) => return (day, attention(Field::Amount, p.amount, e)),
                 Ok(n) => match p.direction.map(|i| plain(cell(r, Some(i)))) {
@@ -483,6 +517,7 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
             }
         };
         let amount = match read(cell(r, p.fee)) {
+            _ if given_amount.is_some() => amount,
             Err(e) => return (day, attention(Field::Amount, p.fee, e)),
             Ok(fee) => amount - fee.abs(),
         };
@@ -512,6 +547,12 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
         if payee.is_empty() {
             payee = tidy(cell(r, p.kind));
         }
+        if let Some(given) = value(Field::Payee) {
+            payee = given.to_string();
+        }
+        if let Some(given) = value(Field::Memo) {
+            memo = given.to_string();
+        }
         (day, Fate::Read { fit: cell(r, p.id).into(), payee, memo, amount })
     };
     // First the file as written: each record's section (the header row again after something
@@ -540,7 +581,7 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
             between = true;
             note = tidy(&r.iter().filter(|c| !c.is_empty()).collect::<Vec<_>>().join(" "));
         }
-        let (day, fate) = classify(r, false);
+        let (day, fate) = classify(r, false, &[]);
         if matches!(fate, Fate::Read { .. }) {
             between = false;
             read_here += 1;
@@ -575,11 +616,24 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
             csv::StringRecord::from(cells)
         });
         let r = fixed.as_ref().unwrap_or(original);
+        let given = o.fields.get(&offset).map(Vec::as_slice);
         let cells: Vec<String> = if o.shown { r.iter().map(String::from).collect() } else { vec![] };
-        let mut record = Record { offset, cells, day: None, evidence: None, fate: Fate::LeftOut { reason: Reason::RepeatedHeader, detail: String::new() }, reserves: false, hidden: sheet.hidden[k] };
+        let written: Vec<String> = if o.shown && fixed.is_some() { original.iter().map(String::from).collect() } else { vec![] };
+        let mut record = Record {
+            offset,
+            cells,
+            written,
+            bank_id: cell(original, p.id).to_string(),
+            first: None,
+            day: None,
+            evidence: None,
+            fate: Fate::LeftOut { reason: Reason::RepeatedHeader, detail: String::new() },
+            reserves: false,
+            hidden: sheet.hidden[k],
+        };
         // A line of a statement in aligned columns that today's reader dropped for having no date.
         if record.hidden {
-            let (day, fate) = classify(r, included);
+            let (day, fate) = classify(r, included, given.unwrap_or(&[]));
             record.fate = fate;
             record.day = day;
             out.push(record);
@@ -605,7 +659,12 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
         }
         record.reserves = matches!(fate0, Fate::Read { .. } | Fate::Attention { .. });
         record.evidence = day0.clone().filter(|_| record.reserves);
-        let (day, fate) = if fixed.is_some() || included { classify(r, included) } else { (day0.clone(), fate0.clone()) };
+        let (day, fate) = if fixed.is_some() || included || given.is_some() {
+            record.first = Some((day0.clone(), fate0.clone()));
+            classify(r, included, given.unwrap_or(&[]))
+        } else {
+            (day0.clone(), fate0.clone())
+        };
         if let Fate::LeftOut { reason: Reason::OtherCurrency, detail } = fate0 {
             foreign.get_or_insert(detail.clone());
         }
@@ -617,9 +676,12 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
         columns: sheet.columns(),
         saved: sheet.saved,
         start: sheet.start,
-        numbered: sheet.numbered,
         separator: sheet.separator,
         date_column: d,
+        payee_column: p.payee,
+        memo_column: p.memo,
+        amount_columns: [p.amount, p.outflow, p.inflow],
+        id_column: p.id,
         sources,
         source,
         records: out,
@@ -673,9 +735,15 @@ pub(crate) fn read(
 pub(crate) struct CsvLine {
     pub offset: usize,
     pub cells: Vec<String>,
+    /// Its cells as the file writes them, when some were fixed.
+    pub written: Vec<String>,
     pub status: Status,
     /// The transaction it gives, when it's ready.
     pub transaction: Option<BankTransaction>,
+    /// The transaction it gives without help, when it does: its identity is made from this.
+    pub original: Option<BankTransaction>,
+    /// The bank's ID for it as the file writes it, or "".
+    pub bank_id: String,
     pub reserves: bool,
 }
 /// A CSV as lines: its records with their dates read in the order the file's own dates settle,
@@ -698,24 +766,39 @@ pub(crate) fn read_lines(b: &Budget, account: &str, content: &str, o: &Options, 
         .map(|(offset, line)| CsvLine {
             offset,
             cells: fields(line, records.separator),
+            written: vec![],
             status: Status::LeftOut { reason: Reason::AboveHeader, detail: String::new() },
             transaction: None,
+            original: None,
+            bank_id: String::new(),
             reserves: false,
         })
         .collect();
+    // A record that read, all but its date, with its date read in the file's order (each date
+    // once: a day has several transactions).
+    let read: RefCell<HashMap<String, Result<String, String>>> = RefCell::default();
+    let dated = |day: &Option<String>, fit: &str, payee: &str, memo: &str, amount: i64| -> Result<BankTransaction, String> {
+        let day = day.as_deref().unwrap_or("");
+        let date = read.borrow_mut().entry(day.to_string())
+            .or_insert_with(|| crate::bank_import::date(day, dates.order).map_err(|_| format!("Can't read the date ‘{day}’.")))
+            .clone()?;
+        Ok(BankTransaction { fit: fit.into(), date, payee: payee.into(), memo: memo.into(), amount })
+    };
     for r in std::mem::take(&mut records.records) {
-        let (status, transaction) = match r.fate {
-            Fate::Read { fit, payee, memo, amount } => {
-                let day = r.day.as_deref().unwrap_or("");
-                match crate::bank_import::date(day, dates.order) {
-                    Ok(date) => (Status::Ready, Some(BankTransaction { fit, date, payee, memo, amount })),
-                    Err(_) => (Status::Attention { field: Field::Date, column, reason: format!("Can't read the date ‘{day}’.") }, None),
-                }
-            }
-            Fate::Attention { field, column, reason } => (Status::Attention { field, column, reason }, None),
-            Fate::LeftOut { reason, detail } => (Status::LeftOut { reason, detail }, None),
+        let (status, transaction) = match &r.fate {
+            Fate::Read { fit, payee, memo, amount } => match dated(&r.day, fit, payee, memo, *amount) {
+                Ok(t) => (Status::Ready, Some(t)),
+                Err(reason) => (Status::Attention { field: Field::Date, column, reason }, None),
+            },
+            Fate::Attention { field, column, reason } => (Status::Attention { field: *field, column: *column, reason: reason.clone() }, None),
+            Fate::LeftOut { reason, detail } => (Status::LeftOut { reason: *reason, detail: detail.clone() }, None),
         };
-        lines.push(CsvLine { offset: r.offset, cells: r.cells, status, transaction, reserves: r.reserves });
+        let original = match &r.first {
+            Some((day, Fate::Read { fit, payee, memo, amount })) => dated(day, fit, payee, memo, *amount).ok(),
+            Some(_) => None,
+            None => transaction.clone(),
+        };
+        lines.push(CsvLine { offset: r.offset, cells: r.cells, written: r.written, status, transaction, original, bank_id: r.bank_id, reserves: r.reserves });
     }
     Ok(CsvLines { records, dates, lines })
 }
@@ -785,6 +868,7 @@ const PAYEES: &[&[&str]] = &[
 const PARTIES: &[&str] = &[
     "zahlungspflichtiger", "zahlungspflichtige", "zahlungsempfangerin", "zahlungsempfanger", "auftraggeberzahlungsempfanger",
     "empfangerzahlungspflichtiger", "payer", "payername", "recipient", "recipientname", "sender", "sendername", "payeename", "from", "to",
+    "sourcename", "targetname",
 ];
 /// What a row that only states a balance or a total says.
 const BALANCES: &[&str] = &[
@@ -801,7 +885,7 @@ const MEMOS: &[&[&str]] = &[&[
 ]];
 const AMOUNTS: &[&str] = &[
     "amount", "transactionamount", "euro", "euros", "eur", "suma", "gross", "betrag", "bedrag", "montant", "importe", "importo", "valor", "kwota",
-    "belopp", "belob", "belop", "maara", "umsatz", "amounttotal", "cardcurrencyamount", "суммаплатежа", "сумма",
+    "belopp", "belob", "belop", "maara", "umsatz", "amounttotal", "cardcurrencyamount", "sourceamountafterfees", "суммаплатежа", "сумма",
     "сумаввалютікартки", "сума", "金额", "入出金", "זכותחובה", "סכוםחיוב", "المبلغ",
 ];
 const OUTFLOWS: &[&str] = &[
@@ -817,7 +901,7 @@ const INFLOWS: &[&str] = &[
 ];
 const IDS: &[&str] = &["fitid", "transactionid", "id", "transferwiseid", "transaktionsnr", "irasonr", "交易订单号", "交易单号"];
 /// What the bank charged on top, as Revolut writes it beside each amount.
-const FEES: &[&str] = &["fee", "fees", "conversioncharge", "commission", "сумакомісій", "комиссия", "עמלה"];
+const FEES: &[&str] = &["fee", "fees", "conversioncharge", "commission", "sourcefeeamount", "сумакомісій", "комиссия", "עמלה"];
 /// Columns saying whether a row went through: its state, its kind, its effect on the balance.
 const STATES: &[&str] = &[
     "state", "status", "transactionstate", "transactionstatus", "contabilizzazione", "type", "balanceimpact",
@@ -1043,9 +1127,10 @@ impl Picked {
         // Rows shaped like the transactions: a note or a total under them is narrower.
         let sample: Vec<&csv::StringRecord> = records.iter().filter(|r| r.len() >= headers.len()).take(50).collect();
         let cells = |i: usize| sample.iter().filter_map(move |r| r.get(i)).filter(|c| !c.is_empty());
+        // Four in five of a column's cells, or all but one (a damaged cell in a short file).
         let mostly = |i: usize, test: &dyn Fn(&str) -> bool| {
             let (all, yes) = cells(i).fold((0, 0), |(all, yes), c| (all + 1, yes + test(c) as usize));
-            all > 0 && yes * 5 >= all * 4
+            all > 0 && (yes * 5 >= all * 4 || yes >= 1 && yes + 1 == all)
         };
         let date = named.date.or_else(|| (0..headers.len()).find(|&i| mostly(i, &is_date)));
         let money: Vec<usize> = (0..headers.len())
@@ -1060,8 +1145,10 @@ impl Picked {
         // balance goes up and down by the amount, row after row, in whichever order they come.
         let value = |r: &csv::StringRecord, i: usize| r.get(i).filter(|c| !c.is_empty()).and_then(|c| crate::bank_import::money(c, currency).ok());
         let running = |a: usize, b: usize| {
+            // A column that doesn't move (an exchange rate of 1.0) is no balance.
             let steps: Vec<bool> = sample.windows(2)
                 .filter_map(|w| Some((value(w[0], a)?, value(w[0], b)?, value(w[1], a)?, value(w[1], b)?)))
+                .filter(|(_, b0, _, b1)| b0 != b1)
                 .map(|(a0, b0, a1, b1)| b1 - b0 == a1 || b0 - b1 == a0)
                 .collect();
             steps.len() >= 2 && steps.iter().filter(|s| **s).count() * 5 >= steps.len() * 4
@@ -1132,10 +1219,14 @@ fn aligned(content: &str) -> Option<(String, Vec<(usize, bool)>)> {
     let dated = |line: &str| runs(line).first().is_some_and(|(_, _, first)| is_date(first));
     // Separators, or commas between fields rather than in amounts, make it a CSV.
     let separated = |line: &str| line.contains(['\t', ';', '|']) || line.matches(',').count() >= 2;
+    // The column names: no date or number among them, over dated lines (or a line whose date is
+    // damaged, then dated ones).
+    let numeric = |t: &str| t.bytes().any(|b| b.is_ascii_digit()) && t.chars().all(|c| c.is_ascii_digit() || matches!(c, ',' | '.' | '-' | '+'));
+    let wide = |k: usize| lines.get(k).is_some_and(|l| runs(l.1).len() >= 3);
     let header = (0..lines.len().min(60)).find(|&h| {
-        let next = lines.get(h + 1).map(|l| l.1);
-        runs(lines[h].1).len() >= 3 && !separated(lines[h].1) && !dated(lines[h].1)
-            && next.is_some_and(|n| dated(n) && runs(n).len() >= 3)
+        let data = |k: usize| wide(k) && dated(lines[k].1);
+        wide(h) && !separated(lines[h].1) && !dated(lines[h].1) && !runs(lines[h].1).iter().any(|r| numeric(&r.2))
+            && (data(h + 1) || wide(h + 1) && data(h + 2))
     })?;
     let names = runs(lines[header].1);
     let mut out = vec![names.iter().map(|n| n.2.as_str()).collect::<Vec<_>>().join("\t")];
@@ -1173,7 +1264,13 @@ fn data_start(lines: &[(usize, &str)], currency: &str) -> Option<(usize, u8, Opt
         }
         let (&n, _) = counts.iter().max_by_key(|&(n, k)| (*k, *n))?;
         let data = |r: &[String]| r.len() == n && r.iter().any(|c| is_date(c)) && r.iter().any(|c| amount_like(c, currency));
-        let first = rows.iter().position(|r| data(r))?;
+        let mut first = rows.iter().position(|r| data(r))?;
+        // A row as wide just above, with a date or an amount, is data with the other damaged, not
+        // the header.
+        let damaged = |r: &[String]| r.len() == n && r.iter().any(|c| is_date(c) || amount_like(c, currency));
+        while first > 0 && damaged(&rows[first - 1]) {
+            first -= 1;
+        }
         let header = first.checked_sub(1).filter(|&h| rows[h].len() == n && !rows[h].iter().any(|c| is_date(c)));
         Some((lines[first].0, d, header.map(|h| lines[h].0)))
     })
