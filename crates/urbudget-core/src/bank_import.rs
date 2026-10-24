@@ -68,6 +68,26 @@ pub struct Row {
     /// own ID when it's that): a batch's payments and the whole entry are never both imported.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub batch: Option<String>,
+    /// The purchase it may be a refund of (see `refund_offers`); imported, it takes that
+    /// purchase's category when it has none.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub refund_of: Option<RefundOf>,
+}
+/// A purchase a row of money in may be a refund of.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct RefundOf {
+    /// The purchase (the latest, of several).
+    pub id: String,
+    pub date: String,
+    pub payee: String,
+    /// Cents, negative.
+    pub amount: i64,
+    /// The purchases' category, when they agree on one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub category_id: Option<String>,
+    /// How many purchases it may be a refund of.
+    pub purchases: usize,
 }
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -924,6 +944,7 @@ fn review_each(
             at: None,
             aliases,
             batch,
+            refund_of: None,
         };
         let t = new_transaction(b, account, &row);
         row.rename = Some(t.payee).filter(|p| *p != row.payee);
@@ -931,10 +952,77 @@ fn review_each(
         rows.push((row, d));
     }
     let offers = transfer_offers(b, account, &matches, &rows);
-    for ((row, d), transfer) in rows.into_iter().zip(offers) {
+    let refunds = refund_offers(b, account, &matches, &rows, &offers);
+    for (((mut row, d), transfer), refund) in rows.into_iter().zip(offers).zip(refunds) {
+        row.refund_of = refund;
         emit(row, &matches, d, transfer);
     }
     Ok(())
+}
+/// How long after a purchase its refund may come.
+const REFUND_DAYS: i64 = 90;
+/// A purchase a refund may be of.
+struct Purchase<'a> {
+    id: &'a str,
+    date: NaiveDate,
+    payee: &'a str,
+    /// Its payee's name, and its bank text without numbers, to tell the shop by.
+    name: String,
+    wording: String,
+    amount: i64,
+    category: Option<&'a str>,
+}
+/// Which purchase each row may be a refund of: money in that could be nothing already here and
+/// isn't offered as a transfer, into an account on the budget, after a purchase from the same
+/// payee (by the name the payee rules give it, or its bank text without numbers) in that account
+/// in the 90 days before, in the budget or the file. Purchases of the same amount say which, else
+/// larger ones (a partial refund). One purchase gives its category; several, theirs when they
+/// agree on one, else none (it's only said they may be).
+fn refund_offers(b: &Budget, account: &str, matches: &Matches, rows: &[(Row, NaiveDate)], offers: &[Option<(&String, bool)>]) -> Vec<Option<RefundOf>> {
+    if !b.accounts.iter().any(|a| a.id == account && a.on_budget()) || rows.iter().all(|(r, _)| r.amount <= 0) {
+        return vec![None; rows.len()];
+    }
+    // A category, not the Uncategorized an import gives spending.
+    fn category<'a>(b: &Budget, c: Option<&'a str>) -> Option<&'a str> {
+        c.filter(|c| !workflows::placeholder(b, c))
+    }
+    let mut purchases: Vec<Purchase> = b.transactions.iter()
+        .filter(|t| t.account_id == account && t.amount < 0 && t.transfer_account_id.is_none() && !ledger::starting_balance(t))
+        .filter(|t| matches!(t.splits.as_slice(), [s] if ledger::transfer(s).is_none()))
+        .filter_map(|t| Some(Purchase {
+            id: &t.id,
+            date: NaiveDate::parse_from_str(&t.date, "%Y-%m-%d").ok()?,
+            payee: &t.payee,
+            name: bank_csv::plain(&t.payee),
+            wording: wording(t.extra.get("importedPayee").and_then(Value::as_str).unwrap_or(&t.payee)),
+            amount: t.amount,
+            category: category(b, t.splits[0].category_id.as_deref()),
+        }))
+        .collect();
+    purchases.extend(rows.iter().filter(|(r, _)| r.amount < 0 && !r.duplicate).map(|(r, day)| {
+        let payee = r.rename.as_deref().unwrap_or(&r.payee);
+        Purchase { id: &r.id, date: *day, payee, name: bank_csv::plain(payee), wording: wording(&r.payee), amount: r.amount, category: category(b, r.category_id.as_deref()) }
+    }));
+    rows.iter().zip(offers).map(|((r, day), offer)| {
+        if r.amount <= 0 || r.duplicate || r.possible_duplicate || offer.is_some() || !matches.candidates(r.amount, *day).is_empty() {
+            return None;
+        }
+        let (name, said) = (bank_csv::plain(r.rename.as_deref().unwrap_or(&r.payee)), wording(&r.payee));
+        let shop = |p: &&Purchase| (!name.is_empty() && p.name == name) || (!said.is_empty() && p.wording == said);
+        let before: Vec<&Purchase> = purchases.iter().filter(|p| p.date <= *day && (*day - p.date).num_days() <= REFUND_DAYS).filter(shop).collect();
+        let exact: Vec<&Purchase> = before.iter().copied().filter(|p| -p.amount == r.amount).collect();
+        let these = if exact.is_empty() { before.into_iter().filter(|p| -p.amount > r.amount).collect() } else { exact };
+        let latest = these.iter().max_by_key(|p| (p.date, p.id))?;
+        let agreed = these.iter().all(|p| p.category == these[0].category);
+        Some(RefundOf {
+            id: latest.id.to_string(),
+            date: latest.date.format("%Y-%m-%d").to_string(),
+            payee: latest.payee.to_string(),
+            amount: latest.amount,
+            category_id: these[0].category.filter(|_| agreed).map(String::from),
+            purchases: these.len(),
+        })
+    }).collect()
 }
 /// The IDs a row is kept under besides its own: identical rows' shared one, its aliases, and its
 /// batch's mark on a payment.
@@ -990,6 +1078,8 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
         });
         back > forward
     };
+    // Refunds imported, and the purchase whose category each takes.
+    let mut refunds: Vec<(String, RefundOf)> = vec![];
     for (i, c) in choices.into_iter().enumerate() {
         let offset = if newest_first { count - 1 - i } else { i };
         if c.action == "skip" {
@@ -1124,6 +1214,9 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
                 }
                 t.splits[0].category_id = Some(category);
             }
+            if let Some(refund) = r.refund_of.clone().filter(|_| t.amount > 0) {
+                refunds.push((t.id.clone(), refund));
+            }
             b.transactions.push(t);
         } else {
             return Err("Review every imported row before saving.".into());
@@ -1131,6 +1224,19 @@ pub fn apply(mut b: Budget, account: &str, choices: Vec<Choice>) -> Result<Budge
         imported.insert(identity.to_owned());
         imported.extend(more_ids(&r));
         imported.insert(r.id);
+    }
+    // A refund takes its purchase's category, when it has none and the purchase (in the budget,
+    // or this file) still has that category.
+    for (id, refund) in refunds {
+        let Some(category) = refund.category_id else { continue };
+        let still = b.transactions.iter().any(|t| {
+            t.id == refund.id && t.account_id == account && t.amount < 0 && matches!(t.splits.as_slice(), [s] if s.category_id.as_deref() == Some(category.as_str()))
+        });
+        if let (true, Some(t)) = (still, b.transactions.iter_mut().find(|t| t.id == id)) {
+            if let [s] = t.splits.as_mut_slice() {
+                s.category_id.get_or_insert(category);
+            }
+        }
     }
     validate(&b)?;
     Ok(b)
@@ -1665,6 +1771,109 @@ D10/15'26\nT12.00\nMInterest\n^\n!Account\nNSavings\nTBank\n^\n!Type:Bank\nD10/1
         assert_eq!(read("!Type:CCard\nD10/14/2026\nU-3.00\nPShop", "qif"), [row("2026-10-14", "Shop", "", -300)]);
         let investments = preview(&b, "cash", "!Type:Invst\nD10/14/2026\nNBuy\nT-3.00\n^", "qif", "mdy", false);
         assert!(investments.err().unwrap().contains("Only bank"));
+    }
+
+    fn refunds_budget() -> Budget {
+        let mut b = sample();
+        b.transactions.clear();
+        for (id, name) in [("shopping", "Shopping"), ("gifts", "Gifts")] {
+            b.categories.push(Category { extra: Default::default(), id: id.into(), name: name.into(), group: "Living".into(), target: 0 });
+        }
+        b
+    }
+    fn bought(id: &str, date: &str, payee: &str, amount: i64, category: Option<&str>) -> Transaction {
+        let mut t = purchase();
+        (t.id, t.date, t.account_id, t.payee, t.amount) = (id.into(), date.into(), "cash".into(), payee.into(), amount);
+        t.splits[0].amount = amount;
+        t.splits[0].category_id = category.map(String::from);
+        t
+    }
+    fn money_in(date: &str, payee: &str, amount: i64) -> BankTransaction {
+        BankTransaction { fit: String::new(), date: date.into(), payee: payee.into(), memo: String::new(), amount }
+    }
+    fn imported(b: Budget, rows: Vec<Row>) -> Budget {
+        apply(b, "cash", rows.into_iter().map(|row| Choice { row, action: "new".into(), match_id: None }).collect()).unwrap()
+    }
+    fn category_of(b: &Budget, payee: &str, amount: i64) -> Option<String> {
+        b.transactions.iter().find(|t| t.payee == payee && t.amount == amount).and_then(|t| t.splits[0].category_id.clone())
+    }
+
+    #[test]
+    fn money_back_from_a_shop_is_offered_as_a_refund_of_what_was_bought_there() {
+        let mut b = refunds_budget();
+        b.transactions.push(bought("p1", "2026-10-07", "Amazon EU", -2399, Some("shopping")));
+        let rows = review(&b, "cash", vec![money_in("2026-10-12", "Amazon EU", 2399)]).unwrap();
+        let refund = rows[0].refund_of.clone().unwrap();
+        assert_eq!(refund, RefundOf { id: "p1".into(), date: "2026-10-07".into(), payee: "Amazon EU".into(), amount: -2399, category_id: Some("shopping".into()), purchases: 1 });
+        let b = imported(b, rows);
+        assert_eq!(category_of(&b, "Amazon EU", 2399).as_deref(), Some("shopping"));
+
+        // Two purchases of that amount there in other categories: it's said it may be either, and
+        // no category is given.
+        let mut b = refunds_budget();
+        b.transactions.push(bought("p1", "2026-10-02", "Amazon EU", -2399, Some("shopping")));
+        b.transactions.push(bought("p2", "2026-10-07", "Amazon EU", -2399, Some("gifts")));
+        let rows = review(&b, "cash", vec![money_in("2026-10-12", "Amazon EU", 2399)]).unwrap();
+        let refund = rows[0].refund_of.clone().unwrap();
+        assert_eq!((refund.id.as_str(), refund.category_id, refund.purchases), ("p2", None, 2));
+        assert_eq!(category_of(&imported(b, rows), "Amazon EU", 2399), None);
+
+        // Part of a larger purchase back: the larger purchases there agree on the category.
+        let mut b = refunds_budget();
+        b.transactions.push(bought("p1", "2026-09-20", "Zalando", -8000, Some("shopping")));
+        b.transactions.push(bought("p2", "2026-10-01", "Zalando", -5000, Some("shopping")));
+        b.transactions.push(bought("p3", "2026-10-03", "Zalando", -500, Some("gifts")));
+        let rows = review(&b, "cash", vec![money_in("2026-10-12", "ZALANDO", 1000)]).unwrap();
+        let refund = rows[0].refund_of.clone().unwrap();
+        assert_eq!((refund.id.as_str(), refund.category_id.as_deref(), refund.purchases), ("p2", Some("shopping"), 2));
+
+        // Not a split purchase, a transfer, one too long ago, another shop's, or another account's.
+        let mut b = refunds_budget();
+        let mut split = bought("p1", "2026-10-07", "Amazon EU", -2399, Some("shopping"));
+        split.splits = vec![Split { category_id: Some("shopping".into()), amount: -1399, extra: Default::default() }, Split { category_id: Some("gifts".into()), amount: -1000, extra: Default::default() }];
+        b.transactions.push(split);
+        let mut moved = bought("p2", "2026-10-07", "Amazon EU", -2399, None);
+        (moved.transfer_account_id, moved.transfer_status) = (Some("card".into()), Some(Cleared::Cleared));
+        moved.splits.clear();
+        b.transactions.push(moved);
+        b.transactions.push(bought("p3", "2026-06-01", "Amazon EU", -2399, Some("shopping")));
+        b.transactions.push(bought("p4", "2026-10-07", "Other Shop", -2399, Some("shopping")));
+        let mut card = bought("p5", "2026-10-07", "Amazon EU", -2399, Some("shopping"));
+        card.account_id = "card".into();
+        b.transactions.push(card);
+        assert_eq!(review(&b, "cash", vec![money_in("2026-10-12", "Amazon EU", 2399)]).unwrap()[0].refund_of, None);
+
+        // Money in that could be a transaction already here is that, not a refund.
+        let mut b = refunds_budget();
+        b.transactions.push(bought("p1", "2026-10-07", "Amazon EU", -2399, Some("shopping")));
+        b.transactions.push(bought("in", "2026-10-11", "Expected refund", 2399, None));
+        assert_eq!(review(&b, "cash", vec![money_in("2026-10-12", "Amazon EU", 2399)]).unwrap()[0].refund_of, None);
+    }
+
+    #[test]
+    fn a_refund_in_the_same_file_as_its_purchase_takes_the_category_the_rules_give_it() {
+        let mut b = refunds_budget();
+        b.extra.insert("payeeRules".into(), json!([{"id": "r", "match": "amazon", "payee": "Amazon", "categoryId": "shopping"}]));
+        // Newest first, as many banks write it: the refund before the purchase.
+        let rows = review(&b, "cash", vec![money_in("2026-10-12", "AMAZON MKTPL REFUND 4471", 2399), money_in("2026-10-07", "AMAZON MKTPL 4471", -2399)]).unwrap();
+        let refund = rows[0].refund_of.clone().unwrap();
+        assert_eq!((refund.payee.as_str(), refund.category_id.as_deref()), ("Amazon", Some("shopping")));
+        // The rules give the refund its category already; the purchase checks out at saving.
+        let b = imported(b, rows);
+        assert_eq!(category_of(&b, "Amazon", 2399).as_deref(), Some("shopping"));
+
+        // Without a rule for the refund's text, the purchase's category is checked at saving: a
+        // review made before the purchase changed category gives none.
+        let mut b = refunds_budget();
+        b.transactions.push(bought("p1", "2026-10-07", "Amazon EU", -2399, Some("shopping")));
+        let rows = review(&b, "cash", vec![money_in("2026-10-12", "Amazon EU", 2399)]).unwrap();
+        b.transactions[0].splits[0].category_id = Some("gifts".into());
+        assert_eq!(category_of(&imported(b, rows), "Amazon EU", 2399), None);
+        // An account off the budget has no categories to give.
+        let mut b = refunds_budget();
+        b.accounts[0].extra.insert("onBudget".into(), json!(false));
+        b.transactions.push(bought("p1", "2026-10-07", "Amazon EU", -2399, None));
+        assert_eq!(review(&b, "cash", vec![money_in("2026-10-12", "Amazon EU", 2399)]).unwrap()[0].refund_of, None);
     }
 
     #[test]
