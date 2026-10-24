@@ -491,7 +491,40 @@ fn reading(b: &Budget, account: &str, content: &str, session: &Session) -> Resul
             fields: edits.fields.iter().filter_map(|(id, f)| Some((offset(id)?, f.iter().map(|(k, v)| (*k, v.clone())).collect()))).collect(),
             shown: true,
         };
-        let read = bank_csv::read_lines(b, account, content, &o, order, s.date_order.confirmed)?;
+        let read = match bank_csv::read_lines(b, account, content, &o, order, s.date_order.confirmed) {
+            Ok(read) => read,
+            // Columns that aren't found: every line, for someone to say which holds what.
+            Err(why) => {
+                let unread = bank_csv::unread(content, &b.currency, s.header_line).map_err(|_| why.clone())?;
+                let reason = if why.starts_with("CSV needs") { "Choose the columns with the date and the amount (or money out and in).".to_string() } else { why };
+                for (offset, cells, above) in unread.lines {
+                    let id = offset.to_string();
+                    let status = if above {
+                        Status::LeftOut { reason: Reason::AboveHeader, detail: String::new() }
+                    } else {
+                        Status::Attention { field: Field::Date, column: None, reason: reason.clone() }
+                    };
+                    extra.push(Extra { transaction: None, original: None, reserves: false, bank_id: String::new(), written: vec![] });
+                    statement.lines.push(Line {
+                        version: version(&id),
+                        included: false,
+                        fixed: false,
+                        id,
+                        cells,
+                        original: vec![],
+                        fields: Fields::default(),
+                        status,
+                        batch: None,
+                    });
+                }
+                statement.headers = unread.headers;
+                statement.columns = s.columns.clone();
+                statement.header_line = Some(unread.start);
+                statement.counts = Counts::of(&statement.lines);
+                statement.remember = remembered(&statement);
+                return Ok(Reading { statement, extra, batches });
+            }
+        };
         let r = &read.records;
         let cell = |cells: &[String], i: Option<usize>| i.and_then(|i| cells.get(i)).cloned().unwrap_or_default();
         for l in read.lines {
@@ -1282,6 +1315,26 @@ mod tests {
         assert!(!start(&b, "card", &damaged, "s2", "budget", None).unwrap().structure.flip_signs);
         // Not for an account that isn't a card.
         assert!(!start(&b, "cash", file, "s3", "budget", None).unwrap().structure.flip_signs);
+    }
+
+    #[test]
+    fn a_file_whose_columns_arent_found_shows_its_lines_to_choose_them() {
+        let b = eur();
+        // Two columns of unsigned amounts: which is the transaction's can't be told.
+        let file = "Konto 4711\nDatum;Text;A;B\n15.10.2026;Shop;3,20;100,00\n16.10.2026;Kino;12,00;88,00\n";
+        let s = open(file, Structure { date_order: DateOrder { order: "dmy".into(), confirmed: false }, ..csv() });
+        let st = statement(&b, "cash", file, &s).unwrap();
+        assert_eq!(st.headers, ["Datum", "Text", "A", "B"]);
+        assert_eq!(st.lines.iter().map(|l| l.cells.len()).collect::<Vec<_>>(), [1, 4, 4]);
+        assert!(matches!(st.lines[0].status, Status::LeftOut { reason: Reason::AboveHeader, .. }));
+        assert!(matches!(&st.lines[1].status, Status::Attention { reason, .. } if reason.contains("Choose the columns")), "{:?}", st.lines[1].status);
+        // Chosen, the columns read.
+        let columns = Columns { date: Some("Datum".into()), payee: Some("Text".into()), outflow: Some("A".into()), ..Columns::default() };
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.structure = Some(Structure { columns: Some(columns), ..s.structure.clone() })));
+        let st = statement(&b, "cash", file, &s).unwrap();
+        assert_eq!(st.counts.ready, 2);
+        assert_eq!(st.lines[2].fields.amount, "-12.00");
+        assert_eq!(st.remember.columns.as_ref().and_then(|c| c.outflow.as_deref()), Some("A"));
     }
 
     #[test]

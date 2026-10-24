@@ -1,0 +1,295 @@
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { useState } from "react";
+import type { BankFixes, BankRow, BankSession, LineStatus, Statement, StatementLine } from "../bridge";
+import type { Budget } from "../types";
+
+vi.mock("../bridge", () => ({
+  api: {
+    bankSession: vi.fn(),
+    bankStatement: vi.fn(),
+    bankStatementPreview: vi.fn(),
+    bankApplyFixes: vi.fn(),
+    importBank: vi.fn(async (b: Budget) => b),
+    decodeStatement: vi.fn(async (latin1: string) => ({ text: latin1, encoding: "ISO-8859-1" })),
+    writeExport: vi.fn(async () => "C:/budget/exports/bank-import-template.csv"),
+    reveal: vi.fn(async () => {}),
+  },
+}));
+import { api } from "../bridge";
+import { demoBudget } from "../demo";
+import { ToastProvider } from "../ui";
+import { ImportPage, type ImportState } from "./ImportPage";
+
+afterEach(cleanup);
+beforeEach(() => vi.clearAllMocks());
+
+const scope = (session: string) => ({ session, budget: "b", account: "checking", file: `file-${session}` });
+const session = (id = "s1", revision = 0, more: Partial<BankSession["structure"]> = {}): BankSession => ({
+  scope: scope(id),
+  revision,
+  structure: { format: "csv", dateOrder: { order: "ymd", confirmed: false }, flipSigns: false, ...more },
+  edits: { cells: {}, fields: {}, include: [] },
+  versions: {},
+});
+const line = (id: string, cells: string[], status: LineStatus = { kind: "ready" }, more: Partial<StatementLine> = {}): StatementLine => ({
+  id,
+  version: 0,
+  cells,
+  fields: { date: cells[0], payee: cells[1], memo: "", amount: cells[2] },
+  status,
+  ...more,
+});
+const statement = (s: BankSession, lines: StatementLine[], more: Partial<Statement> = {}): Statement => {
+  const leftOut: Statement["counts"]["leftOut"] = {};
+  for (const l of lines) if (l.status.kind === "leftOut") leftOut[l.status.reason] = (leftOut[l.status.reason] ?? 0) + 1;
+  return {
+    scope: s.scope,
+    revision: s.revision,
+    structure: s.structure,
+    format: "csv",
+    headers: ["Date", "Payee", "Amount"],
+    columns: { date: "Date", payee: "Payee", amount: "Amount" },
+    headerLine: 0,
+    order: "ymd",
+    lines,
+    counts: { ready: lines.filter((l) => l.status.kind === "ready").length, attention: lines.filter((l) => l.status.kind === "attention").length, leftOut },
+    remember: { dateFormat: "ymd", dateConfirmed: false, flipSigns: false },
+    ...more,
+  };
+};
+const bakery = line("0", ["2026-10-01", "Bakery", "-3.20"]);
+const grocer = line("30", ["2026-10-02", "Grocer", "n/a"], { kind: "attention", field: "amount", column: 2, reason: "Invalid amount: n/a" });
+const lunch = line("60", ["2026-10-03", "Lunch", "-8.50"]);
+const rowOf = (l: StatementLine): BankRow => ({ id: `bank:${l.id}`, date: l.cells[0], payee: l.cells[1], memo: "", amount: Math.round(Number(l.cells[2]) * 100), duplicate: false, candidates: [] });
+
+/**
+ * The engine, for one file: a session for it, its statement as `read` makes it of the session,
+ * fixes that apply by making the next revision, and the review of the lines that read.
+ */
+function engine(read: (s: BankSession) => Statement, first = session()) {
+  vi.mocked(api.bankSession).mockResolvedValue(first);
+  vi.mocked(api.bankStatement).mockImplementation(async (_b, _a, _c, s) => read(s));
+  vi.mocked(api.bankApplyFixes).mockImplementation(async (_b, _a, _c, s, fixes) => ({
+    session: { ...s, revision: s.revision + 1, structure: fixes.structure ?? s.structure },
+    results: [{ fix: "cell", applied: true }],
+  }));
+  vi.mocked(api.bankStatementPreview).mockImplementation(async (_b, _a, _c, s) => {
+    const st = read(s);
+    const ready = st.lines.filter((l) => l.status.kind === "ready");
+    return { statement: st, rows: ready.map(rowOf), lines: ready.map((l) => l.id) };
+  });
+}
+/** The fixes sent last. */
+const sent = (): BankFixes => vi.mocked(api.bankApplyFixes).mock.lastCall![4];
+
+function Page({ budget = demoBudget(), initial = { account: "checking" }, onImported = vi.fn(), onAskAssistant }: {
+  budget?: Budget;
+  initial?: ImportState;
+  onImported?: () => void;
+  onAskAssistant?: (file: File, problem: string, account: string) => void;
+}) {
+  const [state, setState] = useState<ImportState>(initial);
+  return (
+    <ToastProvider>
+      <ImportPage
+        budget={budget}
+        budgetId="b"
+        state={state}
+        onState={(next) => setState((was) => (typeof next === "function" ? next(was) : next))}
+        transform={async (work) => void (await work(budget))}
+        onImported={onImported}
+        onCancel={vi.fn()}
+        onAskAssistant={onAskAssistant}
+      />
+    </ToastProvider>
+  );
+}
+const choose = (file: File) => fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [file] } });
+const csv = (name = "october.csv") => new File(["Date,Payee,Amount\n2026-10-01,Bakery,-3.20\n"], name, { type: "text/csv" });
+
+it("opens the file at the lines that need attention, and a cell fixed there is sent as that fix", async () => {
+  engine((s) =>
+    statement(s, s.revision ? [bakery, line("30", ["2026-10-02", "Grocer", "-12.40"], { kind: "ready" }, { fixed: true, original: ["2026-10-02", "Grocer", "n/a"], version: 1 }), lunch] : [bakery, grocer, lunch]),
+  );
+  render(<Page />);
+  choose(csv());
+  expect(await screen.findByText("Invalid amount: n/a")).toBeTruthy();
+  // Only the line that needs attention is shown to begin with; the rest are a tab away.
+  expect(screen.queryByText("Bakery")).toBeNull();
+  expect(screen.getByText(/2 lines read · 1 needs attention and won't be imported/)).toBeTruthy();
+  expect(api.bankSession).toHaveBeenCalledWith(expect.anything(), "checking", expect.stringContaining("Bakery"), expect.any(String), "b", null);
+  fireEvent.click(screen.getByRole("button", { name: "Amount of line 30: n/a" }));
+  const cell = screen.getByLabelText("Cell");
+  fireEvent.change(cell, { target: { value: "-12.40" } });
+  fireEvent.keyDown(cell, { key: "Enter" });
+  await waitFor(() => expect(api.bankApplyFixes).toHaveBeenCalledTimes(1));
+  expect(sent()).toMatchObject({ scope: scope("s1"), baseRevision: 0, cells: [{ line: "30", lineVersion: 0, column: 2, from: "n/a", to: "-12.40" }] });
+  // It reads now, marked as changed from the file.
+  fireEvent.click(screen.getByRole("tab", { name: /All/ }));
+  const fixed = await screen.findByRole("button", { name: "Amount of line 30: -12.40" });
+  expect(fixed.closest("td")!.className).toContain("changed");
+  expect(fixed.closest("td")!.title).toBe("In the file: n/a");
+  // Lines still needing attention don't stop the review: they stay out of it.
+  fireEvent.click(screen.getByRole("button", { name: "Continue to the review" }));
+  expect(await screen.findByRole("button", { name: "Import 3 transactions" })).toBeTruthy();
+});
+
+it("goes straight to the review when every line reads, says what's left out, and imports with what the account keeps", async () => {
+  const pending = line("90", ["2026-10-04", "Cinema", "-12.00"], { kind: "leftOut", reason: "pending", detail: "Pending" });
+  engine((s) => statement(s, [bakery, pending], { remember: { dateFormat: "dmy", dateConfirmed: true, flipSigns: false, source: "A1" } }));
+  const onImported = vi.fn();
+  const b = demoBudget();
+  render(<Page budget={b} onImported={onImported} />);
+  choose(csv());
+  const check = await screen.findByRole("button", { name: /1 left out · Check the file/ });
+  fireEvent.click(screen.getByRole("button", { name: "Import 1 transaction" }));
+  await waitFor(() => expect(onImported).toHaveBeenCalledWith(1, { ids: [], accounts: [] }));
+  expect(api.importBank).toHaveBeenCalledWith(b, "checking", [expect.objectContaining({ action: "new" })], { dateFormat: "dmy", dateConfirmed: true, flipSigns: false, source: "A1" });
+  // The file is a click away, its left-out lines with why.
+  fireEvent.click(check);
+  fireEvent.click(await screen.findByRole("tab", { name: /Left out/ }));
+  expect(screen.getByText("Not booked yet (Pending)")).toBeTruthy();
+});
+
+it("includes a line left out, and asks for its amount in the budget's currency", async () => {
+  const london = line("40", ["2026-10-05", "London", "-9.99"], { kind: "leftOut", reason: "otherCurrency", detail: "GBP" });
+  engine((s) =>
+    statement(s, [bakery, s.revision ? { ...london, included: true, version: 1, status: { kind: "attention", field: "amount", column: 2, reason: "This line is in GBP: enter the amount in SAR." } } : london]),
+  );
+  render(<Page />);
+  choose(csv());
+  fireEvent.click(await screen.findByRole("button", { name: /1 left out · Check the file/ }));
+  fireEvent.click(await screen.findByRole("tab", { name: /Left out/ }));
+  expect(screen.getByText("In GBP")).toBeTruthy();
+  fireEvent.click(screen.getByLabelText("Include"));
+  await waitFor(() => expect(sent()).toMatchObject({ include: [{ line: "40", lineVersion: 0, include: true }] }));
+  fireEvent.click(screen.getByRole("tab", { name: /Need attention/ }));
+  expect(await screen.findByText("This line is in GBP: enter the amount in SAR.")).toBeTruthy();
+  // Lines that can't be: nothing to include.
+  expect(screen.queryAllByLabelText("Include")).toHaveLength(1);
+});
+
+it("asks once whether the day or the month comes first, when the dates don't say", async () => {
+  engine((s) =>
+    statement(s, [line("0", ["01/02/2026", "Bakery", "-3.20"])], s.structure.dateOrder.confirmed ? {} : { dateOrder: { order: "dmy", example: "01/02/2026", unconfirmed: true } }),
+  );
+  render(<Page />);
+  choose(csv());
+  const question = await screen.findByRole("group", { name: "Date order" });
+  expect(within(question).getByText("01/02/2026")).toBeTruthy();
+  fireEvent.click(within(question).getByRole("button", { name: "2 January 2026" }));
+  await waitFor(() => expect(sent().structure).toMatchObject({ dateOrder: { order: "mdy", confirmed: true } }));
+  await waitFor(() => expect(screen.queryByRole("group", { name: "Date order" })).toBeNull());
+});
+
+it("reads another account of the file, a card's purchases as positive, and another sheet", async () => {
+  engine((s) =>
+    statement(s, [bakery], {
+      sources: [
+        { label: "A1", lines: 1 },
+        { label: "B2", currency: "EUR", lines: 3 },
+      ],
+      source: 0,
+      dateOrder: { order: "ymd", example: "x", unconfirmed: true },
+    }),
+  );
+  vi.mocked(api.decodeStatement).mockImplementation(async (latin1, sheet) => ({ text: latin1, encoding: "spreadsheet", sheet: sheet ?? "Movimientos", sheets: ["Resumen", "Movimientos"] }));
+  render(<Page />);
+  choose(new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04])], "Movimientos.xlsx"));
+  fireEvent.change(await screen.findByLabelText("Account in the file"), { target: { value: "1" } });
+  await waitFor(() => expect(sent().structure).toMatchObject({ source: "B2" }));
+  fireEvent.click(screen.getByLabelText("Purchases are positive"));
+  await waitFor(() => expect(sent().structure).toMatchObject({ flipSigns: true }));
+  expect(api.bankSession).toHaveBeenLastCalledWith(expect.anything(), "checking", expect.any(String), expect.any(String), "b", "Movimientos");
+  // Another sheet is another reading of the file: a new session.
+  fireEvent.click(screen.getByRole("tab", { name: "Resumen" }));
+  await waitFor(() => expect(api.decodeStatement).toHaveBeenLastCalledWith(expect.any(String), "Resumen"));
+  await waitFor(() => expect(api.bankSession).toHaveBeenLastCalledWith(expect.anything(), "checking", expect.any(String), expect.any(String), "b", "Resumen"));
+});
+
+it("chooses what a column holds, imports a batch as one entry, and puts a line back as the file has it", async () => {
+  const anna = line("e2.1", ["2026-10-03", "Anna", "100.00"], { kind: "attention", field: "amount", column: null, reason: "These payments add up to 350.00, not the entry's 300.00." }, { batch: 0 });
+  const ben = line("e2.2", ["2026-10-03", "Ben", "250.00"], { kind: "attention", field: "amount", column: null, reason: "These payments add up to 350.00, not the entry's 300.00." }, { batch: 0 });
+  const edited = line("e3", ["2026-10-04", "Shop", "-4.00"], { kind: "ready" }, { fixed: true, version: 2, original: ["2026-10-04", "Shop", "-4.0O"] });
+  engine((s) => statement(s, [anna, ben, edited], { batches: [{ entry: "e2", payments: [0, 1], total: 30000, addsUp: false, asOne: false }] }));
+  render(<Page />);
+  choose(csv());
+  fireEvent.click(await screen.findByRole("button", { name: "Import as one entry" }));
+  await waitFor(() => expect(sent().structure).toMatchObject({ wholeBatches: ["e2"] }));
+  // Each change waits for the file to read again, so it's made against the lines as they are.
+  const ready = () => waitFor(() => expect((screen.getByLabelText("What column 3 holds") as HTMLSelectElement).disabled).toBe(false));
+  await ready();
+  fireEvent.click(screen.getByRole("tab", { name: /Edited/ }));
+  fireEvent.click(await screen.findByRole("button", { name: "Put line e3 back as the file has it" }));
+  await waitFor(() => expect(sent()).toMatchObject({ revert: [{ line: "e3", lineVersion: 2 }] }));
+  await ready();
+  fireEvent.change(screen.getByLabelText("What column 3 holds"), { target: { value: "outflow" } });
+  await waitFor(() => expect(sent().structure?.columns).toEqual({ date: "Date", payee: "Payee", amount: null, outflow: "Amount" }));
+});
+
+it("says why a fix didn't apply, and drops a fix made for a file since replaced", async () => {
+  engine((s) => statement(s, [bakery, grocer]));
+  vi.mocked(api.bankApplyFixes).mockResolvedValueOnce({ session: session(), results: [{ line: "30", fix: "cell", applied: false, problem: "This line changed since this fix was made." }] });
+  render(<Page />);
+  choose(csv());
+  fireEvent.click(await screen.findByRole("button", { name: "Amount of line 30: n/a" }));
+  fireEvent.change(screen.getByLabelText("Cell"), { target: { value: "-1.00" } });
+  fireEvent.keyDown(screen.getByLabelText("Cell"), { key: "Enter" });
+  expect(await screen.findByText("This line changed since this fix was made.")).toBeTruthy();
+  // A fix still on its way when another file is chosen is for an import that's gone.
+  let finish!: (v: Awaited<ReturnType<typeof api.bankApplyFixes>>) => void;
+  vi.mocked(api.bankApplyFixes).mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
+  const cell = await screen.findByRole("button", { name: "Amount of line 30: n/a" });
+  await waitFor(() => expect((cell as HTMLButtonElement).disabled).toBe(false));
+  fireEvent.click(cell);
+  fireEvent.change(screen.getByLabelText("Cell"), { target: { value: "-2.00" } });
+  fireEvent.keyDown(screen.getByLabelText("Cell"), { key: "Enter" });
+  fireEvent.click(screen.getByRole("button", { name: "Choose another file" }));
+  vi.mocked(api.bankSession).mockResolvedValue(session("s2"));
+  choose(csv("november.csv"));
+  await waitFor(() => expect(api.bankStatement).toHaveBeenLastCalledWith(expect.anything(), "checking", expect.any(String), session("s2"), expect.anything()));
+  finish({ session: session("s1", 5), results: [{ fix: "cell", applied: true }] });
+  await new Promise((r) => setTimeout(r, 250));
+  expect(vi.mocked(api.bankStatement).mock.calls.every(([, , , s]) => s.scope.session === "s2" || s.revision === 0)).toBe(true);
+});
+
+it("checks the review again when the budget changes, instead of failing", async () => {
+  engine((s) => statement(s, [bakery]));
+  const b = demoBudget();
+  const view = render(<Page budget={b} />);
+  choose(csv());
+  await screen.findByRole("button", { name: "Import 1 transaction" });
+  expect(api.bankStatementPreview).toHaveBeenCalledTimes(1);
+  const changed = { ...b, name: "Changed" };
+  view.rerender(<Page budget={changed} />);
+  await waitFor(() => expect(api.bankStatementPreview).toHaveBeenLastCalledWith(changed, "checking", expect.any(String), expect.anything()));
+});
+
+it("sends a PDF statement to the assistant, and saves a template", async () => {
+  const ask = vi.fn();
+  render(<Page onAskAssistant={ask} />);
+  const pdf = new File(["%PDF-1.7"], "Kontoauszug_2026_10.pdf");
+  choose(pdf);
+  expect(await screen.findByText(/PDF statements need the assistant/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Read it with the assistant" }));
+  expect(ask).toHaveBeenCalledWith(pdf, "", "Everyday account");
+  expect(api.bankSession).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Choose another file" }));
+  fireEvent.click(screen.getByRole("button", { name: /Download a template/ }));
+  await waitFor(() => expect(api.writeExport).toHaveBeenCalledWith("bank-import-template.csv", expect.stringContaining("Date,Payee,Memo,Outflow,Inflow")));
+  expect(await screen.findByText("Template saved.")).toBeTruthy();
+});
+
+it("offers the assistant first when no line reads, with why", async () => {
+  engine((s) => statement(s, [grocer]));
+  const ask = vi.fn();
+  render(<Page onAskAssistant={ask} />);
+  const file = csv();
+  choose(file);
+  await screen.findByText("Invalid amount: n/a");
+  fireEvent.click(screen.getByRole("button", { name: /Fix with the assistant/ }));
+  expect(ask).toHaveBeenCalledWith(file, "1 lines don't read.", "Everyday account");
+  // Nothing reads, so there's no review to continue to.
+  expect((screen.getByRole("button", { name: "Continue to the review" }) as HTMLButtonElement).disabled).toBe(true);
+});

@@ -31,9 +31,15 @@ export type BankColumns = {
 };
 export type BankFileSettings = {
   /** Without them, the columns are found by their names. */
-  columns?: BankColumns;
-  dateFormat?: string;
-  flipSigns?: boolean;
+  columns?: BankColumns | null;
+  dateFormat?: string | null;
+  /** Someone confirmed that date order, for files whose dates don't settle it. */
+  dateConfirmed?: boolean | null;
+  flipSigns?: boolean | null;
+  /** A workbook's sheet, by its name. */
+  sheet?: string | null;
+  /** The account in files with several, by its label. */
+  source?: string | null;
 };
 export type SimpleFinLink = {
   /** The SimpleFIN account's id. */

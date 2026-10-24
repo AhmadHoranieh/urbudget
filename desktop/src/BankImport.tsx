@@ -1,49 +1,30 @@
-import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent, type ReactNode } from "react";
-import { Download, FileText, FileUp, MessageSquareText, X } from "lucide-react";
-import { api, type BankFileLayout, type BankRow } from "./bridge";
+import { useMemo, useRef, useState, type ReactNode } from "react";
+import { MessageSquareText, Undo2 } from "lucide-react";
+import { api, type BankRow, type RefundOf } from "./bridge";
 import { placeholder } from "./bankNames";
-import { errorText, formatDate, money } from "./format";
-import { today, type BankColumns, type BankFileSettings, type Budget } from "./types";
-import { useToast, useVirtualRows } from "./ui";
+import { formatDate, money } from "./format";
+import { today, type Budget } from "./types";
+import { useVirtualRows } from "./ui";
 import "./import.css";
 
 /** Each review row is this tall, so a long bank file only renders the rows in view. */
 const REVIEW_ROW = 41;
-const FORMATS: Record<string, string> = { csv: "CSV or Excel", ofx: "OFX", qfx: "QFX", qif: "QIF", camt053: "CAMT.053", mt940: "MT940" };
-/**
- * Extensions that aren't a format's own name: ISO 20022 statements are XML, MT940 has several, and a
- * workbook's sheet (or a ZIP's statements, whose content then says what they are) reads as a table.
- */
-const EXTENSIONS: Record<string, string> = {
-  xml: "camt053",
-  sta: "mt940",
-  "940": "mt940",
-  mt940: "mt940",
-  xlsx: "csv",
-  xlsm: "csv",
-  xlsb: "csv",
-  xls: "csv",
-  ods: "csv",
-  zip: "csv",
-};
-const DATE_ORDERS: [string, string][] = [
-  ["ymd", "Year-month-day (2026-10-31)"],
-  ["dmy", "Day/month/year (31/10/2026)"],
-  ["mdy", "Month/day/year (10/31/2026)"],
-];
 /**
  * A statement's text: UTF-16 or UTF-8 as its byte-order mark says, else UTF-8, else what the engine
- * makes of its bytes: a workbook's sheet as CSV, a ZIP of statements, or text in the encoding its
- * bytes fit (Windows-1250 or -1252 in Europe, Shift_JIS, GBK, Windows-1251…). A PDF it turns away.
+ * makes of its bytes: a workbook's sheet as CSV (the one named, else the one most like a statement,
+ * with the names of the others), a ZIP of statements, or text in the encoding its bytes fit
+ * (Windows-1250 or -1252 in Europe, Shift_JIS, GBK, Windows-1251…). A PDF it turns away.
  */
-export async function statementText(file: Blob) {
+export async function statementFile(file: Blob, sheet: string | null = null): Promise<{ text: string; sheets: string[]; sheet?: string }> {
   const bytes = new Uint8Array(await file.arrayBuffer());
-  const decode = (encoding: string, from = 0) => new TextDecoder(encoding).decode(bytes.subarray(from));
+  const text = (t: string) => ({ text: t, sheets: [] });
+  const decode = (encoding: string, from = 0) => text(new TextDecoder(encoding).decode(bytes.subarray(from)));
   // The engine gets the bytes as ISO-8859-1, a character for each.
   const engine = async () => {
     let latin1 = "";
     for (let i = 0; i < bytes.length; i += 0x8000) latin1 += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-    return (await api.decodeStatement(latin1)).text;
+    const read = await api.decodeStatement(latin1, sheet);
+    return { text: read.text, sheets: read.sheets ?? [], sheet: read.sheet };
   };
   // An Excel or OpenDocument workbook, a ZIP, a PDF: not text at all.
   const starts = (...signature: number[]) => signature.every((b, i) => bytes[i] === b);
@@ -56,28 +37,19 @@ export async function statementText(file: Blob) {
   if (head.length >= 4 && zeros(1) > head.length / 4) return decode("utf-16le");
   if (head.length >= 4 && zeros(0) > head.length / 4) return decode("utf-16be");
   try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return text(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
   } catch {
     return engine();
   }
 }
+/** A statement's text (see `statementFile`). */
+export const statementText = async (file: Blob) => (await statementFile(file)).text;
 
 /**
  * A row's choice lists at most this many possible matches, the nearest in date: an account with
  * thousands of the same charge would otherwise give every row thousands of options to draw.
  */
 const LISTED = 50;
-/** Columns an import can read: a date, and an amount or money out and in. */
-const complete = (c: BankColumns) => !!c.date && !!(c.amount || c.outflow || c.inflow);
-const PARTS: [keyof BankColumns, string][] = [
-  ["date", "Date"],
-  ["payee", "Payee"],
-  ["memo", "Memo"],
-  ["amount", "Amount"],
-  ["outflow", "Money out"],
-  ["inflow", "Money in"],
-];
-
 /** A CSV to start from: the headers the importer reads and a few example rows. */
 export function bankTemplate(dateOrder = "ymd", month = today().slice(0, 7)) {
   const [y, m] = month.split("-");
@@ -136,529 +108,6 @@ export function categorizeText({ ids, accounts }: Uncategorized) {
     : `Categorize the ${ids.length} new transactions in ${where}.`;
 }
 
-/**
- * Imports a file a bank exported: choose (or drop) the file, preview it, decide what each row
- * does (add, match an existing transaction, or skip), then import. Nothing is saved until then.
- */
-export function BankImport({
-  budget,
-  transform,
-  initialAccount,
-  initialFile,
-  embedded = false,
-  onImported,
-  onAskAssistant,
-  onCategorize,
-}: {
-  /** A file to preview right away, such as one the assistant converted (CSV, ISO dates). */
-  initialFile?: File;
-  budget: Budget;
-  transform: (work: (b: Budget) => Promise<Budget>) => Promise<void>;
-  /** The account to import into; the dialog for one account doesn't ask again. */
-  initialAccount?: string;
-  /** Inside a dialog: no panel or heading of its own. */
-  embedded?: boolean;
-  /**
-   * Called after a successful import with the number of rows added or matched, and the new
-   * transactions that came in without a category.
-   */
-  onImported?: (count: number, uncategorized: Uncategorized) => void;
-  /** Offers the assistant the new transactions that have no category, after an import here. */
-  onCategorize?: (uncategorized: Uncategorized) => void;
-  /**
-   * Hands the chosen file to the assistant, with what went wrong if anything did. Offered all
-   * along, and more prominently when the preview fails or doesn't look right.
-   */
-  onAskAssistant?: (file: File, problem: string, account: string) => void;
-}) {
-  const toast = useToast();
-  const [account, setAccount] = useState(initialAccount ?? budget.accounts.find((a) => !a.archived)?.id ?? ""),
-    [format, setFormat] = useState("csv"),
-    [dateFormat, setDateFormat] = useState("ymd"),
-    [flipSigns, setFlipSigns] = useState(false),
-    [file, setFile] = useState<File | null>(initialFile ?? null),
-    // A CSV's columns, and the ones chosen here (null: the account's saved choice, or the ones found by name).
-    [layout, setLayout] = useState<BankFileLayout | null>(null),
-    [chosen, setChosen] = useState<BankColumns | null>(null),
-    [columnsOpen, setColumnsOpen] = useState(false),
-    // The date order or signs were chosen for this file, so what the account kept doesn't replace them.
-    touched = useRef(false),
-    [dragging, setDragging] = useState(false),
-    [rows, setRows] = useState<BankRow[]>([]),
-    [base, setBase] = useState<Budget | null>(null),
-    [message, setMessage] = useState(""),
-    [left, setLeft] = useState<Uncategorized | null>(null),
-    [busy, setBusy] = useState(false);
-  // The last preview failed or found nothing, so the file needs another reading.
-  const [failed, setFailed] = useState(false);
-  const accountName = budget.accounts.find((a) => a.id === account)?.name ?? "";
-  const kept = budget.accounts.find((a) => a.id === account)?.fileImport;
-  // How the account's last file read, and a CSV's columns, as soon as the file is chosen.
-  useEffect(() => {
-    setLayout(null);
-    setChosen(null);
-    setColumnsOpen(false);
-    if (format === "qif" && kept?.dateFormat) setDateFormat(kept.dateFormat);
-    if (!file || format !== "csv" || !account) return;
-    let live = true;
-    statementText(file)
-      .then((text) => api.bankFileColumns(budget, account, text))
-      .then(
-        (found) => {
-          if (!live) return;
-          // Not a CSV after all (an MT940 statement saved as .txt): read it as what it is.
-          if (found.format && found.format !== "csv") return setFormat(found.format);
-          setLayout(found);
-          if (!touched.current) {
-            if (found.dateFormat) setDateFormat(found.dateFormat);
-            setFlipSigns(found.flipSigns);
-          }
-          setColumnsOpen(!complete(found.columns));
-        },
-        // The preview says what's wrong with a file this can't read.
-        () => {},
-      );
-    return () => {
-      live = false;
-    };
-  }, [file, account, format]);
-  const reset = () => {
-    setRows([]);
-    setMessage("");
-    setLeft(null);
-    setFailed(false);
-  };
-  const choose = (next: File | null) => {
-    touched.current = false;
-    setFile(next);
-    const ext = next?.name.split(".").pop()?.toLowerCase() ?? "";
-    const known = ext in FORMATS ? ext : EXTENSIONS[ext];
-    if (known) setFormat(known);
-    reset();
-  };
-  const drop = (e: DragEvent<HTMLLabelElement>) => {
-    e.preventDefault();
-    setDragging(false);
-    const dropped = e.dataTransfer.files?.[0];
-    if (dropped) choose(dropped);
-  };
-  const template = async () => {
-    try {
-      const path = await api.writeExport("bank-import-template.csv", bankTemplate(dateFormat));
-      toast({
-        message: "Template saved.",
-        action: { label: "Show in folder", onClick: () => void api.reveal(path).catch((e) => setMessage(errorText(e))) },
-      });
-    } catch (e) {
-      setMessage(errorText(e));
-    }
-  };
-  const preview = async () => {
-    if (!file) return;
-    setBusy(true);
-    setMessage("");
-    try {
-      const r = await api.previewBank(
-        budget,
-        account,
-        await statementText(file),
-        format,
-        dateFormat,
-        format === "csv" && flipSigns,
-        format === "csv" ? chosen : null,
-      );
-      setRows(r);
-      setBase(budget);
-      if (!r.length) setMessage("The file has no transactions to import.");
-      setFailed(!r.length);
-    } catch (e) {
-      setMessage(errorText(e));
-      setFailed(true);
-    } finally {
-      setBusy(false);
-    }
-  };
-  useEffect(() => {
-    if (initialFile) void preview();
-  }, []);
-  const save = async (choices: ImportChoice[], importing: number) => {
-    setBusy(true);
-    setMessage("");
-    try {
-      let uncategorized: Uncategorized = { ids: [], accounts: [] };
-      await transform(async (b) => {
-        if (b !== base) throw Error("Your budget changed. Preview the file again before importing.");
-        // The account keeps how this file read for its next one.
-        const remember: BankFileSettings | null =
-          format === "csv"
-            ? { dateFormat, flipSigns, ...(chosen ? { columns: chosen } : {}) }
-            : format === "qif"
-              ? { dateFormat }
-              : null;
-        const after = await api.importBank(b, account, choices, remember);
-        uncategorized = uncategorizedImports(b, after);
-        return after;
-      });
-      setRows([]);
-      setFile(null);
-      if (onImported) onImported(importing, uncategorized);
-      else {
-        setMessage(`Imported ${importing} ${importing === 1 ? "transaction" : "transactions"}. They're waiting for your approval.`);
-        setLeft(uncategorized.ids.length ? uncategorized : null);
-      }
-    } catch (e) {
-      setMessage(errorText(e));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const Wrapper = embedded ? "div" : "section";
-  // Every row as money in usually means the file writes purchases as positive numbers.
-  const allIn = rows.length >= 3 && rows.every((r) => r.amount > 0);
-  const problem = failed ? message : allIn ? "Every row came out as money in." : "";
-  // A PDF is the assistant's to read.
-  const pdf = !!file && /\.pdf$/i.test(file.name);
-  return (
-    <Wrapper className={`bank-import${embedded ? "" : " panel"}`}>
-      {!embedded && <h2>Import a bank file</h2>}
-      {!rows.length ? (
-        <>
-          <p className="import-lead">
-            Bring in the transactions your bank exported. You check every row, and how it matches what you already
-            entered, before anything is saved.
-          </p>
-          {!initialAccount && (
-            <label className="import-account">
-              Into account
-              <select
-                value={account}
-                onChange={(e) => {
-                  setAccount(e.target.value);
-                  reset();
-                }}
-              >
-                {budget.accounts
-                  .filter((a) => !a.archived)
-                  .map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-              </select>
-            </label>
-          )}
-          <label
-            className={`file-drop${dragging ? " dragging" : ""}${file ? " chosen" : ""}`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragging(true);
-            }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={drop}
-          >
-            {file ? <FileText size={22} aria-hidden /> : <FileUp size={22} aria-hidden />}
-            <span>
-              <strong>{file ? file.name : "Choose a file"}</strong>
-              <small>
-                {file
-                  ? `${pdf ? "PDF" : (FORMATS[format] ?? format.toUpperCase())} · ${Math.max(1, Math.round(file.size / 1024))} KB · click to choose another`
-                  : "or drop it here · CSV, Excel, OFX, QFX, QIF, CAMT.053 or MT940, or a PDF through the assistant"}
-              </small>
-            </span>
-            {file && (
-              <button
-                type="button"
-                className="icon-button"
-                aria-label="Remove the file"
-                onClick={(e) => {
-                  e.preventDefault();
-                  choose(null);
-                }}
-              >
-                <X size={15} />
-              </button>
-            )}
-            <input
-              type="file"
-              className="sr-only"
-              aria-label="Bank file"
-              accept=".csv,.xlsx,.xls,.xlsm,.xlsb,.ods,.ofx,.qfx,.qif,.xml,.sta,.940,.mt940,.zip,.txt,.pdf"
-              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                choose(e.target.files?.[0] ?? null);
-                e.target.value = "";
-              }}
-            />
-          </label>
-          {file && !pdf && (
-            <div className="import-options">
-              <label>
-                Read as
-                <select
-                  value={format}
-                  onChange={(e) => {
-                    setFormat(e.target.value);
-                    reset();
-                  }}
-                >
-                  {Object.entries(FORMATS).map(([id, name]) => (
-                    <option key={id} value={id}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {(format === "csv" || format === "qif") && (
-                <label>
-                  Dates in the file
-                  <select
-                    value={dateFormat}
-                    onChange={(e) => {
-                      touched.current = true;
-                      setDateFormat(e.target.value);
-                      reset();
-                    }}
-                  >
-                    {DATE_ORDERS.map(([id, name]) => (
-                      <option key={id} value={id}>
-                        {name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              {format === "csv" && (
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={flipSigns}
-                    onChange={(e) => {
-                      touched.current = true;
-                      setFlipSigns(e.target.checked);
-                      reset();
-                    }}
-                  />
-                  Purchases are positive
-                </label>
-              )}
-            </div>
-          )}
-          {file && format === "csv" && layout && (
-            <ColumnChoice
-              layout={layout}
-              columns={chosen ?? layout.columns}
-              chosen={!!chosen}
-              open={columnsOpen}
-              onOpen={() => setColumnsOpen(true)}
-              onChange={(columns) => {
-                const dated = !!columns.date && columns.date !== (chosen ?? layout.columns).date;
-                setChosen(columns);
-                reset();
-                // A date column just chosen says which order its dates are in.
-                if (dated && !touched.current)
-                  void statementText(file)
-                    .then((text) => api.bankFileColumns(budget, account, text, columns))
-                    .then(
-                      (found) => {
-                        if (found.dateFormat && !touched.current) setDateFormat(found.dateFormat);
-                      },
-                      () => {},
-                    );
-              }}
-            />
-          )}
-          <div className="import-help">
-            <p>
-              In a <strong>CSV or Excel file</strong>, the <b>Date</b>, <b>Payee</b> and <b>Amount</b> (or money out and money
-              in) columns are found by the names banks give them, in most languages, or by what's in them, or you can choose
-              them; the account remembers them, and the date order, for its next file. If a card lists purchases as positive
-              amounts, tick <b>Purchases are positive</b>. A <strong>PDF</strong> statement goes through the assistant.
-            </p>
-            <button type="button" className="secondary small" onClick={() => void template()}>
-              <Download size={14} /> Download a template
-            </button>
-          </div>
-          <div className="form-actions">
-            <button
-              className="primary"
-              disabled={!file || pdf || busy || !account || (format === "csv" && !!layout && !complete(chosen ?? layout.columns))}
-              onClick={() => void preview()}
-            >
-              {busy ? "Reading the file…" : "Preview transactions"}
-            </button>
-          </div>
-        </>
-      ) : (
-        <ImportReview
-          budget={budget}
-          rows={rows}
-          busy={busy}
-          icon={<FileText size={18} aria-hidden />}
-          title={
-            <>
-              <strong>{file?.name}</strong> into {accountName}
-            </>
-          }
-          action={
-            <button className="link-button" onClick={reset}>
-              Change file
-            </button>
-          }
-          onCancel={reset}
-          onImport={(choices, count) => void save(choices, count)}
-        />
-      )}
-      {message && (
-        <p role="status" className="import-result">
-          {message}
-        </p>
-      )}
-      {onCategorize && left && (
-        <CategorizeOffer
-          uncategorized={left}
-          onCategorize={() => {
-            onCategorize(left);
-            setLeft(null);
-          }}
-        />
-      )}
-      {onAskAssistant && file && (
-        <div className={`import-assist${problem ? " needed" : ""}`}>
-          <MessageSquareText size={16} aria-hidden />
-          <p>
-            {pdf
-              ? "PDF statements need the assistant. It reads the PDF, finds the transactions, checks them against the statement's totals and brings them to this review, where you decide on each row."
-              : failed
-              ? "The assistant can read this file, find the transactions and ask you about anything unclear."
-              : allIn
-                ? "Every row came out as money in. If these are purchases, the signs are probably reversed, and the assistant can check the file with you."
-                : rows.length
-                  ? "If something here doesn't look right, the assistant can go through the file with you."
-                  : "Not sure how this file will import? The assistant can read it and prepare it for you."}
-            <small>Opens the assistant with this file attached. Nothing is sent until you press Send.</small>
-          </p>
-          <button
-            type="button"
-            className={problem || pdf ? "primary small" : "secondary small"}
-            onClick={() => onAskAssistant(file, problem, accountName)}
-          >
-            {pdf ? "Read it with the assistant" : "Help with this import"}
-          </button>
-        </div>
-      )}
-      {!onAskAssistant && pdf && (
-        <p role="status" className="import-result">
-          PDF statements need the assistant, which isn't available here. Download a CSV, Excel, OFX, QIF, CAMT.053 or
-          MT940 file from your bank instead.
-        </p>
-      )}
-    </Wrapper>
-  );
-}
-
-/**
- * Which of a CSV's columns hold what: a line saying what will be read, or a choice for each part
- * once opened, as it is when the columns' names weren't recognised.
- */
-function ColumnChoice({
-  layout,
-  columns,
-  chosen,
-  open,
-  onOpen,
-  onChange,
-}: {
-  layout: BankFileLayout;
-  columns: BankColumns;
-  /** The columns were chosen here, not saved or found by name. */
-  chosen: boolean;
-  open: boolean;
-  onOpen: () => void;
-  onChange: (columns: BankColumns) => void;
-}) {
-  const [separate, setSeparate] = useState(!columns.amount && !!(columns.outflow || columns.inflow));
-  // What the first rows have in a column, to tell them apart.
-  const sample = (name?: string | null) => {
-    const i = name ? layout.headers.indexOf(name) : -1;
-    return i < 0 ? "" : (layout.samples.find((r) => r[i])?.[i] ?? "");
-  };
-  const reading = PARTS.filter(([part]) => columns[part]);
-  if (!open)
-    return (
-      <div className="column-choice">
-        <p>
-          {layout.saved && !chosen ? "Columns you chose for this account: " : "Reading "}
-          {reading.map(([part, label], i) => (
-            <span key={part}>
-              {i > 0 && " · "}
-              {label} from <b>{columns[part]}</b>
-            </span>
-          ))}
-        </p>
-        <button type="button" className="link-button" onClick={onOpen}>
-          Change columns
-        </button>
-      </div>
-    );
-  const field = (part: keyof BankColumns, label: string) => (
-    <label key={part}>
-      {label}
-      <select
-        aria-label={`${label} column`}
-        value={columns[part] ?? ""}
-        onChange={(e) => onChange({ ...columns, [part]: e.target.value || null })}
-      >
-        <option value="">{part === "date" || part === "amount" ? "Choose a column" : "None"}</option>
-        {layout.headers.map(
-          (h, i) =>
-            h && (
-              <option key={i} value={h}>
-                {h}
-              </option>
-            ),
-        )}
-      </select>
-      <small className="column-sample">{sample(columns[part]) || "\u00a0"}</small>
-    </label>
-  );
-  return (
-    <fieldset className="column-choice open">
-      <legend>Columns</legend>
-      <p className="help">
-        {complete(columns)
-          ? "Choose which column holds each part. The account keeps your choice for its next file."
-          : "Choose the column with each transaction's date, and the one with its amount (or the ones with money out and money in). The account keeps your choice for its next file."}
-      </p>
-      <div className="import-options">
-        {field("date", "Date")}
-        {field("payee", "Payee")}
-        {field("memo", "Memo")}
-        <label>
-          Amounts
-          <select
-            value={separate ? "separate" : "one"}
-            onChange={(e) => {
-              const next = e.target.value === "separate";
-              setSeparate(next);
-              onChange(next ? { ...columns, amount: null } : { ...columns, outflow: null, inflow: null });
-            }}
-          >
-            <option value="one">In one column</option>
-            <option value="separate">Money out and in apart</option>
-          </select>
-        </label>
-        {separate ? (
-          <>
-            {field("outflow", "Money out")}
-            {field("inflow", "Money in")}
-          </>
-        ) : (
-          field("amount", "Amount")
-        )}
-      </div>
-    </fieldset>
-  );
-}
-
 export type ImportChoice = { row: BankRow; action: string; matchId: string | null };
 
 /**
@@ -674,6 +123,13 @@ const defaultChoice = (r: BankRow) => {
   if (r.candidates.length > 1 || r.previouslyMatchedCandidates?.includes(only)) return "review";
   return r.transferCandidates?.includes(only) && !r.transferSure ? "review" : `match:${only}`;
 };
+
+/** What a row of money in may be: a refund of a purchase, with its category when it gives one. */
+export function refundText(refund: RefundOf, budget: Budget) {
+  if (refund.purchases > 1 && !refund.categoryId) return `Possible refund · ${refund.purchases} purchases from ${refund.payee} match`;
+  const category = refund.categoryId && budget.categories.find((c) => c.id === refund.categoryId)?.name;
+  return `Refund of ${refund.payee} · ${money(-refund.amount)} on ${formatDate(refund.date)}${category ? ` · ${category}` : ""}`;
+}
 
 /**
  * The review of transactions bound for one account, from a bank file or from bank sync: what
@@ -751,6 +207,7 @@ export function ImportReview({
   const undecided = rows.filter((r) => choice(r) === "review").length;
   const duplicates = rows.filter((r) => r.duplicate).length;
   const renamed = rows.filter((r) => !r.duplicate && r.rename).length;
+  const refunds = rows.filter((r) => !r.duplicate && r.refundOf).length;
   const chosen = () =>
     rows.map((row) => {
       const c = choice(row);
@@ -772,6 +229,7 @@ export function ImportReview({
           {title} · {rows.length} {rows.length === 1 ? "row" : "rows"}
           {duplicates > 0 && ` · ${duplicates} already imported`}
           {renamed > 0 && ` · ${renamed} renamed by your payee rules`}
+          {refunds > 0 && ` · ${refunds} ${refunds === 1 ? "refund" : "refunds"}`}
           {transfers > 0 && ` · ${transfers} ${transfers === 1 ? "transfer" : "transfers"} between your accounts`}
         </span>
         {action}
@@ -816,6 +274,11 @@ export function ImportReview({
                     {r.rename ?? r.payee}
                     {r.rename && <small className="bank-text">{r.payee}</small>}
                     {r.memo && <small className="bank-text" title={r.memo}>{r.memo}</small>}
+                    {r.refundOf && !r.duplicate && (
+                      <small className="refund-note">
+                        <Undo2 size={11} aria-hidden /> {refundText(r.refundOf, budget)}
+                      </small>
+                    )}
                   </td>
                   <td className="num">{money(r.amount)}</td>
                   <td>

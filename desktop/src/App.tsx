@@ -19,7 +19,8 @@ import { assistant, type Card, type Proposal } from "./assistant/api";
 import { LoanActionsContext, hasLoan, loanTerms, type LoanActions } from "./Planning";
 import { LoanPlanner } from "./LoanPlanner";
 import { LoanPaymentForm } from "./LoanPayment";
-import { ATTACH_LIMIT, BankImport, categorizeText, importHelpText, type Uncategorized } from "./BankImport";
+import { ATTACH_LIMIT, categorizeText, importHelpText, type Uncategorized } from "./BankImport";
+import { ImportPage, type ImportState } from "./import/ImportPage";
 import { BankSync, BankSyncDetails, syncHelpText } from "./BankSync";
 import { Payees } from "./PayeesPage";
 import { Reports } from "./Reports";
@@ -57,7 +58,6 @@ type Dialog =
   | { type: "planner"; account: Account }
   | { type: "category"; category?: Category }
   | { type: "transaction"; transaction?: Transaction; isNew?: boolean; repeat?: string }
-  | { type: "import"; account: Account; file?: File; proposal?: { threadId: string; id: string } }
   | { type: "reconcile"; account: Account }
   | { type: "payment"; account: Account }
   | { type: "bankSync"; account?: Account }
@@ -88,6 +88,7 @@ const titles: Record<Page, string> = {
   reports: "Reports",
   payees: "Payees & rules",
   settings: "Settings & data",
+  import: "Import a bank file",
 };
 const kindLabel = (a: Account) =>
   a.kind === "credit" ? "Credit card" : a.kind === "tracking" ? "Tracking account" : "Cash account";
@@ -220,6 +221,13 @@ export default function App() {
   useUsageCounts();
   const startPage = (): Page => (getPref("startPage") === "transactions" ? "transactions" : "budget");
   const [page, setPage] = useState<Page>(startPage);
+  // A bank file being imported, kept while someone looks elsewhere.
+  const [importing, setImporting] = useState<ImportState | null>(null);
+  const openImport = (next: ImportState) => {
+    // One import at a time: an unfinished one is where the next starts.
+    if (!importing?.session || next.file) setImporting(next);
+    setPage("import");
+  };
   const [accountId, setAccountId] = useState("all");
   const [registerFilter, setRegisterFilter] = useState<RegisterFilter | undefined>();
   const layout = useSidebarLayout();
@@ -308,6 +316,7 @@ export default function App() {
   // A different budget starts on the start page (Settings › General).
   useEffect(() => {
     setPage(startPage());
+    setImporting(null);
     setAccountId("all");
     setRegisterFilter(undefined);
     setMonth(today().slice(0, 7));
@@ -474,12 +483,7 @@ export default function App() {
       const file = await assistant.importFile(threadId, p.id);
       const account = budget.accounts.find((a) => a.id === file.account);
       if (!account) throw new Error("That account no longer exists.");
-      setDialog({
-        type: "import",
-        account,
-        file: new File([file.csv], file.name, { type: "text/csv" }),
-        proposal: { threadId, id: p.id },
-      });
+      openImport({ account: account.id, file: new File([file.csv], file.name, { type: "text/csv" }), proposal: { threadId, id: p.id } });
     } catch (e) {
       fail(e);
     }
@@ -578,6 +582,7 @@ export default function App() {
         layout={layout}
         edit={edit}
         onNavigate={setPage}
+        importing={importing ? (budget.accounts.find((a) => a.id === importing.account)?.name ?? "") : undefined}
         onAccount={navigateAccount}
         onAddAccount={() => setDialog({ type: "account" })}
         onEditAccount={(account) => setDialog({ type: "account", account })}
@@ -718,7 +723,7 @@ export default function App() {
                 setAccountId(account);
                 setRegisterFilter({ focus: id });
               }}
-              onImport={(account) => setDialog({ type: "import", account })}
+              onImport={(account) => openImport({ account: account.id })}
               onSync={(account) => setDialog({ type: "bankSync", account })}
               onEdit={(transaction) => setDialog({ type: "transaction", transaction })}
               onAddDialog={(transaction, repeat) => setDialog({ type: "transaction", transaction, isNew: true, repeat })}
@@ -736,6 +741,36 @@ export default function App() {
             />
           )}
           {page === "payees" && <Payees budget={budget} edit={edit} transform={model.transform} undo={model.undo} />}
+          {page === "import" && importing && (
+            <ImportPage
+              budget={budget}
+              budgetId={budgetId}
+              state={importing}
+              onState={(next) => setImporting((was) => (typeof next === "function" ? (was ? next(was) : was) : next))}
+              transform={model.transform}
+              onImported={(count, uncategorized) => {
+                const from = importing.proposal;
+                if (from) void assistant.mark(from.threadId, from.id, "applied").catch(() => {});
+                setImporting(null);
+                setAccountId(importing.account);
+                setRegisterFilter(undefined);
+                setPage("transactions");
+                toast({
+                  message: count === 1 ? "Imported 1 transaction for review." : `Imported ${count} transactions for review.`,
+                  action: { label: "Undo", onClick: model.undo },
+                  offer: uncategorized.ids.length ? { label: "Categorize with the assistant", onClick: () => categorize(uncategorized) } : undefined,
+                });
+              }}
+              onCancel={() => {
+                setImporting(null);
+                setPage("transactions");
+              }}
+              onAskAssistant={
+                // A file the assistant already converted goes back to it from its own card instead.
+                importing.proposal ? undefined : (file, problem, account) => ask({ text: importHelpText(account, problem), files: [file] })
+              }
+            />
+          )}
           {page === "settings" && (
             <SettingsPage
               key={settingsTab?.key}
@@ -745,7 +780,6 @@ export default function App() {
               syncLabel={syncLabels[sync]}
               metadata={metadata}
               edit={edit}
-              transform={model.transform}
               flush={model.flush}
               onReload={reload}
               onExport={() => void exportDraft()}
@@ -756,8 +790,7 @@ export default function App() {
               onAsk={(text) => ask({ text })}
               openBudget={switchBudget}
               onBankSync={() => setDialog({ type: "bankSync" })}
-              onCategorize={categorize}
-              onAskImport={(file, problem, account) => ask({ text: importHelpText(account, problem), files: [file] })}
+              onBankImport={() => openImport({ account: accountId !== "all" && budget.accounts.some((a) => a.id === accountId && !a.archived) ? accountId : (budget.accounts.find((a) => !a.archived)?.id ?? "") })}
               theme={theme}
               setTheme={setTheme}
               cloud={cloud}
@@ -913,38 +946,6 @@ export default function App() {
         />
       )}
       {newCategory.dialog}
-      {dialog?.type === "import" && (
-        <Modal title={`Import into ${dialog.account.name}`} close={close} wide>
-          <BankImport
-            budget={budget}
-            transform={model.transform}
-            initialAccount={dialog.account.id}
-            initialFile={dialog.file}
-            embedded
-            onImported={(count, uncategorized) => {
-              const from = dialog.proposal;
-              if (from) void assistant.mark(from.threadId, from.id, "applied").catch(() => {});
-              close();
-              toast({
-                message: count === 1 ? "Imported 1 transaction for review." : `Imported ${count} transactions for review.`,
-                action: { label: "Undo", onClick: model.undo },
-                offer: uncategorized.ids.length
-                  ? { label: "Categorize with the assistant", onClick: () => categorize(uncategorized) }
-                  : undefined,
-              });
-            }}
-            onAskAssistant={
-              // A file the assistant already converted goes back to it from its own card instead.
-              dialog.proposal
-                ? undefined
-                : (file, problem) => {
-                    close();
-                    ask({ text: importHelpText(dialog.account.name, problem), files: [file] });
-                  }
-            }
-          />
-        </Modal>
-      )}
       {dialog?.type === "bankSync" && (
         <Modal title="Sync with your bank" close={close} wide>
           <BankSync

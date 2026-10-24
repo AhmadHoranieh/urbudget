@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Budget, Transaction } from "./types";
 
 vi.mock("./bridge", () => ({
@@ -7,25 +7,12 @@ vi.mock("./bridge", () => ({
     previewBank: vi.fn(async () => [
       { id: "r1", date: "2026-10-03", payee: "Grocery store", memo: "", amount: -8540, duplicate: false, candidates: [] },
     ]),
-    importBank: vi.fn(async (b: Budget) => b),
     decodeStatement: vi.fn(async (latin1: string) => ({ text: latin1, encoding: "ISO-8859-1" })),
-    bankFileColumns: vi.fn(async () => ({
-      headers: ["Date", "Payee", "Amount"],
-      samples: [["2026-10-03", "Grocery store", "-85.40"]],
-      format: "csv",
-      columns: { date: "Date", payee: "Payee", amount: "Amount" },
-      saved: false,
-      dateFormat: "ymd",
-      flipSigns: false,
-    })),
-    writeExport: vi.fn(async () => "C:/budget/exports/bank-import-template.csv"),
-    reveal: vi.fn(async () => {}),
   },
 }));
 import { api } from "./bridge";
-import { BankImport, ImportReview, bankTemplate, categorizeText, importHelpText, statementText, uncategorizedImports } from "./BankImport";
+import { ImportReview, bankTemplate, categorizeText, importHelpText, statementFile, statementText, uncategorizedImports } from "./BankImport";
 import { demoBudget } from "./demo";
-import { ToastProvider } from "./ui";
 
 afterEach(cleanup);
 beforeEach(() => vi.clearAllMocks());
@@ -149,116 +136,6 @@ it("makes a template in the chosen date order", () => {
   expect(bankTemplate("mdy", "2026-10")).toContain("10/05/2026,Electric company");
 });
 
-it("previews a chosen file and imports it into the dialog's account", async () => {
-  const b = demoBudget();
-  const onImported = vi.fn();
-  render(
-    <ToastProvider>
-      <BankImport
-        budget={b}
-        transform={async (work) => void (await work(b))}
-        initialAccount="checking"
-        embedded
-        onImported={onImported}
-      />
-    </ToastProvider>,
-  );
-  // The dialog for one account doesn't ask which account.
-  expect(screen.queryByLabelText("Into account")).toBeNull();
-  const file = new File(["Date,Payee,Amount\n2026-10-03,Grocery store,-85.40\n"], "october.csv", { type: "text/csv" });
-  fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [file] } });
-  expect(screen.getByText("october.csv")).toBeTruthy();
-  expect(screen.getByLabelText("Dates in the file")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Preview transactions" }));
-  expect(await screen.findByText("Grocery store")).toBeTruthy();
-  expect(api.previewBank).toHaveBeenCalledWith(
-    b,
-    "checking",
-    expect.stringContaining("Grocery store"),
-    "csv",
-    "ymd",
-    false,
-    null,
-  );
-  fireEvent.click(screen.getByRole("button", { name: "Import 1 transaction" }));
-  await waitFor(() => expect(onImported).toHaveBeenCalledWith(1, { ids: [], accounts: [] }));
-  // The account keeps the date order and signs, and the columns only when they were chosen.
-  expect(api.importBank).toHaveBeenCalledWith(b, "checking", expect.any(Array), { dateFormat: "ymd", flipSigns: false });
-});
-
-it("lets the columns be chosen when their names aren't known, and the account keeps them", async () => {
-  const unknown = { format: "csv", headers: ["Wann", "Wer", "Wieviel"], samples: [["15.10.2026", "Bäckerei", "-3,20"]], columns: {}, saved: false, flipSigns: false };
-  vi.mocked(api.bankFileColumns)
-    .mockResolvedValueOnce({ ...unknown, dateFormat: null })
-    .mockResolvedValueOnce({ ...unknown, columns: { date: "Wann" }, dateFormat: "dmy" });
-  const b = demoBudget();
-  render(
-    <ToastProvider>
-      <BankImport budget={b} transform={async (work) => void (await work(b))} initialAccount="checking" embedded onImported={vi.fn()} />
-    </ToastProvider>,
-  );
-  fireEvent.change(screen.getByLabelText("Bank file"), {
-    target: { files: [new File(["Wann;Wer;Wieviel\n15.10.2026;Bäckerei;-3,20\n"], "konto.csv")] },
-  });
-  expect(await screen.findByText(/Choose the column with each transaction's date/)).toBeTruthy();
-  const dates = screen.getByLabelText("Dates in the file") as HTMLSelectElement;
-  expect(dates.value).toBe("ymd");
-  const preview = screen.getByRole("button", { name: "Preview transactions" });
-  expect(preview.hasAttribute("disabled")).toBe(true);
-  fireEvent.change(screen.getByLabelText("Date column"), { target: { value: "Wann" } });
-  // The dates in the column chosen say they're day first.
-  await waitFor(() => expect(dates.value).toBe("dmy"));
-  expect(api.bankFileColumns).toHaveBeenLastCalledWith(b, "checking", expect.any(String), { date: "Wann" });
-  fireEvent.change(screen.getByLabelText("Payee column"), { target: { value: "Wer" } });
-  fireEvent.change(screen.getByLabelText("Amount column"), { target: { value: "Wieviel" } });
-  // What the first row has there, to tell the columns apart.
-  expect(screen.getByText("15.10.2026")).toBeTruthy();
-  expect(screen.getByText("-3,20")).toBeTruthy();
-  const columns = { date: "Wann", payee: "Wer", amount: "Wieviel" };
-  fireEvent.click(preview);
-  expect(await screen.findByText("Grocery store")).toBeTruthy();
-  expect(api.previewBank).toHaveBeenCalledWith(b, "checking", expect.any(String), "csv", "dmy", false, columns);
-  fireEvent.click(screen.getByRole("button", { name: "Import 1 transaction" }));
-  await waitFor(() =>
-    expect(api.importBank).toHaveBeenCalledWith(b, "checking", expect.any(Array), { dateFormat: "dmy", flipSigns: false, columns }),
-  );
-});
-
-it("says which columns it reads, and when they're the ones chosen for the account", async () => {
-  vi.mocked(api.bankFileColumns).mockResolvedValueOnce({
-    format: "csv",
-    headers: ["Type", "Started Date", "Description", "Amount", "Fee"],
-    samples: [],
-    columns: { date: "Started Date", payee: "Description", amount: "Amount" },
-    saved: true,
-    dateFormat: "ymd",
-    flipSigns: true,
-  });
-  const b = demoBudget();
-  render(
-    <ToastProvider>
-      <BankImport budget={b} transform={async () => {}} initialAccount="checking" embedded />
-    </ToastProvider>,
-  );
-  fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [new File(["x"], "revolut.csv")] } });
-  const summary = await screen.findByText(/Columns you chose for this account/);
-  expect(summary.textContent).toBe("Columns you chose for this account: Date from Started Date · Payee from Description · Amount from Amount");
-  // The signs the account kept, too.
-  expect((screen.getByLabelText("Purchases are positive") as HTMLInputElement).checked).toBe(true);
-  fireEvent.click(screen.getByRole("button", { name: "Preview transactions" }));
-  expect(await screen.findByText("Grocery store")).toBeTruthy();
-  expect(api.previewBank).toHaveBeenCalledWith(b, "checking", "x", "csv", "ymd", true, null);
-  cleanup();
-  render(
-    <ToastProvider>
-      <BankImport budget={b} transform={async () => {}} initialAccount="checking" embedded />
-    </ToastProvider>,
-  );
-  fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [new File(["x"], "october.csv")] } });
-  fireEvent.click(await screen.findByRole("button", { name: "Change columns" }));
-  expect((screen.getByLabelText("Date column") as HTMLSelectElement).value).toBe("Date");
-});
-
 it("offers the other side of money moved from another account as a transfer", () => {
   const b = demoBudget();
   const move: Transaction = { ...imported("move", "savings", null, -20000), payee: "TO EVERYDAY", date: "2026-10-02" };
@@ -322,7 +199,7 @@ it("reads statements in the encodings banks write", async () => {
   // character for each byte.
   vi.mocked(api.decodeStatement).mockResolvedValueOnce({ text: "Tytuł;ŻABKA", encoding: "windows-1250" });
   expect(await statementText(bytes(0x54, 0x79, 0x74, 0x75, 0xb3, 0x3b, 0xaf, 0x41, 0x42, 0x4b, 0x41))).toBe("Tytuł;ŻABKA");
-  expect(api.decodeStatement).toHaveBeenCalledWith("Tytu\u00b3;\u00afABKA");
+  expect(api.decodeStatement).toHaveBeenCalledWith("Tytu\u00b3;\u00afABKA", null);
   // An Excel workbook (a ZIP inside) goes to the engine too, which gives back its sheet as CSV.
   vi.mocked(api.decodeStatement).mockResolvedValueOnce({ text: "Date,Payee,Amount", encoding: "spreadsheet" });
   expect(await statementText(bytes(0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x06, 0x00, 0x08, 0x00))).toBe("Date,Payee,Amount");
@@ -334,97 +211,27 @@ it("reads statements in the encodings banks write", async () => {
   expect(await statementText(bytes(0xfe, 0xff, 0x00, 0x44, 0x00, 0xe4))).toBe("Dä");
   expect(await statementText(bytes(0x44, 0x00, 0x61, 0x00, 0x74, 0x00, 0x65, 0x00))).toBe("Date");
   expect(api.decodeStatement).toHaveBeenCalledTimes(2);
+  // A workbook's other sheet, by its name, and the sheets it has.
+  vi.mocked(api.decodeStatement).mockResolvedValueOnce({ text: "Fecha,Importe", encoding: "spreadsheet", sheet: "Resumen", sheets: ["Resumen", "Movimientos"] });
+  expect(await statementFile(bytes(0x50, 0x4b, 0x03, 0x04), "Resumen")).toEqual({ text: "Fecha,Importe", sheet: "Resumen", sheets: ["Resumen", "Movimientos"] });
+  expect(api.decodeStatement).toHaveBeenLastCalledWith("PK\u0003\u0004", "Resumen");
 });
 
-it("sends a PDF statement to the assistant, and reads an Excel one as a table", async () => {
+it("shows the name a payee rule gives a row beside the bank's, and what a refund may be of", () => {
   const b = demoBudget();
-  const onAskAssistant = vi.fn();
-  render(
-    <ToastProvider>
-      <BankImport budget={b} transform={async () => {}} initialAccount="checking" embedded onAskAssistant={onAskAssistant} />
-    </ToastProvider>,
-  );
-  const pdf = new File(["%PDF-1.7"], "Kontoauszug_2026_10.pdf");
-  fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [pdf] } });
-  expect(screen.getByText(/PDF statements need the assistant/)).toBeTruthy();
-  expect(screen.queryByLabelText("Read as")).toBeNull();
-  expect((screen.getByRole("button", { name: "Preview transactions" }) as HTMLButtonElement).disabled).toBe(true);
-  fireEvent.click(screen.getByRole("button", { name: "Read it with the assistant" }));
-  expect(onAskAssistant).toHaveBeenCalledWith(pdf, "", "Everyday account");
-  expect(screen.getByText(/^PDF · /)).toBeTruthy();
-  fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [new File(["PK"], "Movimientos.xlsx")] } });
-  expect((screen.getByLabelText("Read as") as HTMLSelectElement).value).toBe("csv");
-  expect(screen.getByRole("option", { name: "CSV or Excel" })).toBeTruthy();
-  cleanup();
-  // Where no one can open the assistant, it says so and what to download instead.
-  render(
-    <ToastProvider>
-      <BankImport budget={b} transform={async () => {}} initialAccount="checking" embedded />
-    </ToastProvider>,
-  );
-  fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [pdf] } });
-  expect(screen.getByText(/PDF statements need the assistant, which isn't available here/)).toBeTruthy();
-});
-
-it("reads a bank's own statement formats, whatever the file is called", async () => {
-  const b = demoBudget();
-  render(
-    <ToastProvider>
-      <BankImport budget={b} transform={async () => {}} initialAccount="checking" embedded />
-    </ToastProvider>,
-  );
-  // ISO 20022 statements are .xml files, and need no date order or columns.
-  fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [new File(["<Document/>"], "camt053_2026-10.xml")] } });
-  expect((screen.getByLabelText("Read as") as HTMLSelectElement).value).toBe("camt053");
-  expect(screen.queryByLabelText("Dates in the file")).toBeNull();
-  expect(api.bankFileColumns).not.toHaveBeenCalled();
-  fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [new File([":20:STARTUMS"], "konto.sta")] } });
-  expect((screen.getByLabelText("Read as") as HTMLSelectElement).value).toBe("mt940");
-  // An MT940 statement saved as .txt: the engine finds no columns, and says what it is.
-  vi.mocked(api.bankFileColumns).mockResolvedValueOnce({ format: "mt940", headers: [], samples: [], columns: {}, saved: false, dateFormat: null, flipSigns: false });
-  fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [new File([":20:STARTUMS"], "umsaetze.txt")] } });
-  await waitFor(() => expect((screen.getByLabelText("Read as") as HTMLSelectElement).value).toBe("mt940"));
-  fireEvent.click(screen.getByRole("button", { name: "Preview transactions" }));
-  expect(await screen.findByText("Grocery store")).toBeTruthy();
-  expect(api.previewBank).toHaveBeenCalledWith(b, "checking", ":20:STARTUMS", "mt940", "ymd", false, null);
-});
-
-it("reads a card's positive purchases as money out when asked", async () => {
-  const b = demoBudget();
-  render(
-    <ToastProvider>
-      <BankImport budget={b} transform={async () => {}} initialAccount="checking" embedded />
-    </ToastProvider>,
-  );
-  const choose = (name: string) =>
-    fireEvent.change(screen.getByLabelText("Bank file"), {
-      target: { files: [new File(["Date,Description,Amount\n2026-10-03,Grocery store,85.40\n"], name)] },
-    });
-  // Only a CSV can need it: OFX and QFX amounts are always signed the standard way.
-  choose("october.qfx");
-  expect(screen.queryByLabelText("Purchases are positive")).toBeNull();
-  choose("october.csv");
-  fireEvent.click(screen.getByLabelText("Purchases are positive"));
-  fireEvent.click(screen.getByRole("button", { name: "Preview transactions" }));
-  expect(await screen.findByText("Grocery store")).toBeTruthy();
-  expect(api.previewBank).toHaveBeenCalledWith(b, "checking", expect.any(String), "csv", "ymd", true, null);
-});
-
-it("saves a template and offers to show it", async () => {
-  render(
-    <ToastProvider>
-      <BankImport budget={demoBudget()} transform={async () => {}} />
-    </ToastProvider>,
-  );
-  expect(screen.getByLabelText("Into account")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: /Download a template/ }));
-  await waitFor(() =>
-    expect(api.writeExport).toHaveBeenCalledWith(
-      "bank-import-template.csv",
-      expect.stringContaining("Date,Payee,Memo,Outflow,Inflow"),
-    ),
-  );
-  expect(await screen.findByText("Template saved.")).toBeTruthy();
+  const row = { date: "2026-10-12", memo: "", duplicate: false, candidates: [] };
+  const rows = [
+    { ...row, id: "a", payee: "SQ *BLUE BOTTLE 0042", rename: "Blue Bottle", categoryId: "x", amount: -650 },
+    { ...row, id: "b", payee: "AMAZON EU", amount: 2399, refundOf: { id: "p1", date: "2026-10-07", payee: "Amazon EU", amount: -2399, categoryId: "groceries", purchases: 1 } },
+    { ...row, id: "c", payee: "ZALANDO", amount: 1000, refundOf: { id: "p2", date: "2026-10-01", payee: "Zalando", amount: -5000, purchases: 2 } },
+  ];
+  render(<ImportReview budget={b} rows={rows} busy={false} icon={null} title="File" onCancel={() => {}} onImport={() => {}} />);
+  expect(screen.getByText(/1 renamed by your payee rules · 2 refunds/)).toBeTruthy();
+  const cell = screen.getByTitle("Blue Bottle, from the bank's “SQ *BLUE BOTTLE 0042”");
+  expect(cell.textContent).toBe("Blue BottleSQ *BLUE BOTTLE 0042");
+  const groceries = b.categories.find((c) => c.id === "groceries")!.name;
+  expect(screen.getByText(new RegExp(`Refund of Amazon EU · .*23[.,]99.* on .* · ${groceries}`))).toBeTruthy();
+  expect(screen.getByText("Possible refund · 2 purchases from Zalando match")).toBeTruthy();
 });
 
 it("words the request to the assistant, with the problem when there is one", () => {
@@ -434,81 +241,6 @@ it("words the request to the assistant, with the problem when there is one", () 
   expect(importHelpText("Card", "The file has no transactions to import.")).toContain(
     "into Card. The import preview said: The file has no transactions to import. Find",
   );
-});
-
-function renderWithAssistant(onAskAssistant?: (file: File, problem: string) => void) {
-  const b = demoBudget();
-  render(
-    <ToastProvider>
-      <BankImport budget={b} transform={async () => {}} initialAccount="checking" embedded onAskAssistant={onAskAssistant} />
-    </ToastProvider>,
-  );
-  const file = new File(["Account statement\nDate,Payee,Amount\n"], "statement.csv", { type: "text/csv" });
-  fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [file] } });
-  return file;
-}
-
-it("offers the assistant once a file is chosen, and hands it the file", () => {
-  const ask = vi.fn();
-  const file = renderWithAssistant(ask);
-  const help = screen.getByRole("button", { name: "Help with this import" });
-  // Before any problem it's a quiet offer, for someone who isn't sure where to start.
-  expect(help.className).toContain("secondary");
-  expect(screen.getByText(/Nothing is sent until you press Send/)).toBeTruthy();
-  fireEvent.click(help);
-  expect(ask).toHaveBeenCalledWith(file, "", "Everyday account");
-});
-
-it("offers the assistant first when the preview fails, with the reason", async () => {
-  vi.mocked(api.previewBank).mockRejectedValueOnce(new Error("CSV needs Date, Payee/Description, and Amount headers."));
-  const ask = vi.fn();
-  const file = renderWithAssistant(ask);
-  fireEvent.click(screen.getByRole("button", { name: "Preview transactions" }));
-  expect(await screen.findByText(/can read this file, find the transactions/)).toBeTruthy();
-  const help = screen.getByRole("button", { name: "Help with this import" });
-  expect(help.className).toContain("primary");
-  fireEvent.click(help);
-  expect(ask).toHaveBeenCalledWith(file, "CSV needs Date, Payee/Description, and Amount headers.", "Everyday account");
-});
-
-it("offers the assistant when a file has no transactions the importer can find", async () => {
-  vi.mocked(api.previewBank).mockResolvedValueOnce([]);
-  const ask = vi.fn();
-  renderWithAssistant(ask);
-  fireEvent.click(screen.getByRole("button", { name: "Preview transactions" }));
-  expect(await screen.findByText("The file has no transactions to import.")).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Help with this import" }));
-  expect(ask).toHaveBeenCalledWith(expect.any(File), "The file has no transactions to import.", "Everyday account");
-});
-
-it("points out a file where every row came out as money in", async () => {
-  const row = (id: string, amount: number) => ({ id, date: "2026-10-03", payee: `Shop ${id}`, memo: "", amount, duplicate: false, candidates: [] });
-  vi.mocked(api.previewBank).mockResolvedValueOnce([row("a", 1200), row("b", 3450), row("c", 999)]);
-  const ask = vi.fn();
-  renderWithAssistant(ask);
-  fireEvent.click(screen.getByRole("button", { name: "Preview transactions" }));
-  expect(await screen.findByText(/the signs are probably reversed/)).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Help with this import" }));
-  expect(ask).toHaveBeenCalledWith(expect.any(File), "Every row came out as money in.", "Everyday account");
-});
-
-it("shows the name a payee rule gives a row, beside the bank's", async () => {
-  const row = { date: "2026-10-03", memo: "", amount: -650, duplicate: false, candidates: [] };
-  vi.mocked(api.previewBank).mockResolvedValueOnce([
-    { ...row, id: "a", payee: "SQ *BLUE BOTTLE 0042", rename: "Blue Bottle", categoryId: "x" },
-    { ...row, id: "b", payee: "ELSEWHERE" },
-  ]);
-  renderWithAssistant();
-  fireEvent.click(screen.getByRole("button", { name: "Preview transactions" }));
-  expect(await screen.findByText(/1 renamed by your payee rules/)).toBeTruthy();
-  const cell = screen.getByTitle("Blue Bottle, from the bank's “SQ *BLUE BOTTLE 0042”");
-  expect(cell.textContent).toBe("Blue BottleSQ *BLUE BOTTLE 0042");
-  expect(screen.getByText("ELSEWHERE")).toBeTruthy();
-});
-
-it("keeps quiet about the assistant where no one can open it", () => {
-  renderWithAssistant(undefined);
-  expect(screen.queryByRole("button", { name: "Help with this import" })).toBeNull();
 });
 
 const imported = (id: string, accountId: string, categoryId: string | null, amount = -1000): Transaction => ({
@@ -562,38 +294,3 @@ it("words the request with the count and the accounts", () => {
   );
 });
 
-async function importOne(props: Partial<Parameters<typeof BankImport>[0]>, added: Transaction[]) {
-  const b = demoBudget();
-  vi.mocked(api.importBank).mockImplementation(async (budget: Budget) => after(budget, ...added));
-  render(
-    <ToastProvider>
-      <BankImport budget={b} transform={async (work) => void (await work(b))} initialAccount="checking" {...props} />
-    </ToastProvider>,
-  );
-  fireEvent.change(screen.getByLabelText("Bank file"), {
-    target: { files: [new File(["Date,Payee,Amount\n2026-10-03,Grocery store,-85.40\n"], "october.csv")] },
-  });
-  fireEvent.click(screen.getByRole("button", { name: "Preview transactions" }));
-  fireEvent.click(await screen.findByRole("button", { name: "Import 1 transaction" }));
-}
-
-it("hands the import dialog the new transactions without a category", async () => {
-  const onImported = vi.fn();
-  await importOne({ embedded: true, onImported }, [imported("bank:a", "checking", "local-uncategorized")]);
-  await waitFor(() => expect(onImported).toHaveBeenCalledWith(1, { ids: ["bank:a"], accounts: ["Everyday account"] }));
-});
-
-it("offers the assistant after an import only when something came in without a category", async () => {
-  const onCategorize = vi.fn();
-  await importOne({ onCategorize }, [imported("bank:a", "checking", "local-uncategorized"), imported("bank:b", "checking", null, 5000)]);
-  expect(await screen.findByText("2 new transactions have no category.")).toBeTruthy();
-  expect(screen.getByText(/Nothing is sent until you press Send/)).toBeTruthy();
-  fireEvent.click(screen.getByRole("button", { name: "Categorize with the assistant" }));
-  expect(onCategorize).toHaveBeenCalledWith({ ids: ["bank:a", "bank:b"], accounts: ["Everyday account"] });
-  expect(screen.queryByRole("button", { name: "Categorize with the assistant" })).toBeNull();
-  cleanup();
-  // Payee rules categorized everything: no offer.
-  await importOne({ onCategorize: vi.fn() }, [imported("bank:c", "checking", "groceries")]);
-  expect(await screen.findByText(/Imported 1 transaction/)).toBeTruthy();
-  expect(screen.queryByRole("button", { name: "Categorize with the assistant" })).toBeNull();
-});

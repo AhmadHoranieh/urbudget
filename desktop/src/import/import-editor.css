@@ -1,0 +1,215 @@
+/* The import page and its editor: every line of a bank file, to fix. Imported by ImportPage.tsx. */
+.import-page {
+  margin: var(--gutter, 20px);
+}
+.import-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.import-page-head h2 {
+  margin: 0;
+}
+.statement-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.statement-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px 18px;
+}
+.statement-bar:empty {
+  display: none;
+}
+.statement-source select {
+  min-width: 240px;
+}
+/* A question the file leaves open (the date order, the signs): answered here, once. */
+.statement-question {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--attention) 55%, var(--border));
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--attention) 12%, var(--surface));
+  color: var(--text);
+}
+.statement-question > svg {
+  flex: none;
+  color: var(--attention-ink);
+}
+/* Each line is a fixed 37px, matching LINE in StatementGrid.tsx, so only the lines in view render. */
+.statement-grid {
+  max-height: max(320px, calc(100vh - 380px));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+}
+.statement-grid table {
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.statement-grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface);
+  box-shadow: inset 0 -1px 0 var(--border-strong);
+  white-space: nowrap;
+}
+.statement-grid thead tr.statement-roles + tr th {
+  top: 34px;
+}
+.statement-roles th {
+  padding-top: 6px;
+  padding-bottom: 4px;
+}
+.statement-roles select {
+  width: 100%;
+  min-width: 96px;
+  padding: 2px 22px 2px 6px;
+  font-size: 12px;
+}
+.statement-grid tbody tr:not(.spacer-row) {
+  height: 37px;
+}
+.statement-grid td {
+  max-width: 280px;
+  padding: 0 8px;
+  overflow: hidden;
+  border-bottom: 1px solid var(--border);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* The line's state stays in view as the cells scroll sideways. */
+.statement-grid .statement-state {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  width: 240px;
+  min-width: 240px;
+  max-width: 240px;
+  background: var(--surface);
+  box-shadow: inset -1px 0 0 var(--border);
+}
+.statement-grid thead .statement-state {
+  z-index: 3;
+}
+.statement-line.leftOut td {
+  color: var(--muted);
+}
+.statement-line.attention .statement-state {
+  background: color-mix(in srgb, var(--attention) 10%, var(--surface));
+}
+.line-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12.5px;
+}
+/* The reason gives way, cut short (its title says it all); what can be done stays in view. */
+.line-state > span:first-child {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.line-state > .link-button,
+.line-state > label {
+  flex: none;
+}
+.line-ok {
+  display: inline-flex;
+  color: var(--positive);
+}
+.line-attention {
+  display: inline-block;
+  gap: 5px;
+  color: var(--attention-ink);
+}
+.line-attention svg {
+  margin-right: 4px;
+  vertical-align: -2px;
+}
+.line-include {
+  flex: none;
+  gap: 4px;
+  font-size: 12px;
+}
+.line-revert {
+  display: inline-flex;
+  flex: none;
+  gap: 2px;
+  margin-left: auto;
+}
+.statement-cell .statement-value {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  padding: 4px 2px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+}
+.statement-cell .statement-value:hover:not(:disabled) {
+  background: var(--hover);
+}
+.statement-cell .statement-value:disabled {
+  cursor: default;
+}
+.statement-cell.bad {
+  background: color-mix(in srgb, var(--attention) 18%, transparent);
+}
+.statement-cell.bad .statement-value {
+  color: var(--text);
+  text-decoration: underline wavy var(--attention-ink);
+  text-underline-offset: 3px;
+}
+.statement-cell.changed .statement-value {
+  color: var(--accent);
+  font-weight: 550;
+}
+.statement-cell input {
+  width: 100%;
+  min-width: 80px;
+  padding: 3px 5px;
+}
+.statement-empty {
+  padding: 16px;
+}
+.statement-actions {
+  flex-wrap: wrap;
+}
+.statement-actions .help {
+  margin-right: auto;
+}
+/* In the review: what a row of money in may be a refund of. */
+.import-review .refund-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  color: var(--positive);
+  font-size: 0.85em;
+}
+.import-page-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}

@@ -195,10 +195,28 @@ export const api = {
       dateFormat,
       flipSigns,
       columns,
-    }).then(({ items, candidateSets }) => items.map(({ candidateSet, ...row }) => ({ ...row, ...candidateSets[candidateSet] }))),
+    }).then(expand),
+  /**
+   * A statement that isn't UTF-8, as ISO-8859-1 (a character for each byte): its text in the encoding the
+   * engine finds, or a workbook's sheet (the one named, else the one most like a statement) and its sheets.
+   */
+  decodeStatement: (latin1: string, sheet: string | null = null) =>
+    invoke<{ text: string; encoding: string; sheet?: string; sheets?: string[] }>("decode_statement", { latin1, sheet }),
+  /** An import of a file into an account, read as the account's last file was (bank_statement.rs). */
+  bankSession: (budget: Budget, account: string, content: string, session: string, budgetId: string, sheet: string | null) =>
+    read<BankSession>(budget, "bank_session", { account, content, session, budget: budgetId, sheet }),
+  /** The file as lines, each with what became of it. */
+  bankStatement: (budget: Budget, account: string, content: string, session: BankSession, signal?: AbortSignal) =>
+    read<Statement>(budget, "bank_statement", { account, content, session }, signal),
+  /** The statement and the review of the lines that read; `lines[i]` is the line `rows[i]` is. */
+  bankStatementPreview: (budget: Budget, account: string, content: string, session: BankSession) =>
+    read<{ statement: Statement; review: CompactReview; lines: string[] }>(budget, "bank_statement_preview", { account, content, session }).then(
+      ({ statement, review, lines }) => ({ statement, lines, rows: expand(review) }),
+    ),
+  /** Changes to an import where they still fit it, and what became of each. */
+  bankApplyFixes: (budget: Budget, account: string, content: string, session: BankSession, fixes: BankFixes) =>
+    read<{ session: BankSession; results: FixResult[] }>(budget, "bank_apply_fixes", { account, content, session, fixes }),
   /** A CSV's header row, first rows and the columns an import would read, for choosing them. */
-  /** A statement that isn't UTF-8, as ISO-8859-1 (a character for each byte): its text in the encoding the engine finds. */
-  decodeStatement: (latin1: string) => invoke<{ text: string; encoding: string }>("decode_statement", { latin1 }),
   bankFileColumns: (budget: Budget, account: string, content: string, columns: BankColumns | null = null) =>
     read<BankFileLayout>(budget, "bank_file_columns", { account, content, columns }),
   importBank: (
@@ -351,12 +369,125 @@ export type BankRow = {
   categoryId?: string;
   /** When the bank says it happened (bank sync), which becomes its createdAt; a file has none. */
   at?: string;
+  /** More IDs it's known by: a line that read only once fixed, by the line as the file wrote it. */
+  aliases?: string[];
+  /** The batch it belongs to, by the ID of its entry as one transaction. */
+  batch?: string;
+  /** The purchase it may be a refund of; imported, it takes that purchase's category when it has none. */
+  refundOf?: RefundOf;
 };
+export type RefundOf = {
+  id: string;
+  date: string;
+  payee: string;
+  /** Cents, negative. */
+  amount: number;
+  /** The purchases' category, when they agree on one. */
+  categoryId?: string;
+  /** How many purchases it may be a refund of. */
+  purchases: number;
+};
+/** Rows read from a compact review, each with its own list of possible matches. */
+const expand = ({ items, candidateSets }: CompactReview): BankRow[] =>
+  items.map(({ candidateSet, ...row }) => ({ ...row, ...candidateSets[candidateSet] }));
 /** A preview with each list of possible matches sent once, for every row it's for (bank_import.rs). */
 type CompactReview = {
   items: (BankRow & { candidateSet: number })[];
   candidateSets: Pick<BankRow, "candidates" | "previouslyMatchedCandidates" | "candidateDetails" | "transferCandidates" | "transferSure">[];
 };
+/** A part of a transaction a line gives. */
+export type BankField = "date" | "payee" | "memo" | "amount";
+/** Why a line isn't imported unless someone includes it (bank_statement.rs). */
+export type LeftOutReason =
+  | "pending"
+  | "declined"
+  | "otherAccount"
+  | "otherCurrency"
+  | "ownBalances"
+  | "balance"
+  | "aboveHeader"
+  | "noDate"
+  | "noAmount"
+  | "zero"
+  | "corrected"
+  | "repeatedHeader"
+  | "inWholeBatch"
+  | "imported";
+/** What became of a line. */
+export type LineStatus =
+  | { kind: "ready" }
+  | { kind: "attention"; field: BankField; column?: number | null; reason: string }
+  | { kind: "leftOut"; reason: LeftOutReason; detail: string };
+export type BankScope = { session: string; budget: string; account: string; file: string };
+/** Everything that changes how a file's cells read. */
+export type BankStructure = {
+  format: string;
+  sheet?: string | null;
+  source?: string | null;
+  headerLine?: number | null;
+  columns?: BankColumns | null;
+  dateOrder: { order: string; confirmed: boolean };
+  flipSigns: boolean;
+  signsByType?: boolean | null;
+  wholeBatches?: string[];
+};
+/** An import in progress (bank_statement.rs): pass it back as it came. */
+export type BankSession = {
+  scope: BankScope;
+  revision: number;
+  structure: BankStructure;
+  edits: { cells: Record<string, Record<string, string>>; fields: Record<string, Record<string, string>>; include: string[] };
+  versions: Record<string, number>;
+};
+export type StatementLine = {
+  /** Where it starts in the file (a CSV), or which record it is (`t1`, `e1.2`). */
+  id: string;
+  version: number;
+  /** Its cells with any fixes: a CSV's, or a statement's fields. */
+  cells: string[];
+  /** Its cells as the file writes them, when some were fixed. */
+  original?: string[];
+  fields: Record<BankField, string>;
+  status: LineStatus;
+  included?: boolean;
+  fixed?: boolean;
+  batch?: number;
+};
+export type BatchInfo = { entry: string; line?: number; payments: number[]; total?: number; addsUp?: boolean; asOne: boolean };
+export type Statement = {
+  scope: BankScope;
+  revision: number;
+  structure: BankStructure;
+  format: string;
+  sources?: { label: string; currency?: string; lines: number }[];
+  source?: number;
+  headers: string[];
+  columns?: BankColumns;
+  headerLine?: number;
+  /** The columns are the account's saved choice. */
+  saved?: boolean;
+  order: string;
+  lines: StatementLine[];
+  counts: { ready: number; attention: number; leftOut: Partial<Record<LeftOutReason, number>> };
+  dateOrder?: { order: string; example: string; unconfirmed: boolean };
+  signs?: { byType: boolean; unconfirmed: boolean };
+  currency?: string;
+  batches?: BatchInfo[];
+  /** What the account keeps for its next file, once this one is imported. */
+  remember: BankFileSettings;
+};
+/** Changes to an import, made against one revision of it. */
+export type BankFixes = {
+  scope: BankScope;
+  baseRevision: number;
+  baseStructure: BankStructure;
+  structure?: BankStructure | null;
+  cells?: { line: string; lineVersion: number; column: number; from: string; to: string }[];
+  fields?: { line: string; lineVersion: number; field: BankField; from: string; to: string }[];
+  include?: { line: string; lineVersion: number; include: boolean }[];
+  revert?: { line: string; lineVersion: number }[];
+};
+export type FixResult = { line?: string; fix: string; applied: boolean; problem?: string };
 /** A CSV's columns, for choosing which holds what (bank_csv.rs). */
 export type BankFileLayout = {
   /** "csv", or the format the file turned out to be in (an MT940 statement saved as .txt), with no columns. */

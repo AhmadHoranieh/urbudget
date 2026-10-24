@@ -782,11 +782,11 @@ pub(crate) fn read_lines(b: &Budget, account: &str, content: &str, o: &Options, 
     let column = Some(records.date_column);
     let content = content.trim_start_matches('\u{feff}');
     // Account details or a title above the header: shown, not read.
-    let mut lines: Vec<CsvLine> = all_lines(&content[..records.start.min(content.len())])
+    let mut lines: Vec<CsvLine> = above(content, records.start, records.separator)
         .into_iter()
-        .map(|(offset, line)| CsvLine {
+        .map(|(offset, cells)| CsvLine {
             offset,
-            cells: fields(line, records.separator),
+            cells,
             written: vec![],
             status: Status::LeftOut { reason: Reason::AboveHeader, detail: String::new() },
             transaction: None,
@@ -822,6 +822,29 @@ pub(crate) fn read_lines(b: &Budget, account: &str, content: &str, o: &Options, 
         lines.push(CsvLine { offset: r.offset, cells: r.cells, written: r.written, status, transaction, original, bank_id: r.bank_id, reserves: r.reserves });
     }
     Ok(CsvLines { records, dates, lines })
+}
+/// The lines above the header row with something in them (not only separators), as cells.
+fn above(content: &str, start: usize, separator: u8) -> Vec<(usize, Vec<String>)> {
+    all_lines(&content[..start.min(content.len())])
+        .into_iter()
+        .map(|(offset, line)| (offset, fields(line, separator)))
+        .filter(|(_, cells)| cells.iter().any(|c| !c.is_empty()))
+        .collect()
+}
+/// A CSV whose columns aren't found (or no longer there): its header row (or its widest line, or
+/// "Column 1"… for one without), and every line as cells, those above the header marked, for
+/// someone to say which column holds what.
+pub(crate) struct Unread {
+    pub headers: Vec<String>,
+    pub start: usize,
+    pub lines: Vec<(usize, Vec<String>, bool)>,
+}
+pub(crate) fn unread(content: &str, currency: &str, header_at: Option<usize>) -> Result<Unread, String> {
+    let content = content.trim_start_matches('\u{feff}');
+    let sheet = Sheet::read(content, currency, None, header_at)?;
+    let mut lines: Vec<(usize, Vec<String>, bool)> = above(content, sheet.start, sheet.separator).into_iter().map(|(o, c)| (o, c, true)).collect();
+    lines.extend(sheet.records.iter().zip(&sheet.offsets).map(|(r, &offset)| (offset, r.iter().map(String::from).collect(), false)));
+    Ok(Unread { headers: sheet.headers, start: sheet.start, lines })
 }
 /// Every line with something on it, and where it starts; lines end in CR LF, LF or a lone CR.
 fn all_lines(content: &str) -> Vec<(usize, &str)> {
