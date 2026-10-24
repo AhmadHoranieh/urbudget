@@ -558,7 +558,6 @@ export function AssistantPanel({
     setAway(false);
     setEntries((list) => [...list, { kind: "user", text: message, attachments }]);
     setDraft("");
-    if (input.current) input.current.style.height = "auto";
     setAttachments([]);
     setSelected([]);
     setRunning(true);
@@ -592,6 +591,15 @@ export function AssistantPanel({
     else if (request.text) setDraft(request.text);
     setTimeout(() => input.current?.focus());
   }, [request, status]);
+  // The message field is as tall as its text (up to 160px) however the text got there: typed,
+  // filled in by a request from elsewhere (the import's "Fix with the assistant"), or put back
+  // after a send that failed. It appears once the assistant is ready, with any text already in it.
+  useLayoutEffect(() => {
+    const el = input.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [draft, status?.ready]);
 
   const newConversation = () => {
     if (running) return;
@@ -989,11 +997,7 @@ export function AssistantPanel({
                 value={draft}
                 aria-label="Message the assistant"
                 placeholder="Ask about your budget, or drop a file"
-                onChange={(e) => {
-                  setDraft(e.target.value);
-                  e.target.style.height = "auto";
-                  e.target.style.height = `${Math.min(e.target.scrollHeight, 160)}px`;
-                }}
+                onChange={(e) => setDraft(e.target.value)}
                 onPaste={(e) => {
                   const files = [...e.clipboardData.files];
                   if (files.length) {

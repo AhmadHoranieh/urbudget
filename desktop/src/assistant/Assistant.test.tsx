@@ -437,11 +437,20 @@ it("suggests what fits the budget", () => {
 
 it("puts an import's request and transactions in the box without sending them", async () => {
   vi.mocked(assistant.status).mockResolvedValue(ready);
+  // A field's text is as tall as it is long here: two lines of it, or one of a placeholder.
+  const tall = vi.spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get").mockImplementation(function (this: HTMLTextAreaElement) {
+    return this.value ? 44 : 22;
+  });
   panel({ request: { key: 1, text: "Categorize the 2 new transactions in Checking.", selected: ["bank:a", "bank:b"] } });
   const box = (await screen.findByLabelText("Message the assistant")) as HTMLTextAreaElement;
   await waitFor(() => expect(box.value).toBe("Categorize the 2 new transactions in Checking."));
   expect(screen.getByText("2 selected transactions")).toBeTruthy();
   expect(assistant.send).not.toHaveBeenCalled();
+  // The box opens to the whole request, not a line of it.
+  expect(box.style.height).toBe("44px");
+  fireEvent.change(box, { target: { value: "" } });
+  expect(box.style.height).toBe("22px");
+  tall.mockRestore();
 });
 
 it("offers fixes for an import to apply there", async () => {
