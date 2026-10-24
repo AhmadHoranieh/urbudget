@@ -53,15 +53,32 @@ const statement = (s: BankSession, lines: StatementLine[], more: Partial<Stateme
     headerLine: 0,
     order: "ymd",
     lines,
-    counts: { ready: lines.filter((l) => l.status.kind === "ready").length, attention: lines.filter((l) => l.status.kind === "attention").length, leftOut },
+    counts: {
+      ready: lines.filter((l) => l.status.kind === "ready").length,
+      attention: lines.filter((l) => l.status.kind === "attention").length,
+      leftOut,
+    },
     remember: { dateFormat: "ymd", dateConfirmed: false, flipSigns: false },
     ...more,
   };
 };
 const bakery = line("0", ["2026-10-01", "Bakery", "-3.20"]);
-const grocer = line("30", ["2026-10-02", "Grocer", "n/a"], { kind: "attention", field: "amount", column: 2, reason: "Invalid amount: n/a" });
+const grocer = line("30", ["2026-10-02", "Grocer", "n/a"], {
+  kind: "attention",
+  field: "amount",
+  column: 2,
+  reason: "Invalid amount: n/a",
+});
 const lunch = line("60", ["2026-10-03", "Lunch", "-8.50"]);
-const rowOf = (l: StatementLine): BankRow => ({ id: `bank:${l.id}`, date: l.cells[0], payee: l.cells[1], memo: "", amount: Math.round(Number(l.cells[2]) * 100), duplicate: false, candidates: [] });
+const rowOf = (l: StatementLine): BankRow => ({
+  id: `bank:${l.id}`,
+  date: l.cells[0],
+  payee: l.cells[1],
+  memo: "",
+  amount: Math.round(Number(l.cells[2]) * 100),
+  duplicate: false,
+  candidates: [],
+});
 
 /**
  * The engine, for one file: a session for it, its statement as `read` makes it of the session,
@@ -83,7 +100,13 @@ function engine(read: (s: BankSession) => Statement, first = session()) {
 /** The fixes sent last. */
 const sent = (): BankFixes => vi.mocked(api.bankApplyFixes).mock.lastCall![4];
 
-function Page({ budget = demoBudget(), initial = { account: "checking" }, onImported = vi.fn(), onAskAssistant, onFixWithAssistant }: {
+function Page({
+  budget = demoBudget(),
+  initial = { account: "checking" },
+  onImported = vi.fn(),
+  onAskAssistant,
+  onFixWithAssistant,
+}: {
   budget?: Budget;
   initial?: ImportState;
   onImported?: () => void;
@@ -112,7 +135,21 @@ const csv = (name = "october.csv") => new File(["Date,Payee,Amount\n2026-10-01,B
 
 it("opens the file at the lines that need attention, and a cell fixed there is sent as that fix", async () => {
   engine((s) =>
-    statement(s, s.revision ? [bakery, line("30", ["2026-10-02", "Grocer", "-12.40"], { kind: "ready" }, { fixed: true, original: ["2026-10-02", "Grocer", "n/a"], version: 1 }), lunch] : [bakery, grocer, lunch]),
+    statement(
+      s,
+      s.revision
+        ? [
+            bakery,
+            line(
+              "30",
+              ["2026-10-02", "Grocer", "-12.40"],
+              { kind: "ready" },
+              { fixed: true, original: ["2026-10-02", "Grocer", "n/a"], version: 1 },
+            ),
+            lunch,
+          ]
+        : [bakery, grocer, lunch],
+    ),
   );
   render(<Page />);
   choose(csv());
@@ -120,13 +157,25 @@ it("opens the file at the lines that need attention, and a cell fixed there is s
   // Only the line that needs attention is shown to begin with; the rest are a tab away.
   expect(screen.queryByText("Bakery")).toBeNull();
   expect(screen.getByText(/2 lines read · 1 needs attention and won't be imported/)).toBeTruthy();
-  expect(api.bankSession).toHaveBeenCalledWith(expect.anything(), "checking", expect.stringContaining("Bakery"), expect.any(String), "b", null, false);
+  expect(api.bankSession).toHaveBeenCalledWith(
+    expect.anything(),
+    "checking",
+    expect.stringContaining("Bakery"),
+    expect.any(String),
+    "b",
+    null,
+    false,
+  );
   fireEvent.click(screen.getByRole("button", { name: "Amount of line 30: n/a" }));
   const cell = screen.getByLabelText("Cell");
   fireEvent.change(cell, { target: { value: "-12.40" } });
   fireEvent.keyDown(cell, { key: "Enter" });
   await waitFor(() => expect(api.bankApplyFixes).toHaveBeenCalledTimes(1));
-  expect(sent()).toMatchObject({ scope: scope("s1"), baseRevision: 0, cells: [{ line: "30", lineVersion: 0, column: 2, from: "n/a", to: "-12.40" }] });
+  expect(sent()).toMatchObject({
+    scope: scope("s1"),
+    baseRevision: 0,
+    cells: [{ line: "30", lineVersion: 0, column: 2, from: "n/a", to: "-12.40" }],
+  });
   // It reads now, marked as changed from the file.
   fireEvent.click(screen.getByRole("tab", { name: /All/ }));
   const fixed = await screen.findByRole("button", { name: "Amount of line 30: -12.40" });
@@ -147,7 +196,12 @@ it("goes straight to the review when every line reads, says what's left out, and
   const check = await screen.findByRole("button", { name: /1 left out · Check the file/ });
   fireEvent.click(screen.getByRole("button", { name: "Import 1 transaction" }));
   await waitFor(() => expect(onImported).toHaveBeenCalledWith(1, { ids: [], accounts: [] }));
-  expect(api.importBank).toHaveBeenCalledWith(b, "checking", [expect.objectContaining({ action: "new" })], { dateFormat: "dmy", dateConfirmed: true, flipSigns: false, source: "A1" });
+  expect(api.importBank).toHaveBeenCalledWith(b, "checking", [expect.objectContaining({ action: "new" })], {
+    dateFormat: "dmy",
+    dateConfirmed: true,
+    flipSigns: false,
+    source: "A1",
+  });
   // The file is a click away, its left-out lines with why.
   fireEvent.click(check);
   fireEvent.click(await screen.findByRole("tab", { name: /Left out/ }));
@@ -158,7 +212,13 @@ it("reads a file the assistant prepared the standard way, and leaves what the ac
   engine((s) => statement(s, [bakery], { remember: { dateFormat: "ymd", dateConfirmed: true, flipSigns: false } }));
   const onImported = vi.fn();
   const b = demoBudget();
-  render(<Page budget={b} onImported={onImported} initial={{ account: "checking", file: csv("assistant.csv"), proposal: { threadId: "t1", id: "p1" } }} />);
+  render(
+    <Page
+      budget={b}
+      onImported={onImported}
+      initial={{ account: "checking", file: csv("assistant.csv"), proposal: { threadId: "t1", id: "p1" } }}
+    />,
+  );
   fireEvent.click(await screen.findByRole("button", { name: "Import 1 transaction" }));
   await waitFor(() => expect(onImported).toHaveBeenCalled());
   expect(api.bankSession).toHaveBeenCalledWith(expect.anything(), "checking", expect.any(String), expect.any(String), "b", null, true);
@@ -186,7 +246,17 @@ it("never shows a review made before a change to the file", async () => {
 it("includes a line left out, and asks for its amount in the budget's currency", async () => {
   const london = line("40", ["2026-10-05", "London", "-9.99"], { kind: "leftOut", reason: "otherCurrency", detail: "GBP" });
   engine((s) =>
-    statement(s, [bakery, s.revision ? { ...london, included: true, version: 1, status: { kind: "attention", field: "amount", column: 2, reason: "This line is in GBP: enter the amount in SAR." } } : london]),
+    statement(s, [
+      bakery,
+      s.revision
+        ? {
+            ...london,
+            included: true,
+            version: 1,
+            status: { kind: "attention", field: "amount", column: 2, reason: "This line is in GBP: enter the amount in SAR." },
+          }
+        : london,
+    ]),
   );
   render(<Page />);
   choose(csv());
@@ -201,9 +271,67 @@ it("includes a line left out, and asks for its amount in the budget's currency",
   expect(screen.queryAllByLabelText("Include")).toHaveLength(1);
 });
 
+it("keeps an answered date order one choice away, and waits for how the file tells money out", async () => {
+  engine((s) =>
+    statement(s, [line("0", ["01/02/2026", "Bakery", "3.20"])], {
+      dateOrder: { order: "dmy", example: "01/02/2026", unconfirmed: false },
+      signs: { byType: false, unconfirmed: s.structure.signsByType == null },
+    }),
+  );
+  render(<Page />);
+  choose(csv());
+  // Not answered yet: the review waits.
+  const signs = await screen.findByRole("group", { name: "Signs" });
+  expect(screen.getByText("Say how the file tells money out, above, to continue.")).toBeTruthy();
+  expect((screen.getByRole("button", { name: "Continue to the review" }) as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(within(signs).getByRole("button", { name: "No, as written" }));
+  await waitFor(() => expect(sent().structure).toMatchObject({ signsByType: false }));
+  await waitFor(() => expect((screen.getByRole("button", { name: "Continue to the review" }) as HTMLButtonElement).disabled).toBe(false));
+  // Both answers stay changeable.
+  expect((screen.getByLabelText("Money out") as HTMLSelectElement).value).toBe("written");
+  const dates = screen.getByLabelText("Dates") as HTMLSelectElement;
+  expect(dates.value).toBe("dmy");
+  expect(screen.getByRole("option", { name: "Month first (01/02/2026 is 2 January 2026)" })).toBeTruthy();
+  fireEvent.change(dates, { target: { value: "mdy" } });
+  await waitFor(() => expect(sent().structure).toMatchObject({ dateOrder: { order: "mdy", confirmed: true } }));
+});
+
+it("shows a cell's new value at once, while the file reads again", async () => {
+  let release: () => void = () => {};
+  engine((s) =>
+    statement(
+      s,
+      s.revision
+        ? [bakery, line("30", ["2026-10-02", "Grocer", "-12.40"], { kind: "ready" }, { fixed: true, version: 1 })]
+        : [bakery, grocer],
+    ),
+  );
+  render(<Page />);
+  choose(csv());
+  fireEvent.click(await screen.findByRole("button", { name: "Amount of line 30: n/a" }));
+  // The next reading takes its time.
+  const later = vi.mocked(api.bankStatement).getMockImplementation()!;
+  vi.mocked(api.bankStatement).mockImplementationOnce((...args) => new Promise((r) => (release = () => r(later(...args)))));
+  const cell = screen.getByLabelText("Cell");
+  fireEvent.change(cell, { target: { value: "-12.40" } });
+  fireEvent.keyDown(cell, { key: "Enter" });
+  const shown = await screen.findByRole("button", { name: "Amount of line 30: -12.40" });
+  expect(shown.closest("td")!.className).toContain("waiting");
+  await waitFor(() => expect(api.bankStatement).toHaveBeenCalledTimes(2));
+  release();
+  // Read again, it reads: every line does, and the tab says so.
+  expect(await screen.findByText(/Every line reads now/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Show all lines" }));
+  expect((await screen.findByRole("button", { name: "Amount of line 30: -12.40" })).closest("td")!.className).not.toContain("waiting");
+});
+
 it("asks once whether the day or the month comes first, when the dates don't say", async () => {
   engine((s) =>
-    statement(s, [line("0", ["01/02/2026", "Bakery", "-3.20"])], s.structure.dateOrder.confirmed ? {} : { dateOrder: { order: "dmy", example: "01/02/2026", unconfirmed: true } }),
+    statement(
+      s,
+      [line("0", ["01/02/2026", "Bakery", "-3.20"])],
+      s.structure.dateOrder.confirmed ? {} : { dateOrder: { order: "dmy", example: "01/02/2026", unconfirmed: true } },
+    ),
   );
   render(<Page />);
   choose(csv());
@@ -228,25 +356,65 @@ it("reads another account of the file, a card's purchases as positive, and anoth
       dateOrder: { order: "ymd", example: "x", unconfirmed: true },
     }),
   );
-  vi.mocked(api.decodeStatement).mockImplementation(async (latin1, sheet) => ({ text: latin1, encoding: "spreadsheet", sheet: sheet ?? "Movimientos", sheets: ["Resumen", "Movimientos"] }));
+  vi.mocked(api.decodeStatement).mockImplementation(async (latin1, sheet) => ({
+    text: latin1,
+    encoding: "spreadsheet",
+    sheet: sheet ?? "Movimientos",
+    sheets: ["Resumen", "Movimientos"],
+  }));
   render(<Page />);
   choose(new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04])], "Movimientos.xlsx"));
   fireEvent.change(await screen.findByLabelText("Account in the file"), { target: { value: "1" } });
   await waitFor(() => expect(sent().structure).toMatchObject({ source: "B2" }));
   fireEvent.click(screen.getByLabelText("Purchases are positive"));
   await waitFor(() => expect(sent().structure).toMatchObject({ flipSigns: true }));
-  expect(api.bankSession).toHaveBeenLastCalledWith(expect.anything(), "checking", expect.any(String), expect.any(String), "b", "Movimientos", false);
+  expect(api.bankSession).toHaveBeenLastCalledWith(
+    expect.anything(),
+    "checking",
+    expect.any(String),
+    expect.any(String),
+    "b",
+    "Movimientos",
+    false,
+  );
   // Another sheet is another reading of the file: a new session.
   fireEvent.click(screen.getByRole("tab", { name: "Resumen" }));
   await waitFor(() => expect(api.decodeStatement).toHaveBeenLastCalledWith(expect.any(String), "Resumen"));
-  await waitFor(() => expect(api.bankSession).toHaveBeenLastCalledWith(expect.anything(), "checking", expect.any(String), expect.any(String), "b", "Resumen", false));
+  await waitFor(() =>
+    expect(api.bankSession).toHaveBeenLastCalledWith(
+      expect.anything(),
+      "checking",
+      expect.any(String),
+      expect.any(String),
+      "b",
+      "Resumen",
+      false,
+    ),
+  );
 });
 
 it("chooses what a column holds, imports a batch as one entry, and puts a line back as the file has it", async () => {
-  const anna = line("e2.1", ["2026-10-03", "Anna", "100.00"], { kind: "attention", field: "amount", column: null, reason: "These payments add up to 350.00, not the entry's 300.00." }, { batch: 0 });
-  const ben = line("e2.2", ["2026-10-03", "Ben", "250.00"], { kind: "attention", field: "amount", column: null, reason: "These payments add up to 350.00, not the entry's 300.00." }, { batch: 0 });
-  const edited = line("e3", ["2026-10-04", "Shop", "-4.00"], { kind: "ready" }, { fixed: true, version: 2, original: ["2026-10-04", "Shop", "-4.0O"] });
-  engine((s) => statement(s, [anna, ben, edited], { batches: [{ entry: "e2", payments: [0, 1], total: 30000, addsUp: false, asOne: false }] }));
+  const anna = line(
+    "e2.1",
+    ["2026-10-03", "Anna", "100.00"],
+    { kind: "attention", field: "amount", column: null, reason: "These payments add up to 350.00, not the entry's 300.00." },
+    { batch: 0 },
+  );
+  const ben = line(
+    "e2.2",
+    ["2026-10-03", "Ben", "250.00"],
+    { kind: "attention", field: "amount", column: null, reason: "These payments add up to 350.00, not the entry's 300.00." },
+    { batch: 0 },
+  );
+  const edited = line(
+    "e3",
+    ["2026-10-04", "Shop", "-4.00"],
+    { kind: "ready" },
+    { fixed: true, version: 2, original: ["2026-10-04", "Shop", "-4.0O"] },
+  );
+  engine((s) =>
+    statement(s, [anna, ben, edited], { batches: [{ entry: "e2", payments: [0, 1], total: 30000, addsUp: false, asOne: false }] }),
+  );
   render(<Page />);
   choose(csv());
   fireEvent.click(await screen.findByRole("button", { name: "Import as one entry" }));
@@ -264,7 +432,10 @@ it("chooses what a column holds, imports a batch as one entry, and puts a line b
 
 it("says why a fix didn't apply, and drops a fix made for a file since replaced", async () => {
   engine((s) => statement(s, [bakery, grocer]));
-  vi.mocked(api.bankApplyFixes).mockResolvedValueOnce({ session: session(), results: [{ line: "30", fix: "cell", applied: false, problem: "This line changed since this fix was made." }] });
+  vi.mocked(api.bankApplyFixes).mockResolvedValueOnce({
+    session: session(),
+    results: [{ line: "30", fix: "cell", applied: false, problem: "This line changed since this fix was made." }],
+  });
   render(<Page />);
   choose(csv());
   fireEvent.click(await screen.findByRole("button", { name: "Amount of line 30: n/a" }));
@@ -282,7 +453,9 @@ it("says why a fix didn't apply, and drops a fix made for a file since replaced"
   fireEvent.click(screen.getByRole("button", { name: "Choose another file" }));
   vi.mocked(api.bankSession).mockResolvedValue(session("s2"));
   choose(csv("november.csv"));
-  await waitFor(() => expect(api.bankStatement).toHaveBeenLastCalledWith(expect.anything(), "checking", expect.any(String), session("s2"), expect.anything()));
+  await waitFor(() =>
+    expect(api.bankStatement).toHaveBeenLastCalledWith(expect.anything(), "checking", expect.any(String), session("s2"), expect.anything()),
+  );
   finish({ session: session("s1", 5), results: [{ fix: "cell", applied: true }] });
   await new Promise((r) => setTimeout(r, 250));
   expect(vi.mocked(api.bankStatement).mock.calls.every(([, , , s]) => s.scope.session === "s2" || s.revision === 0)).toBe(true);
@@ -297,7 +470,9 @@ it("checks the review again when the budget changes, instead of failing", async 
   expect(api.bankStatementPreview).toHaveBeenCalledTimes(1);
   const changed = { ...b, name: "Changed" };
   view.rerender(<Page budget={changed} />);
-  await waitFor(() => expect(api.bankStatementPreview).toHaveBeenLastCalledWith(changed, "checking", expect.any(String), expect.anything()));
+  await waitFor(() =>
+    expect(api.bankStatementPreview).toHaveBeenLastCalledWith(changed, "checking", expect.any(String), expect.anything()),
+  );
 });
 
 it("sends a PDF statement to the assistant, and saves a template", async () => {
@@ -329,7 +504,12 @@ it("offers the assistant first when no line reads, with why", async () => {
 });
 
 it("asks the assistant to fix the lines that need attention, and marks the lines it fixed", async () => {
-  const fixed = line("30", ["2026-10-02", "Grocer", "-12.40"], { kind: "ready" }, { fixed: true, version: 1, original: ["2026-10-02", "Grocer", "n/a"] });
+  const fixed = line(
+    "30",
+    ["2026-10-02", "Grocer", "-12.40"],
+    { kind: "ready" },
+    { fixed: true, version: 1, original: ["2026-10-02", "Grocer", "n/a"] },
+  );
   engine((s) => statement(s, s.revision ? [bakery, fixed] : [bakery, grocer]));
   const ask = vi.fn();
   const view = render(<Page onFixWithAssistant={ask} />);
@@ -339,7 +519,11 @@ it("asks the assistant to fix the lines that need attention, and marks the lines
   cleanup();
   view.unmount();
   // The assistant's fixes came back: its lines say so.
-  render(<Page initial={{ account: "checking", file: csv(), content: "x", session: session("s1", 1), view: "editor", assisted: ["30"] }} />);
+  render(
+    <Page initial={{ account: "checking", file: csv(), content: "x", session: session("s1", 1), view: "editor", assisted: ["30"] }} />,
+  );
   fireEvent.click(await screen.findByRole("tab", { name: /Edited/ }));
-  expect((await screen.findByRole("button", { name: "Put line 30 back as the file has it" })).title).toBe("Fixed by the assistant · put back as the file has it");
+  expect((await screen.findByRole("button", { name: "Put line 30 back as the file has it" })).title).toBe(
+    "Fixed by the assistant · put back as the file has it",
+  );
 });

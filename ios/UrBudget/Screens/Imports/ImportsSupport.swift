@@ -238,16 +238,26 @@ struct BankStatement: Equatable, Sendable {
     var dateOrder: String?
     var dateExample: String?
     var dateUnconfirmed: Bool
+    /// Whether money out is told by the transaction types, when the file leaves that open; nil when it doesn't.
+    var signsByType: Bool?
     var signsUnconfirmed: Bool
     /// The chosen account's currency, when it isn't the budget's.
     var currency: String?
     var batches: [StatementBatch]
     /// What the account keeps for its next file, once this one is imported.
     var remember: JSON
+    /// Each list the phone shows, worked out once for this reading of the file.
+    var attentionLines: [StatementLine] = []
+    var leftOutLines: [StatementLine] = []
+    var changedLines: [StatementLine] = []
+    /// Where each line is among the file's, as a batch names its payments.
+    var places: [String: Int] = [:]
 
     var leftOutCount: Int { leftOut.values.reduce(0, +) }
     /// It opens at the lines by itself for: lines to fix, none that read, or a question to answer.
     var needsChecking: Bool { attention > 0 || ready == 0 || dateUnconfirmed || signsUnconfirmed }
+    /// Nothing goes on to the review on a guess the file leaves open.
+    var canContinue: Bool { ready > 0 && !dateUnconfirmed && !signsUnconfirmed }
     /// Every line is in a currency other than the budget's, which one.
     var elsewhere: String? {
         guard ready == 0 && currency == nil else { return nil }
@@ -279,6 +289,7 @@ struct BankStatement: Equatable, Sendable {
         dateOrder = date.isNull ? nil : date.text("order")
         dateExample = date.text("example").isEmpty ? nil : date.text("example")
         dateUnconfirmed = date.flag("unconfirmed")
+        signsByType = json["signs"].isNull ? nil : json["signs"].flag("byType")
         signsUnconfirmed = json["signs"].flag("unconfirmed")
         currency = json.text("currency").isEmpty ? nil : json.text("currency")
         batches = json.rows("batches").map { batch in
@@ -286,6 +297,10 @@ struct BankStatement: Equatable, Sendable {
                            addsUp: batch["addsUp"].isNull ? nil : batch.flag("addsUp"), asOne: batch.flag("asOne"))
         }
         remember = json["remember"].isObject ? json["remember"] : [:]
+        attentionLines = lines.filter { $0.kind == "attention" }
+        leftOutLines = lines.filter { $0.kind == "leftOut" }
+        changedLines = lines.filter { $0.kind == "ready" && ($0.fixed || $0.included) }
+        places = Dictionary(lines.enumerated().map { ($0.element.id, $0.offset) }, uniquingKeysWith: { first, _ in first })
     }
 }
 

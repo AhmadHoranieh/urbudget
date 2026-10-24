@@ -46,7 +46,8 @@ internal data class BankStatement(
     val sources: List<StatementSource>, val source: Int?,
     /** The date order, an ambiguous date, and whether it's still to confirm. */
     val dateOrder: String?, val dateExample: String?, val dateUnconfirmed: Boolean,
-    val signsUnconfirmed: Boolean,
+    /** Whether money out is told by the transaction types, when the file leaves that open; null when it doesn't. */
+    val signsByType: Boolean?, val signsUnconfirmed: Boolean,
     /** The chosen account's currency, when it isn't the budget's. */
     val currency: String?,
     val batches: List<StatementBatch>,
@@ -56,6 +57,14 @@ internal data class BankStatement(
     val leftOutCount get() = leftOut.values.sum()
     /** It opens at the lines by itself for: lines to fix, none that read, or a question to answer. */
     val needsChecking get() = attention > 0 || ready == 0 || dateUnconfirmed || signsUnconfirmed
+    /** Nothing goes on to the review on a guess the file leaves open. */
+    val canContinue get() = ready > 0 && !dateUnconfirmed && !signsUnconfirmed
+    // Each list the phone shows, worked out once for this reading of the file.
+    val attentionLines by lazy { lines.filter { it.kind == "attention" } }
+    val leftOutLines by lazy { lines.filter { it.kind == "leftOut" } }
+    val changedLines by lazy { lines.filter { it.kind == "ready" && (it.fixed || it.included) } }
+    /** Where each line is among the file's, as a batch names its payments. */
+    val places by lazy { lines.withIndex().associate { (i, line) -> line.id to i } }
     /** Every line is in a currency other than the budget's, which one; the file says nothing else. */
     val elsewhere get() = if (ready == 0 && currency == null) lines.firstOrNull { it.reason == "otherCurrency" }?.detail?.ifBlank { null } else null
 }
@@ -84,7 +93,7 @@ internal fun parseStatement(json: JSONObject): BankStatement {
         json.optJSONArray("sources").objects().map { StatementSource(it.string("label"), it.string("currency").ifBlank { null }, it.optInt("lines")) },
         if (json.has("source") && !json.isNull("source")) json.optInt("source") else null,
         date?.string("order"), date?.string("example")?.ifBlank { null }, date?.optBoolean("unconfirmed") == true,
-        json.optJSONObject("signs")?.optBoolean("unconfirmed") == true,
+        json.optJSONObject("signs")?.optBoolean("byType"), json.optJSONObject("signs")?.optBoolean("unconfirmed") == true,
         json.string("currency").ifBlank { null },
         json.optJSONArray("batches").objects().map { b ->
             val payments = b.optJSONArray("payments")

@@ -821,9 +821,31 @@ pub fn apply_fixes(b: &Budget, account: &str, content: &str, session: &Session, 
         results.push(FixResult { line: Some(id.into()), fix, applied: outcome.is_ok(), problem: outcome.err() });
     };
     let table = now.format == "csv";
+    // The part of a transaction a CSV column gives, by the columns read.
+    let field_of = |column: usize| -> Option<Field> {
+        let (c, name) = (now.columns.as_ref()?, now.headers.get(column)?.trim());
+        let is = |n: &Option<String>| n.as_deref().is_some_and(|n| n.trim() == name);
+        if is(&c.date) {
+            Some(Field::Date)
+        } else if is(&c.payee) {
+            Some(Field::Payee)
+        } else if is(&c.memo) {
+            Some(Field::Memo)
+        } else if is(&c.amount) || is(&c.outflow) || is(&c.inflow) {
+            Some(Field::Amount)
+        } else {
+            None
+        }
+    };
+    let empty = String::new();
     for f in &fixes.cells {
         let outcome = line(&f.line, f.line_version).and_then(|l| {
-            let value = l.cells.get(f.column).ok_or("This line has no such column.")?;
+            // A line cut short has its missing cells, empty, up to the header's.
+            let value = match l.cells.get(f.column) {
+                Some(v) => v,
+                None if table && f.column < now.headers.len() => &empty,
+                None => return Err("This line has no such column.".into()),
+            };
             if table && now.id_column == Some(f.column) {
                 return Err("The bank's ID for a line can't be changed.".into());
             }
@@ -840,6 +862,13 @@ pub fn apply_fixes(b: &Budget, account: &str, content: &str, session: &Session, 
                 }
                 if cells.is_empty() {
                     next.edits.cells.remove(&f.line);
+                }
+                // The latest change wins: a value given for that part of the line before gives way.
+                if let (Some(field), Some(given)) = (field_of(f.column), next.edits.fields.get_mut(&f.line)) {
+                    given.remove(&field);
+                    if given.is_empty() {
+                        next.edits.fields.remove(&f.line);
+                    }
                 }
             } else {
                 let field = [Field::Date, Field::Payee, Field::Memo, Field::Amount][f.column];
@@ -1371,6 +1400,47 @@ mod tests {
         assert_eq!(st.counts.ready, 2);
         assert_eq!(st.lines[2].fields.amount, "-12.00");
         assert_eq!(st.remember.columns.as_ref().and_then(|c| c.outflow.as_deref()), Some("A"));
+    }
+
+    #[test]
+    fn a_cell_typed_in_the_grid_is_what_the_line_reads() {
+        let b = eur();
+        let at = |s: &Session, file: &str, i: usize| statement(&b, "cash", file, s).unwrap().lines[i].clone();
+        let cell = |l: &Line, column: usize, to: &str, s: &Session| CellFix {
+            line: l.id.clone(),
+            line_version: s.versions.get(&l.id).copied().unwrap_or(0),
+            column,
+            from: l.cells.get(column).cloned().unwrap_or_default(),
+            to: to.into(),
+        };
+        // A line in another currency, included: its amount typed in is in the budget's.
+        let file = "Date,Payee,Amount,Currency\n2026-10-01,Bakery,-3.20,EUR\n2026-10-02,London,-9.99,GBP\n";
+        let s = open(file, csv());
+        let london = at(&s, file, 1);
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.include = vec![IncludeFix { line: london.id.clone(), line_version: 0, include: true }]));
+        assert!(matches!(at(&s, file, 1).status, Status::Attention { field: Field::Amount, .. }));
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.cells = vec![cell(&at(&s, file, 1), 2, "-11.60", &s)]));
+        assert_eq!((at(&s, file, 1).status, at(&s, file, 1).fields.amount), (Status::Ready, "-11.60".to_string()));
+
+        // The latest change wins: an amount given before gives way to the cell typed after it.
+        let file = "Date,Payee,Amount\n2026-10-02,Grocer,n/a\n";
+        let s = open(file, csv());
+        let grocer = at(&s, file, 0);
+        let given = FieldFix { line: grocer.id.clone(), line_version: 0, field: Field::Amount, from: "n/a".into(), to: "-12.40".into() };
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.fields = vec![given]));
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.cells = vec![cell(&at(&s, file, 0), 2, "-13.40", &s)]));
+        assert_eq!(preview_statement(&b, "cash", file, &s).unwrap().review.items[0].row.amount, -1340);
+
+        // A line cut short has its missing cells to fill in.
+        let file = "Date,Payee,Amount\n2026-10-01,Bakery,-3.20\n2026-10-02,Grocer\n";
+        let s = open(file, csv());
+        let short = at(&s, file, 1);
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.include = vec![IncludeFix { line: short.id.clone(), line_version: 0, include: true }]));
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.cells = vec![cell(&at(&s, file, 1), 2, "-13.40", &s)]));
+        assert_eq!(at(&s, file, 1).status, Status::Ready);
+        // Past the header's columns, there's no cell to fill.
+        let past = apply_fixes(&b, "cash", file, &s, &fixes(&s, |f| f.cells = vec![cell(&at(&s, file, 1), 7, "x", &s)])).unwrap();
+        assert_eq!(past.results[0].problem.as_deref(), Some("This line has no such column."));
     }
 
     #[test]

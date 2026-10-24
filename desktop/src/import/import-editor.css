@@ -4,12 +4,19 @@
 }
 .import-page-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
 }
 .import-page-head h2 {
+  min-width: 0;
   margin: 0;
+  overflow-wrap: anywhere;
+}
+.import-into {
+  color: var(--muted);
+  font-weight: 500;
 }
 .statement-editor {
   display: flex;
@@ -29,6 +36,9 @@
 .statement-source select {
   min-width: 240px;
 }
+.statement-choice select {
+  max-width: 320px;
+}
 /* A question the file leaves open (the date order, the signs): answered here, once. */
 .statement-question {
   display: flex;
@@ -45,6 +55,16 @@
 .statement-question > svg {
   flex: none;
   color: var(--attention-ink);
+}
+/* The question takes the room it needs; its answers stay side by side, after it or under it. */
+.statement-question > span:not(.statement-answers) {
+  flex: 1 1 260px;
+}
+.statement-answers {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 /* Each line is a fixed 37px, matching LINE in StatementGrid.tsx, so only the lines in view render. */
 .statement-grid {
@@ -94,9 +114,9 @@
   position: sticky;
   left: 0;
   z-index: 1;
-  width: 240px;
-  min-width: 240px;
-  max-width: 240px;
+  width: 212px;
+  min-width: 212px;
+  max-width: 212px;
   background: var(--surface);
   box-shadow: inset -1px 0 0 var(--border);
 }
@@ -130,7 +150,12 @@
 }
 .line-ok {
   display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--positive);
+}
+.line-changed {
+  color: var(--accent);
 }
 .line-attention {
   display: inline-block;
@@ -185,6 +210,10 @@
   color: var(--accent);
   font-weight: 550;
 }
+/* A value just given, shown while the file reads again. */
+.statement-cell.waiting .statement-value {
+  opacity: 0.7;
+}
 .statement-cell input {
   width: 100%;
   min-width: 80px;
@@ -210,6 +239,9 @@
 }
 .import-page-actions {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 14px;
+  margin-left: auto;
+  white-space: nowrap;
 }

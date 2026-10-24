@@ -451,8 +451,8 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
         ok.then(|| (i, blocks.iter().map(|b| (b.to_string(), values.iter().filter(|v| *v == b).count())).collect::<Vec<_>>()))
     });
     // A record as it reads, someone having included it or not, with any values given for its
-    // fields.
-    let classify = |r: &csv::StringRecord, included: bool, given: &[(Field, String)]| -> (Option<String>, Fate) {
+    // fields, and whether someone wrote its amount in (in the budget's currency, then).
+    let classify = |r: &csv::StringRecord, included: bool, given: &[(Field, String)], amount_written: bool| -> (Option<String>, Fate) {
         let lift = |reason: Reason| included && reason.includable();
         let left = |reason: Reason, detail: &str| Fate::LeftOut { reason, detail: detail.to_string() };
         let attention = |field: Field, column: Option<usize>, reason: String| Fate::Attention { field, column, reason };
@@ -491,7 +491,7 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
             if !lift(Reason::OtherCurrency) {
                 return (day, left(Reason::OtherCurrency, &code));
             }
-            if given_amount.is_none() {
+            if given_amount.is_none() && !amount_written {
                 return (day, attention(Field::Amount, p.amount.or(p.outflow).or(p.inflow), format!("This line is in {code}: enter the amount in {}.", b.currency)));
             }
         }
@@ -602,7 +602,7 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
             between = true;
             note = tidy(&r.iter().filter(|c| !c.is_empty()).collect::<Vec<_>>().join(" "));
         }
-        let (day, fate) = classify(r, false, &[]);
+        let (day, fate) = classify(r, false, &[], false);
         if matches!(fate, Fate::Read { .. }) {
             between = false;
             read_here += 1;
@@ -638,6 +638,7 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
         });
         let r = fixed.as_ref().unwrap_or(original);
         let given = o.fields.get(&offset).map(Vec::as_slice);
+        let amount_written = o.cells.get(&offset).is_some_and(|fixes| fixes.iter().any(|(c, _)| [p.amount, p.outflow, p.inflow].contains(&Some(*c))));
         let cells: Vec<String> = if o.shown { r.iter().map(String::from).collect() } else { vec![] };
         let written: Vec<String> = if o.shown && fixed.is_some() { original.iter().map(String::from).collect() } else { vec![] };
         let mut record = Record {
@@ -654,7 +655,7 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
         };
         // A line of a statement in aligned columns that today's reader dropped for having no date.
         if record.hidden {
-            let (day, fate) = classify(r, included, given.unwrap_or(&[]));
+            let (day, fate) = classify(r, included, given.unwrap_or(&[]), amount_written);
             record.fate = fate;
             record.day = day;
             out.push(record);
@@ -682,7 +683,7 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
         record.evidence = day0.clone().filter(|_| record.reserves);
         let (day, fate) = if fixed.is_some() || included || given.is_some() {
             record.first = Some((day0.clone(), fate0.clone()));
-            classify(r, included, given.unwrap_or(&[]))
+            classify(r, included, given.unwrap_or(&[]), amount_written)
         } else {
             (day0.clone(), fate0.clone())
         };

@@ -265,8 +265,8 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, draft: Ba
         onConfirm = when (view) { null -> null; "review" -> ::importRows; else -> ({ update { it.copy(view = "review") } }) },
         enabled = !busy && when (view) {
             "review" -> reviewing != null && undecided == 0 && importing > 0
-            // Nothing goes on to the review on a guessed date.
-            else -> st != null && st.ready > 0 && !st.dateUnconfirmed
+            // Nothing goes on to the review on a guess the file leaves open.
+            else -> st != null && st.canContinue
         }) {
         if (busy) item(key = "import:loading") { LinearProgressIndicator(Modifier.fillMaxWidth(), color = ur.accent) }
         error?.let { item(key = "import:error") { FormError(it) } }
@@ -361,6 +361,19 @@ private fun LazyListScope.statementLines(st: BankStatement, session: JSONObject,
         Notice("This account's amounts are in $other. Choose another account in the file, or include its lines with their amounts in your budget's currency.", icon = Icons.Outlined.WarningAmber)
     } }
     val example = st.dateExample
+    // Answered once, the date order and the signs stay one choice away.
+    if (!st.dateUnconfirmed && example != null) item(key = "lines:dates-chosen") {
+        val named = dateReadings(example)
+        Choice("Dates", st.dateOrder ?: "dmy", listOf("dmy" to "Day first${named?.let { " ($example is ${it.first})" }.orEmpty()}",
+            "mdy" to "Month first${named?.let { " ($example is ${it.second})" }.orEmpty()}")) { which ->
+            if (!busy && which != st.dateOrder) fix(restructured(session) { put("dateOrder", JSONObject().put("order", which).put("confirmed", true)) })
+        }
+    }
+    if (!st.signsUnconfirmed && st.signsByType != null) item(key = "lines:signs-chosen") {
+        Choice("Money out", if (st.signsByType) "type" else "written", listOf("type" to "Told by the transaction types", "written" to "As the amounts are written")) { which ->
+            if (!busy && (which == "type") != st.signsByType) fix(restructured(session) { put("signsByType", which == "type") })
+        }
+    }
     if (st.dateUnconfirmed && example != null) item(key = "lines:dates") {
         val named = dateReadings(example)
         val order = { which: String -> fix(restructured(session) { put("dateOrder", JSONObject().put("order", which).put("confirmed", true)) }) }
@@ -372,10 +385,10 @@ private fun LazyListScope.statementLines(st: BankStatement, session: JSONObject,
             "Yes, use the types" to { fix(restructured(session) { put("signsByType", true) }) },
             "No, as written" to { fix(restructured(session) { put("signsByType", false) }) }), 0, !busy)
     }
-    val attention = st.lines.filter { it.kind == "attention" }
-    val out = st.lines.filter { it.kind == "leftOut" }
-    val changed = st.lines.filter { it.kind == "ready" && (it.fixed || it.included) }
-    val place = st.lines.withIndex().associate { (i, line) -> line.id to i }
+    val attention = st.attentionLines
+    val out = st.leftOutLines
+    val changed = st.changedLines
+    val place = st.places
     // A batch's payments that don't add up to its entry: imported as the entry instead, or each again.
     fun batchAction(line: StatementLine): Pair<String, () -> Unit>? {
         val batch = line.batch?.let { st.batches.getOrNull(it) } ?: return null

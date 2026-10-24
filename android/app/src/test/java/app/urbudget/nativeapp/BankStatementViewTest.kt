@@ -41,8 +41,21 @@ class BankStatementViewTest {
         assertEquals(listOf(StatementSource("A1", "EUR", 3), StatementSource("B2", null, 1)), st.sources)
         assertEquals(1, st.leftOutCount)
         assertTrue(st.dateUnconfirmed)
-        // Something to answer and a line to fix: it opens at the lines.
+        // Something to answer and a line to fix: it opens at the lines, and waits for the answer.
         assertTrue(st.needsChecking)
+        assertFalse(st.canContinue)
+        assertNull(st.signsByType)
+        assertEquals(listOf("30"), st.attentionLines.map { it.id })
+        assertEquals(listOf("60"), st.leftOutLines.map { it.id })
+        assertEquals(listOf("90"), st.changedLines.map { it.id })
+        assertEquals(2, st.places["90"])
+        val answered = parseStatement(JSONObject(statement.toString()).apply {
+            put("dateOrder", JSONObject().put("order", "dmy").put("example", "01/02/2026").put("unconfirmed", false))
+            put("signs", JSONObject().put("byType", true).put("unconfirmed", true))
+        })
+        // The signs still to say: it waits for them too.
+        assertEquals(true, answered.signsByType)
+        assertFalse(answered.canContinue)
         assertEquals("2 lines read · 1 needs attention and won't be imported · 1 left out", statementCounts(st))
         assertEquals(StatementBatch("e1", null, listOf(2), false, false), st.batches[0])
         assertNull(st.elsewhere)

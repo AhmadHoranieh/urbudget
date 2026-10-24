@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { Download, FileText, FileUp, MessageSquareText, Table2, X } from "lucide-react";
 import { api, type BankFixes, type BankRow, type BankSession, type Statement } from "../bridge";
 import { ImportReview, bankTemplate, statementFile, uncategorizedImports, type ImportChoice, type Uncategorized } from "../BankImport";
@@ -25,9 +25,6 @@ export type ImportState = {
   /** Lines the assistant changed. */
   assisted?: string[];
 };
-
-/** How long the statement waits for more changes before reading the file again. */
-const SETTLE = 150;
 
 /**
  * Importing a bank file, as a page: choose the file, see every line with what became of it and fix
@@ -60,7 +57,11 @@ export function ImportPage({
 }) {
   const toast = useToast();
   const [statement, setStatement] = useState<Statement | null>(null);
-  const [review, setReview] = useState<{ rows: BankRow[]; base: Budget; statement: Statement } | null>(null);
+  const [review, setReview] = useState<{
+    rows: BankRow[];
+    base: Budget;
+    statement: Statement;
+  } | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -93,7 +94,18 @@ export function ImportPage({
       const read = await statementFile(next, sheet ?? budget.accounts.find((a) => a.id === account)?.fileImport?.sheet ?? null);
       // A file the assistant prepared is written the standard way, whatever the account's last one was like.
       const fresh = await api.bankSession(budget, account, read.text, crypto.randomUUID(), budgetId, read.sheet ?? null, !!proposal);
-      onState((was) => (was.file === next ? { ...was, content: read.text, sheets: read.sheets, sheet: read.sheet ?? null, session: fresh, view: undefined } : was));
+      onState((was) =>
+        was.file === next
+          ? {
+              ...was,
+              content: read.text,
+              sheets: read.sheets,
+              sheet: read.sheet ?? null,
+              session: fresh,
+              view: undefined,
+            }
+          : was,
+      );
     } catch (e) {
       setMessage(errorText(e));
     } finally {
@@ -105,24 +117,26 @@ export function ImportPage({
     if (file && !session && !pdf && started.current !== file) void start(file, state.sheet ?? null);
   }, [file]);
 
-  // The statement, read again a moment after each change.
+  // The statement, read again as soon as a change lands (a reading for the change before it is
+  // dropped). The review reads the file itself, so there it isn't read twice.
+  const view = useRef(state.view);
+  view.current = state.view;
   useEffect(() => {
-    if (!session || content === undefined) return;
+    if (!session || content === undefined || view.current === "review") return;
     const stop = new AbortController();
-    const timer = setTimeout(() => {
-      api.bankStatement(budget, account, content, session, stop.signal).then(
-        (read) => {
-          if (stop.signal.aborted || current.current !== read.scope.session) return;
-          setStatement(read);
-          if (!state.view) onState((was) => ({ ...was, view: needsEditor(read) ? "editor" : "review" }));
-        },
-        (e) => !stop.signal.aborted && setMessage(errorText(e)),
-      );
-    }, SETTLE);
-    return () => {
-      clearTimeout(timer);
-      stop.abort();
-    };
+    api.bankStatement(budget, account, content, session, stop.signal).then(
+      (read) => {
+        if (stop.signal.aborted || current.current !== read.scope.session) return;
+        setStatement(read);
+        if (!view.current)
+          onState((was) => ({
+            ...was,
+            view: needsEditor(read) ? "editor" : "review",
+          }));
+      },
+      (e) => !stop.signal.aborted && setMessage(errorText(e)),
+    );
+    return () => stop.abort();
   }, [session, content, account]);
 
   // The review, and again whenever the budget or the session changes.
@@ -130,7 +144,11 @@ export function ImportPage({
     if (state.view !== "review" || !session || content === undefined) return;
     let live = true;
     api.bankStatementPreview(budget, account, content, session).then(
-      (r) => live && current.current === r.statement.scope.session && setReview({ rows: r.rows, base: budget, statement: r.statement }),
+      (r) => {
+        if (!live || current.current !== r.statement.scope.session) return;
+        setReview({ rows: r.rows, base: budget, statement: r.statement });
+        setStatement(r.statement);
+      },
       (e) => live && setMessage(errorText(e)),
     );
     return () => {
@@ -195,13 +213,24 @@ export function ImportPage({
     if (dropped) void start(dropped);
   };
   const shown = reviewed?.statement ?? statement;
+  const assisted = useMemo(() => new Set(state.assisted ?? []), [state.assisted]);
   const out = shown ? leftOut(shown) : 0;
   const attention = shown?.counts.attention ?? 0;
   const problem = message || (shown && !shown.counts.ready ? "None of the file's lines could be read." : "");
   return (
     <section className="bank-import import-page panel">
       <header className="import-page-head">
-        <h2>Import a bank file{accountName && ` into ${accountName}`}</h2>
+        {/* The page is titled already: this says what goes where. */}
+        <h2>
+          {file ? (
+            <>
+              <span className="import-file-name">{file.name}</span>
+              {accountName && <span className="import-into"> into {accountName}</span>}
+            </>
+          ) : (
+            "Choose the file and its account"
+          )}
+        </h2>
         <span className="import-page-actions">
           {file && (
             <button
@@ -232,8 +261,8 @@ export function ImportPage({
       {!session ? (
         <>
           <p className="import-lead">
-            Bring in the transactions your bank exported. You see every line of the file and fix anything that doesn't read,
-            then check what each transaction does before anything is saved.
+            Bring in the transactions your bank exported. You see every line of the file and fix anything that doesn't read, then check what
+            each transaction does before anything is saved.
           </p>
           <label className="import-account">
             Into account
@@ -296,10 +325,9 @@ export function ImportPage({
           </label>
           <div className="import-help">
             <p>
-              Any bank's <strong>CSV or Excel</strong> file, or its <strong>OFX, QFX, QIF, CAMT.053 or MT940</strong> statement.
-              Lines that don't read, or that the importer leaves out (pending payments, another account's, balances), are
-              shown for you to fix or include. The account remembers how its file read. A <strong>PDF</strong> statement goes
-              through the assistant.
+              Any bank's <strong>CSV or Excel</strong> file, or its <strong>OFX, QFX, QIF, CAMT.053 or MT940</strong> statement. Lines that
+              don't read, or that the importer leaves out (pending payments, another account's, balances), are shown for you to fix or
+              include. The account remembers how its file read. A <strong>PDF</strong> statement goes through the assistant.
             </p>
             <button type="button" className="secondary small" onClick={() => void template()}>
               <Download size={14} /> Download a template
@@ -318,10 +346,13 @@ export function ImportPage({
           session={session}
           // Until the file reads again after a change, a line's version is the one before it.
           busy={busy || statement.revision !== session.revision}
-          assisted={new Set(state.assisted ?? [])}
+          assisted={assisted}
           onFix={(f) => void fix(f)}
           onContinue={() => onState((was) => ({ ...was, view: "review" }))}
-          onAssistant={onFixWithAssistant ?? (onAskAssistant && file ? () => onAskAssistant(file, `${attention} lines don't read.`, accountName) : undefined)}
+          onAssistant={
+            onFixWithAssistant ??
+            (onAskAssistant && file ? () => onAskAssistant(file, `${attention} lines don't read.`, accountName) : undefined)
+          }
         />
       ) : !reviewed ? (
         <p className="help" role="status">
@@ -341,7 +372,9 @@ export function ImportPage({
           action={
             <button className="link-button" onClick={() => onState((was) => ({ ...was, view: "editor" }))}>
               <Table2 size={14} aria-hidden />
-              {attention || out ? ` ${[attention && `${attention} need attention`, out && `${out} left out`].filter(Boolean).join(" · ")} · ` : " "}
+              {attention || out
+                ? ` ${[attention && `${attention} need attention`, out && `${out} left out`].filter(Boolean).join(" · ")} · `
+                : " "}
               Check the file
             </button>
           }
@@ -366,7 +399,11 @@ export function ImportPage({
                 : "If something here doesn't look right, the assistant can go through the file with you."}
             <small>Opens the assistant with this file attached. Nothing is sent until you press Send.</small>
           </p>
-          <button type="button" className={problem || pdf ? "primary small" : "secondary small"} onClick={() => onAskAssistant(file, problem, accountName)}>
+          <button
+            type="button"
+            className={problem || pdf ? "primary small" : "secondary small"}
+            onClick={() => onAskAssistant(file, problem, accountName)}
+          >
             {pdf ? "Read it with the assistant" : "Help with this import"}
           </button>
         </div>

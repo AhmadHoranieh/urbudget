@@ -220,6 +220,13 @@ final class BankStatementTests: XCTestCase {
         XCTAssertEqual(st.sources, [StatementSource(label: "A1", currency: "EUR", lines: 3), StatementSource(label: "B2", currency: nil, lines: 1)])
         XCTAssertTrue(st.dateUnconfirmed)
         XCTAssertTrue(st.needsChecking)
+        // A question still open: nothing goes on to the review yet.
+        XCTAssertFalse(st.canContinue)
+        XCTAssertNil(st.signsByType)
+        XCTAssertEqual(st.attentionLines.map(\.id), ["30"])
+        XCTAssertEqual(st.leftOutLines.map(\.id), ["60"])
+        XCTAssertEqual(st.changedLines.map(\.id), ["90"])
+        XCTAssertEqual(st.places["90"], 2)
         XCTAssertEqual(BankStatementText.counts(st), "2 lines read · 1 needs attention and won't be imported · 1 left out")
         XCTAssertEqual(st.batches, [StatementBatch(entry: "e1", line: nil, payments: [2], addsUp: false, asOne: false)])
         XCTAssertNil(st.elsewhere)

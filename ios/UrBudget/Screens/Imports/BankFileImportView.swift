@@ -144,10 +144,10 @@ struct BankFileImportView: View {
                     .fontWeight(.semibold)
                     .disabled(counts.undecided > 0 || counts.importing == 0)
             } else if let current {
-                // Nothing goes on to the review on a guessed date.
+                // Nothing goes on to the review on a guess the file leaves open.
                 Button("Continue") { stage = .review; runPreview() }
                     .fontWeight(.semibold)
-                    .disabled(current.ready == 0 || current.dateUnconfirmed)
+                    .disabled(!current.canContinue)
             }
         }
     }
@@ -215,12 +215,12 @@ struct BankFileImportView: View {
     private var lines: some View {
         let shown = statement!
         let structure = session?["structure"] ?? [:]
-        let attention = shown.lines.filter { $0.kind == "attention" }
-        let out = shown.lines.filter { $0.kind == "leftOut" }
-        let changed = shown.lines.filter { $0.kind == "ready" && ($0.fixed || $0.included) }
+        let attention = shown.attentionLines
+        let out = shown.leftOutLines
+        let changed = shown.changedLines
         return List {
             Section { heading(BankStatementText.counts(shown)) }
-            if sheets.count > 1 || shown.sources.count > 1 || shown.format == "csv" { Section {
+            if sheets.count > 1 || shown.sources.count > 1 || shown.format == "csv" || answeredDates(shown) != nil || answeredSigns(shown) != nil { Section {
                 if sheets.count > 1 {
                     Picker("Sheet", selection: Binding(get: { sheet ?? sheets[0] }, set: { chosen in if chosen != sheet, let file { open(file, sheet: chosen) } })) {
                         ForEach(sheets, id: \.self) { Text($0).tag($0) }
@@ -232,6 +232,21 @@ struct BankFileImportView: View {
                         ForEach(shown.sources, id: \.label) { source in
                             Text("\(source.label)\(source.currency.map { " · \($0)" } ?? "") · \(source.lines) \(source.lines == 1 ? "line" : "lines")").tag(source.label)
                         }
+                    }
+                }
+                // Answered once, the date order and the signs stay one choice away.
+                if let example = answeredDates(shown) {
+                    let named = BankStatementText.readings(example)
+                    Picker("Dates", selection: Binding(get: { shown.dateOrder ?? "dmy" },
+                                                       set: { order in restructure { $0["dateOrder"] = ["order": .string(order), "confirmed": true] } })) {
+                        Text("Day first\(named.map { " (\(example) is \($0.dmy))" } ?? "")").tag("dmy")
+                        Text("Month first\(named.map { " (\(example) is \($0.mdy))" } ?? "")").tag("mdy")
+                    }
+                }
+                if let byType = answeredSigns(shown) {
+                    Picker("Money out", selection: Binding(get: { byType }, set: { on in restructure { $0["signsByType"] = .bool(on) } })) {
+                        Text("Told by the transaction types").tag(true)
+                        Text("As the amounts are written").tag(false)
                     }
                 }
                 if shown.format == "csv" {
@@ -279,6 +294,11 @@ struct BankFileImportView: View {
         }
         .groupedList()
     }
+
+    /// The ambiguous date the date order was answered for, once it has been.
+    private func answeredDates(_ shown: BankStatement) -> String? { shown.dateUnconfirmed ? nil : shown.dateExample }
+    /// How money out was said to be told, once it has been.
+    private func answeredSigns(_ shown: BankStatement) -> Bool? { shown.signsUnconfirmed ? nil : shown.signsByType }
 
     private func heading(_ detail: String) -> some View {
         HStack {
@@ -361,7 +381,7 @@ struct BankFileImportView: View {
     private func batchAction(_ line: StatementLine, _ shown: BankStatement) -> (String, () -> Void)? {
         guard let index = line.batch, shown.batches.indices.contains(index), let session else { return nil }
         let batch = shown.batches[index]
-        let place = shown.lines.firstIndex { $0.id == line.id }
+        let place = shown.places[line.id]
         if batch.addsUp == false && !batch.asOne && batch.payments.first == place {
             return ("Import as one entry", { fix(BankFixes.wholeBatch(session, batch.entry, true)) })
         }
