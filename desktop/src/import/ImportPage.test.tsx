@@ -214,16 +214,65 @@ it("edits a line as the register does: a click selects it, another edits it ther
   fireEvent.keyDown(input, { key: "Escape" });
   expect(screen.queryByLabelText("Payee of line 0")).toBeNull();
   expect(screen.getByRole("cell", { name: "Payee of line 0: Bakery" })).toBeTruthy();
-  // The keys move along the lines: Enter edits one, Space includes one left out.
+  // The keys move along the lines, and Enter edits one.
   const lines = screen.getByRole("grid").parentElement!;
   fireEvent.keyDown(lines, { key: "ArrowDown" });
   fireEvent.keyDown(lines, { key: "Enter" });
   expect(document.activeElement).toBe(screen.getByLabelText("Amount of line 30"));
   fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-  fireEvent.keyDown(lines, { key: "ArrowDown" });
-  fireEvent.keyDown(lines, { key: " " });
-  await waitFor(() => expect(sent()).toMatchObject({ include: [{ line: "90", lineVersion: 0, include: true }] }));
+  expect(api.bankApplyFixes).not.toHaveBeenCalled();
+  // A click on another line saves the one being edited, as a spreadsheet does.
+  fireEvent.keyDown(lines, { key: "Enter" });
+  fireEvent.change(screen.getByLabelText("Amount of line 30"), { target: { value: "-12.40" } });
+  fireEvent.click(screen.getByRole("cell", { name: "Payee of line 0: Bakery" }));
+  await waitFor(() => expect(sent()).toMatchObject({ cells: [{ line: "30", column: 2, from: "n/a", to: "-12.40" }] }));
   expect(api.bankApplyFixes).toHaveBeenCalledTimes(1);
+  expect(screen.queryByLabelText("Amount of line 30")).toBeNull();
+});
+
+it("selects lines as the register does, and includes or leaves them out together", async () => {
+  const pending = line("90", ["2026-10-04", "Cinema", "-12.00"], { kind: "leftOut", reason: "pending", detail: "Pending" });
+  const declined = line("120", ["2026-10-05", "Taxi", "-7.00"], { kind: "leftOut", reason: "declined", detail: "Declined" });
+  engine((s) => statement(s, [bakery, grocer, pending, declined]));
+  render(<Page />);
+  choose(csv());
+  fireEvent.click(await screen.findByRole("tab", { name: /All/ }));
+  const row = (id: string) => screen.getByRole("cell", { name: new RegExp(`^Payee of line ${id}:`) }).closest('[role="row"]')!;
+  const picked = () => screen.getAllByRole("row").filter((r) => r.getAttribute("aria-selected") === "true").map((r) => r.getAttribute("data-line"));
+  // A click selects one line; Shift the run to another, Ctrl adds or takes one away.
+  fireEvent.click(row("0"));
+  fireEvent.click(row("90"), { shiftKey: true });
+  expect(picked()).toEqual(["0", "30", "90"]);
+  expect(screen.getByRole("toolbar", { name: "Selected lines" }).textContent).toContain("3 selected");
+  fireEvent.click(row("30"), { ctrlKey: true });
+  expect(picked()).toEqual(["0", "90"]);
+  // Esc lets them go, from anywhere on the page.
+  fireEvent.keyDown(document.body, { key: "Escape" });
+  expect(picked()).toEqual([]);
+  expect(screen.queryByRole("toolbar", { name: "Selected lines" })).toBeNull();
+  // The checkboxes add lines and keep the rest; Space adds the line the keys are on.
+  fireEvent.click(screen.getByLabelText("Select line 90"));
+  fireEvent.click(screen.getByLabelText("Select line 120"));
+  fireEvent.click(screen.getByLabelText("Select line 0"));
+  expect(picked()).toEqual(["0", "90", "120"]);
+  // What fits some of them is done to those, as one change.
+  const bar = screen.getByRole("toolbar", { name: "Selected lines" });
+  expect(within(bar).queryByRole("button", { name: /Leave out/ })).toBeNull();
+  fireEvent.click(within(bar).getByRole("button", { name: /Include/ }));
+  await waitFor(() =>
+    expect(sent()).toMatchObject({
+      include: [
+        { line: "90", lineVersion: 0, include: true },
+        { line: "120", lineVersion: 0, include: true },
+      ],
+    }),
+  );
+  expect(api.bankApplyFixes).toHaveBeenCalledTimes(1);
+  // The header's checkbox selects every line shown, or none.
+  fireEvent.click(screen.getByLabelText("Select every line shown"));
+  expect(picked()).toHaveLength(4);
+  fireEvent.click(within(screen.getByRole("toolbar", { name: "Selected lines" })).getByRole("button", { name: "Clear selection" }));
+  expect(picked()).toEqual([]);
 });
 
 it("goes straight to the review when every line reads, says what's left out, and imports with what the account keeps", async () => {

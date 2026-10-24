@@ -67,17 +67,20 @@ export function StatementGrid({
       if (now.busy) queued.current = build;
       else now.onFix(build(now.session, now.statement));
     };
-    // A line's change, against the line as it reads when it's made.
-    const onLine = (line: StatementLine, change: (l: StatementLine) => Parameters<typeof fixesFor>[1]) =>
-      send((now, st) => fixesFor(now, change(st.lines.find((l) => l.id === line.id) ?? line)));
+    // Lines' changes, as one, against the lines as they read when it's made.
+    const onLines = (lines: StatementLine[], change: (ls: StatementLine[]) => Parameters<typeof fixesFor>[1]) =>
+      send((now, st) => {
+        const by = new Map(st.lines.map((l) => [l.id, l]));
+        return fixesFor(now, change(lines.map((line) => by.get(line.id) ?? line)));
+      });
     return {
       send,
       cells: (line, changes) =>
-        onLine(line, (l) => ({
+        onLines([line], ([l]) => ({
           cells: changes.map(({ column, to }) => ({ line: l.id, lineVersion: l.version, column, from: l.cells[column] ?? "", to })),
         })),
-      include: (line, on) => onLine(line, (l) => ({ include: [{ line: l.id, lineVersion: l.version, include: on }] })),
-      revert: (line) => onLine(line, (l) => ({ revert: [{ line: l.id, lineVersion: l.version }] })),
+      include: (lines, on) => onLines(lines, (ls) => ({ include: ls.map((l) => ({ line: l.id, lineVersion: l.version, include: on })) })),
+      revert: (lines) => onLines(lines, (ls) => ({ revert: ls.map((l) => ({ line: l.id, lineVersion: l.version })) })),
       header: (line) => send((now) => restructure(now, { headerLine: Number(line.id) })),
       whole: (entry, on) =>
         send((now) => {
