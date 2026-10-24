@@ -28,8 +28,8 @@ const ACTIONS = 64;
 
 /** What can be done to lines, the same functions for every render. */
 export type LineOps = {
-  /** Cells given new values, each against the line as it reads when the change is made. */
-  cells: (line: StatementLine, changes: { column: number; to: string }[]) => void;
+  /** Cells given new values, each from the value it was changed from, against the line as it reads when the change is made. */
+  cells: (line: StatementLine, changes: { column: number; from: string; to: string }[]) => void;
   include: (lines: StatementLine[], on: boolean) => void;
   revert: (lines: StatementLine[]) => void;
   header: (line: StatementLine) => void;
@@ -38,6 +38,8 @@ export type LineOps = {
 };
 /** Cells given new values, shown as them until the file reads again. */
 type Pending = { line: string; values: Record<number, string>; revision: number };
+/** A line's cells as the editor opened on them, and what its fields hold now. */
+type Draft = { opened: string[]; values: string[] };
 
 const includable = (l: StatementLine) => l.status.kind === "leftOut" && INCLUDABLE.has(l.status.reason) && !l.included;
 
@@ -51,7 +53,7 @@ const includable = (l: StatementLine) => l.status.kind === "leftOut" && INCLUDAB
  */
 export function LineTable({
   statement,
-  lines,
+  lines: tab,
   role,
   busy,
   slow,
@@ -85,12 +87,22 @@ export function LineTable({
   const headers = statement.headers;
   const width = Math.max(1, headers.length);
   const place = useMemo(() => new Map(statement.lines.map((l, i) => [l.id, i])), [statement.lines]);
+  // The line being edited stays, in its place, while it's edited, though it has left the tab
+  // meanwhile (another change made it read): what's typed in it isn't lost.
+  const lines = useMemo(() => {
+    const id = editing?.line;
+    if (id === undefined || tab.some((l) => l.id === id)) return tab;
+    const at = place.get(id);
+    if (at === undefined) return tab;
+    const after = tab.findIndex((l) => (place.get(l.id) ?? 0) > at);
+    return after < 0 ? [...tab, statement.lines[at]] : [...tab.slice(0, after), statement.lines[at], ...tab.slice(after)];
+  }, [tab, editing?.line, place, statement.lines]);
   // A new reading of the file shows the cells as they read; a change that didn't apply, as they were.
   useEffect(() => setPending((p) => (p && p.revision !== statement.revision ? null : p)), [statement.revision]);
   useEffect(() => {
     if (!busy) setPending((p) => (p && p.revision === statement.revision ? null : p));
   }, [busy]);
-  // A line no longer in the tab isn't being edited.
+  // A line no longer in the file isn't being edited.
   useEffect(() => {
     if (editing && !lines.some((l) => l.id === editing.line)) setEditing(null);
   }, [lines]);
@@ -206,15 +218,25 @@ export function LineTable({
     setEditing(null);
     focusGrid();
   };
-  const save = (line: StatementLine, values: string[]) => {
-    const changes = values.map((to, column) => ({ column, to: to.trim() })).filter((c) => c.to !== (line.cells[c.column] ?? "").trim());
+  // Only the cells typed over are saved, each from what it held when the editor opened: a change
+  // that landed on the line meanwhile (the assistant's, an earlier edit still being read) stays.
+  const save = (line: StatementLine, { opened, values }: Draft) => {
+    const changes = values
+      .map((to, column) => ({ column, from: opened[column] ?? "", to: to.trim() }))
+      .filter((c) => c.to !== c.from.trim());
     close();
     if (!changes.length) return;
-    setPending({ line: line.id, values: Object.fromEntries(changes.map((c) => [c.column, c.to])), revision: statement.revision });
+    const given = Object.fromEntries(changes.map((c) => [c.column, c.to]));
+    setPending((p) => ({
+      line: line.id,
+      // An earlier edit of the line still on its way keeps showing too.
+      values: p?.line === line.id && p.revision === statement.revision ? { ...p.values, ...given } : given,
+      revision: statement.revision,
+    }));
     ops.cells(line, changes);
   };
   // What the line being edited holds now, saved when the selection moves away from it.
-  const draft = useRef<string[] | null>(null);
+  const draft = useRef<Draft | null>(null);
   const commit = (keep?: string) => {
     if (!editing || editing.line === keep) return;
     const line = lines.find((l) => l.id === editing.line);
@@ -375,8 +397,9 @@ export function LineTable({
                   headers={headers}
                   locked={table ? role.map((r) => r === "id") : []}
                   focus={editing.column}
+                  waiting={pending?.line === line.id ? pending.values : null}
                   draft={draft}
-                  onSave={(values) => save(line, values)}
+                  onSave={(d) => save(line, d)}
                   onCancel={close}
                 />
               ) : (
@@ -740,6 +763,7 @@ function LineEditor({
   headers,
   locked,
   focus,
+  waiting,
   draft,
   onSave,
   onCancel,
@@ -750,13 +774,17 @@ function LineEditor({
   locked: boolean[];
   /** The cell to start in. */
   focus: number;
+  /** The line's cells given new values that the file doesn't read with yet. */
+  waiting: Record<number, string> | null;
   /** Where what the fields hold is kept, for the table to save the line when the selection moves away. */
-  draft: MutableRefObject<string[] | null>;
-  onSave: (values: string[]) => void;
+  draft: MutableRefObject<Draft | null>;
+  onSave: (draft: Draft) => void;
   onCancel: () => void;
 }) {
-  const [values, setValues] = useState(() => headers.map((_, i) => line.cells[i] ?? ""));
-  draft.current = values;
+  // The cells as they show when it opens, kept: what's saved is what's typed over them.
+  const [opened] = useState(() => headers.map((_, i) => waiting?.[i] ?? line.cells[i] ?? ""));
+  const [values, setValues] = useState(opened);
+  draft.current = { opened, values };
   const row = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = row.current;
@@ -776,9 +804,10 @@ function LineEditor({
     if (bottom > scroller.scrollTop + scroller.clientHeight) scroller.scrollTop = bottom - scroller.clientHeight;
   }, []);
   const keys = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "Enter") {
+    // Enter on a button does what the button does (Cancel cancels).
+    if (e.key === "Enter" && !(e.target as HTMLElement).closest("button")) {
       e.preventDefault();
-      onSave(values);
+      onSave({ opened, values });
     } else if (e.key === "Escape") {
       e.preventDefault();
       onCancel();
@@ -813,7 +842,7 @@ function LineEditor({
       <span role="cell" className="line-actions-cell" />
       <div className="line-editor-footer">
         <span className="line-editor-buttons">
-          <button type="button" className="primary small" onClick={() => onSave(values)}>
+          <button type="button" className="primary small" onClick={() => onSave({ opened, values })}>
             Save
           </button>
           <button type="button" className="secondary small" onClick={onCancel}>

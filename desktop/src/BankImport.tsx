@@ -113,6 +113,8 @@ export function categorizeText({ ids, accounts }: Uncategorized) {
 }
 
 export type ImportChoice = { row: BankRow; action: string; matchId: string | null };
+/** What's chosen in a review so far: each row's choice, and the ID each row added separately imports with. */
+export type ReviewChoices = { picked: Record<string, string>; separate?: Record<string, string> };
 
 /**
  * Skip known bank IDs and take a single match only when that account side has not been imported.
@@ -149,23 +151,32 @@ export function ImportReview({
   cancelLabel = "Cancel",
   onCancel,
   onImport,
+  choices: given,
+  onChoices,
 }: {
   budget: Budget;
   rows: BankRow[];
   busy: boolean;
   icon: ReactNode;
-  /** Where the rows come from and where they go. */
-  title: ReactNode;
+  /** Where the rows come from and where they go, unless the page says so already. */
+  title?: ReactNode;
   /** A link beside the summary, such as one to choose another file. */
   action?: ReactNode;
   cancelLabel?: string;
   onCancel: () => void;
   /** Every row's choice, and how many rows are added or matched. */
   onImport: (choices: ImportChoice[], count: number) => void;
+  /** The choices, kept by whoever shows the review when they must outlast it (a page that leaves it and comes back). */
+  choices?: ReviewChoices;
+  onChoices?: (next: ReviewChoices) => void;
 }) {
   // Rows checked again (bank sync does when the budget changes) keep the choices made so far.
-  const [choices, setChoices] = useState<Record<string, string>>({});
-  const separateIds = useRef(new Map<string, string>());
+  const [own, setOwn] = useState<ReviewChoices>({ picked: {} });
+  const kept = given ?? own;
+  const keep = onChoices ?? setOwn;
+  const choices = kept.picked;
+  const setChoices = (picked: Record<string, string>) => keep({ ...kept, picked });
+  // Kept choices are checked against the rows as they are now, as any other.
   const choice = (r: BankRow) => {
     if (r.duplicate) return r.idless && choices[r.id] === "separate" ? "separate" : "skip";
     const selected = choices[r.id];
@@ -212,25 +223,28 @@ export function ImportReview({
   const duplicates = rows.filter((r) => r.duplicate).length;
   const renamed = rows.filter((r) => !r.duplicate && r.rename).length;
   const refunds = rows.filter((r) => !r.duplicate && r.refundOf).length;
-  const chosen = () =>
-    rows.map((row) => {
+  // A row added separately keeps its ID with the choices, so trying the import again (after a save
+  // that failed once the budget had it) can't add it twice, even from a review shown again.
+  const chosen = () => {
+    const separate = { ...kept.separate };
+    const out = rows.map((row) => {
       const c = choice(row);
       if (c === "separate") {
-        let importId = separateIds.current.get(row.id);
-        if (!importId) {
-          importId = `bank:manual:${crypto.randomUUID()}`;
-          separateIds.current.set(row.id, importId);
-        }
+        const importId = (separate[row.id] ??= `bank:manual:${crypto.randomUUID()}`);
         return { row: { ...row, importId }, action: "new", matchId: null };
       }
       return { row, action: c.startsWith("match:") ? "match" : c, matchId: c.startsWith("match:") ? c.slice(6) : null };
     });
+    if (Object.keys(separate).length !== Object.keys(kept.separate ?? {}).length) keep({ ...kept, separate });
+    return out;
+  };
   return (
     <>
       <div className="import-summary">
         {icon}
         <span>
-          {title} · {rows.length} {rows.length === 1 ? "row" : "rows"}
+          {title && <>{title} · </>}
+          {rows.length} {rows.length === 1 ? "row" : "rows"}
           {duplicates > 0 && ` · ${duplicates} already imported`}
           {renamed > 0 && ` · ${renamed} renamed by your payee rules`}
           {refunds > 0 && ` · ${refunds} ${refunds === 1 ? "refund" : "refunds"}`}
@@ -369,7 +383,8 @@ export function ImportReview({
             </button>
           </>
         )}
-        <button className="secondary" onClick={onCancel}>
+        {/* Not while the import saves: it lands all the same. */}
+        <button className="secondary" disabled={busy} onClick={onCancel}>
           {cancelLabel}
         </button>
         <button className="primary" disabled={busy || undecided > 0 || !importing} onClick={() => onImport(chosen(), importing)}>

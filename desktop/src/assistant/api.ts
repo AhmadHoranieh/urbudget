@@ -149,18 +149,19 @@ export const assistant = {
     invoke<Proposal>("assistant_mark", { threadId, proposalId, status }),
   importFile: (threadId: string, proposalId: string) =>
     invoke<{ account: string; name: string; csv: string }>("assistant_import", { threadId, proposalId }),
-  saveImport: (threadId: string, proposalId: string) => invoke<string>("assistant_save_import", { threadId, proposalId }),
+  /** Saves the converted file where the user chooses; null when they cancel. */
+  saveImport: (threadId: string, proposalId: string) => invoke<string | null>("assistant_save_import", { threadId, proposalId }),
   open: (link: Link) => invoke<void>("assistant_open", { link }),
   /** Sends only the text the user approved in the report form; returns its support reference. */
   reportReply: (text: string, reason: string) => invoke<string>("assistant_report_reply", { text, reason }),
   report: (threadId: string, proposalId: string) => invoke<ReportView>("assistant_report", { threadId, proposalId }),
   /**
-   * Writes the card's spreadsheet (or a report's tables) to the budget's exports folder, with
-   * data sheets filled from `budget`, and returns its path. `open` opens it in the user's
-   * spreadsheet app, reusing the file saved last.
+   * Saves the card's spreadsheet (or a report's tables) where the user chooses, with data sheets
+   * filled from `budget`, and returns its path, or null when they cancel. `open` opens it in the
+   * user's spreadsheet app instead, reusing the file saved last.
    */
   spreadsheet: (budget: Budget, threadId: string, proposalId: string, open: boolean) =>
-    read<string>(budget, "assistant_spreadsheet", { threadId, proposalId, open }),
+    read<string | null>(budget, "assistant_spreadsheet", { threadId, proposalId, open }),
   /** Opens the system print dialog for the window. */
   print: () => invoke<void>("assistant_print"),
   onEvent: (handler: (e: AssistantEvent) => void): Promise<UnlistenFn> =>

@@ -690,11 +690,11 @@ export function AssistantPanel({
             onSheet={async (open) => {
               try {
                 const path = await assistant.spreadsheet(budget, id, p.id, open);
-                if (open) return;
+                if (open || !path) return;
                 const name = path.split(/[\\/]/).pop() ?? path;
                 const report = p.kind === "report";
                 toast({
-                  message: `Saved \u201c${name}\u201d in the budget's exports folder.`,
+                  message: `Saved \u201c${name}\u201d.`,
                   action: report
                     ? { label: "Open", onClick: () => void assistant.spreadsheet(budget, id, p.id, true).catch((e) => toast({ message: errorText(e), tone: "error" })) }
                     : { label: "Show in folder", onClick: () => void api.reveal(path).catch((e) => toast({ message: errorText(e), tone: "error" })) },
@@ -706,6 +706,7 @@ export function AssistantPanel({
             onSave={async () => {
               try {
                 const path = await assistant.saveImport(id, p.id);
+                if (!path) return;
                 toast({
                   message: "Saved the converted file.",
                   action: { label: "Show in folder", onClick: () => void api.reveal(path).catch((e) => toast({ message: errorText(e), tone: "error" })) },

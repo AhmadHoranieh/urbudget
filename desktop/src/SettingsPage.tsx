@@ -263,8 +263,9 @@ export function SettingsPage({
   }, []);
   const reveal = (path: string) => () =>
     void api.reveal(path).catch((e) => toast({ message: errorText(e), tone: "error" }));
-  const saved = (message: string, path: string) =>
-    toast({ message, action: { label: "Show in folder", onClick: reveal(path) } });
+  // A null path is a cancelled save panel.
+  const saved = (message: string, path: string | null) =>
+    path && toast({ message, action: { label: "Show in folder", onClick: reveal(path) } });
   const fail = (e: unknown) => toast({ message: errorText(e), tone: "error" });
 
   return (

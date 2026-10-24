@@ -324,17 +324,22 @@ it("opens or saves a spreadsheet the assistant made", async () => {
     },
   };
   vi.mocked(assistant.thread).mockResolvedValue({ id: "t_4", title: "Sheet", running: false, entries: [{ kind: "proposal", proposal: sheet }] });
-  vi.mocked(assistant.spreadsheet).mockResolvedValue("/home/pat/UrBudget/exports/Groceries since June.xlsx");
+  vi.mocked(assistant.spreadsheet).mockResolvedValue("/home/pat/Downloads/Groceries since June.xlsx");
   panel();
   const card = await screen.findByLabelText("Proposal: Groceries since June");
   expect(card.textContent).toContain("214 rows");
   fireEvent.click(within(card).getByRole("button", { name: "Open" }));
   await waitFor(() => expect(assistant.spreadsheet).toHaveBeenCalledTimes(1));
   expect(vi.mocked(assistant.spreadsheet).mock.calls[0].slice(1)).toEqual(["t_4", "p_s", true]);
-  // Opening needs no message; saving says where the file went.
+  // Opening needs no message, and neither does a save panel that was cancelled.
   expect(screen.queryByText(/Saved/)).toBeNull();
+  vi.mocked(assistant.spreadsheet).mockResolvedValueOnce(null);
   fireEvent.click(within(card).getByRole("button", { name: "Save" }));
-  expect(await screen.findByText(/Saved “Groceries since June.xlsx” in the budget's exports folder/)).toBeTruthy();
+  await waitFor(() => expect(assistant.spreadsheet).toHaveBeenCalledTimes(2));
+  expect(screen.queryByText(/Saved/)).toBeNull();
+  // Saving says which file it was.
+  fireEvent.click(within(card).getByRole("button", { name: "Save" }));
+  expect(await screen.findByText("Saved “Groceries since June.xlsx”.")).toBeTruthy();
   expect(screen.getByRole("button", { name: "Show in folder" })).toBeTruthy();
 });
 

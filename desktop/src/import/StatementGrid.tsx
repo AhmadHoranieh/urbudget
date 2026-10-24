@@ -56,16 +56,20 @@ export function StatementGrid({
   const role = useMemo(() => (table ? roles(statement.headers, statement.columns) : []), [table, statement.headers, statement.columns]);
   const s = session.structure;
 
-  // Changes read the import as it is now. One asked for while another applies waits for it, then
-  // is made against the import as it left it (the latest one asked for, if several were).
+  // Changes read the import as it is now. Those asked for while another applies wait for it, in
+  // turn, each made against the import as the one before it left it.
   const latest = useRef({ session, statement, onFix, busy });
   latest.current = { session, statement, onFix, busy };
-  const queued = useRef<Build | null>(null);
-  const ops = useMemo<LineOps & { send: (build: Build) => void }>(() => {
-    const send = (build: Build) => {
+  const queued = useRef<Build[]>([]);
+  const ops = useMemo<LineOps & { send: (build: Build) => void; next: () => void }>(() => {
+    const next = () => {
       const now = latest.current;
-      if (now.busy) queued.current = build;
-      else now.onFix(build(now.session, now.statement));
+      const build = now.busy ? undefined : queued.current.shift();
+      if (build) now.onFix(build(now.session, now.statement));
+    };
+    const send = (build: Build) => {
+      queued.current.push(build);
+      next();
     };
     // Lines' changes, as one, against the lines as they read when it's made.
     const onLines = (lines: StatementLine[], change: (ls: StatementLine[]) => Parameters<typeof fixesFor>[1]) =>
@@ -75,9 +79,11 @@ export function StatementGrid({
       });
     return {
       send,
+      next,
+      // Each from the value it was changed from, so the engine turns away one changed meanwhile.
       cells: (line, changes) =>
         onLines([line], ([l]) => ({
-          cells: changes.map(({ column, to }) => ({ line: l.id, lineVersion: l.version, column, from: l.cells[column] ?? "", to })),
+          cells: changes.map(({ column, from, to }) => ({ line: l.id, lineVersion: l.version, column, from, to })),
         })),
       include: (lines, on) => onLines(lines, (ls) => ({ include: ls.map((l) => ({ line: l.id, lineVersion: l.version, include: on })) })),
       revert: (lines) => onLines(lines, (ls) => ({ revert: ls.map((l) => ({ line: l.id, lineVersion: l.version })) })),
@@ -90,11 +96,9 @@ export function StatementGrid({
       role: (column, r) => send((now, st) => restructure(now, { columns: withRole(st.headers, st.columns, column, r) })),
     };
   }, []);
+  // The next one waiting, once the one before it has applied and the file reads again.
   useEffect(() => {
-    if (busy || !queued.current) return;
-    const build = queued.current;
-    queued.current = null;
-    onFix(build(session, statement));
+    if (!busy) ops.next();
   }, [busy]);
 
   const act = ops.send;

@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from "react";
+import { useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Check, Eye, FileDown, FileSpreadsheet, LoaderCircle, Pencil, RefreshCw, TriangleAlert, Undo2 } from "lucide-react";
 import { editableAmount, errorText, evaluateAmount, money } from "../format";
 import type { Budget } from "../types";
@@ -10,6 +10,7 @@ const signed = (n: number) => (n > 0 ? `+${money(n)}` : money(n));
 const SHOWN = 8;
 
 type RowChange = Revision["set"][number];
+const NONE: Revision = { skip: [], set: [] };
 
 function Row({
   row,
@@ -90,11 +91,14 @@ function Row({
 function RowEditor({
   row,
   budget,
+  busy,
   onSave,
   onCancel,
 }: {
   row: CardRow;
   budget: Pick<Budget, "categories" | "categoryOrder" | "groupOrder">;
+  /** The card is being made again or applied: what's saved now would be made on the card as it was. */
+  busy?: boolean;
   onSave: (change: Omit<RowChange, "key">) => void;
   onCancel: () => void;
 }) {
@@ -103,6 +107,7 @@ function RowEditor({
   const [amount, setAmount] = useState(row.amount !== undefined ? editableAmount(row.amount) : "");
   const [problem, setProblem] = useState("");
   const save = () => {
+    if (busy) return;
     const change: Omit<RowChange, "key"> = {};
     if (row.edit?.category && category !== was) change.category = category === READY_TO_ASSIGN ? null : category;
     if (row.edit?.amount) {
@@ -155,7 +160,7 @@ function RowEditor({
       )}
       {problem && <span className="proposal-editor-problem">{problem}</span>}
       <span className="proposal-editor-actions">
-        <button type="button" className="primary small" onClick={save}>
+        <button type="button" className="primary small" disabled={busy} onClick={save}>
           Save
         </button>
         <button type="button" className="secondary small" onClick={onCancel}>
@@ -203,15 +208,25 @@ export function ProposalCard({
   /** The card made again with the user's choices on it. */
   onRevise?: (revision: Revision) => Promise<void>;
 }) {
-  const [busy, setBusy] = useState(false);
+  // Counted, so the first of two to finish doesn't offer Apply while the other is on its way.
+  const [pending, setPending] = useState(0);
+  const busy = pending > 0;
   const [editing, setEditing] = useState<string | null>(null);
   const [all, setAll] = useState(false);
+  // The choices as the revisions sent will leave them: each is made on the one before and sent
+  // once that one is back, so one started before the last reply lands doesn't drop its change.
+  const latest = useRef(p.choices ?? NONE);
+  const queue = useRef(Promise.resolve());
+  useLayoutEffect(() => {
+    // Nothing on its way: the card's own (one that failed leaves them as they were).
+    if (!pending) latest.current = p.choices ?? NONE;
+  }, [p.choices, pending]);
   const run = (work: () => Promise<void>) => async () => {
-    setBusy(true);
+    setPending((n) => n + 1);
     try {
       await work();
     } finally {
-      setBusy(false);
+      setPending((n) => n - 1);
     }
   };
   const c = p.card;
@@ -242,20 +257,32 @@ export function ProposalCard({
   const keyed = c.rows.filter((r) => r.key);
   const choosing = !!onRevise && p.status === "proposed" && keyed.length > 0;
   const chosen = keyed.filter((r) => !r.skipped).length;
-  const choices: Revision = p.choices ?? { skip: [], set: [] };
-  const revise = (revision: Revision) => onRevise && run(() => onRevise(revision))();
+  const revise = (make: (choices: Revision) => Revision) => {
+    if (!onRevise) return;
+    const revision = make(latest.current);
+    latest.current = revision;
+    const sent = queue.current.then(() => onRevise(revision));
+    queue.current = sent.catch(() => {});
+    void run(() => sent)();
+  };
   const toggle = (row: CardRow) => {
     const key = row.key!;
-    if (row.skipped)
-      // Chosen again: an amount of nothing given to it goes too.
-      void revise({ skip: choices.skip.filter((k) => k !== key), set: choices.set.filter((s) => !(s.key === key && s.amount === 0)) });
-    else void revise({ skip: [...choices.skip, key], set: choices.set });
+    // An editor left open would save onto the card as it was.
+    setEditing(null);
+    revise((choices) =>
+      row.skipped
+        ? // Chosen again: an amount of nothing given to it goes too.
+          { skip: choices.skip.filter((k) => k !== key), set: choices.set.filter((s) => !(s.key === key && s.amount === 0)) }
+        : { skip: [...choices.skip, key], set: choices.set },
+    );
   };
   const change = (row: CardRow, values: Omit<RowChange, "key">) => {
     const key = row.key!;
-    const was = choices.set.find((s) => s.key === key);
     setEditing(null);
-    void revise({ skip: choices.skip, set: [...choices.set.filter((s) => s.key !== key), { ...was, ...values, key }] });
+    revise((choices) => {
+      const was = choices.set.find((s) => s.key === key);
+      return { skip: choices.skip, set: [...choices.set.filter((s) => s.key !== key), { ...was, ...values, key }] };
+    });
   };
   // A long card lists its first rows until asked for all (the one being changed stays in view).
   const shown = all ? c.rows : c.rows.filter((r, i) => i < SHOWN || (editing !== null && r.key === editing));
@@ -287,7 +314,13 @@ export function ProposalCard({
             onEdit={() => setEditing(row.key ?? null)}
           />
           {choosing && editing !== null && row.key === editing && book && (
-            <RowEditor row={row} budget={book} onSave={(values) => change(row, values)} onCancel={() => setEditing(null)} />
+            <RowEditor
+              row={row}
+              budget={book}
+              busy={busy}
+              onSave={(values) => change(row, values)}
+              onCancel={() => setEditing(null)}
+            />
           )}
         </div>
       ))}
@@ -380,7 +413,7 @@ export function ProposalCard({
               Discard
             </button>
             {p.choices ? (
-              <button className="link-button proposal-hint" disabled={busy} onClick={() => void revise({ skip: [], set: [] })}>
+              <button className="link-button proposal-hint" disabled={busy} onClick={() => revise(() => NONE)}>
                 Use the assistant's version
               </button>
             ) : (

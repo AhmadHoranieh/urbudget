@@ -50,7 +50,19 @@ pub fn money(x: i64) -> String {
 pub fn parse_money(v: &Value) -> Result<i64, String> {
     let text = match v {
         Value::Number(n) => n.to_string(),
-        Value::String(s) => s.trim().replace([',', ' '], ""),
+        Value::String(s) => {
+            let s = s.trim();
+            // A decimal comma, as a bank file may have it (-12,40), would read as hundreds.
+            let decimal_comma = match (s.rfind(','), s.rfind('.')) {
+                (Some(c), Some(p)) => c > p,
+                (Some(c), None) => matches!(s[c + 1..].len(), 1 | 2) && s[c + 1..].chars().all(|d| d.is_ascii_digit()),
+                _ => false,
+            };
+            if decimal_comma {
+                return Err(format!("{s} has a decimal comma: write amounts like -12.40."));
+            }
+            s.replace([',', ' '], "")
+        }
         _ => return Err("Amounts must be numbers like 12.50.".into()),
     };
     let (negative, digits) = match text.strip_prefix('-') {
@@ -978,6 +990,11 @@ fn import_of(db: &Database, assistant: &Assistant, thread_id: &str, proposal_id:
 pub fn assistant_import(db: &Database, assistant: &Assistant, thread_id: String, proposal_id: String) -> Result<ImportView, String> {
     Ok(import_of(&db, &assistant, &thread_id, &proposal_id)?.0)
 }
+/// The converted rows' file name and CSV, for saving elsewhere.
+pub fn import_file(db: &Database, assistant: &Assistant, thread_id: &str, proposal_id: &str) -> Result<(String, String), String> {
+    let file = import_of(db, assistant, thread_id, proposal_id)?.0;
+    Ok((file.name, file.csv))
+}
 /// Saves the converted rows in the budget's exports folder and returns the path.
 pub fn assistant_save_import(db: &Database, assistant: &Assistant, thread_id: String, proposal_id: String) -> Result<String, String> {
     let (file, folder) = import_of(&db, &assistant, &thread_id, &proposal_id)?;
@@ -1000,18 +1017,42 @@ pub fn assistant_spreadsheet(
     open: bool,
 ) -> Result<String, String> {
     let folder = folder(&db)?;
-    let p = assistant
-        .thread_copy(&folder, &thread_id)?
+    if open {
+        if let Some(saved) = spreadsheet_card(assistant, &folder, &thread_id, &proposal_id)?.saved.filter(|s| Path::new(s).is_file()) {
+            crate::host::open_file(Path::new(&saved))?;
+            return Ok(saved);
+        }
+    }
+    let (title, bytes) = spreadsheet_file(db, assistant, patch, &thread_id, &proposal_id)?;
+    let directory = folder.join("exports");
+    std::fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
+    let path = workbook::free_path(&directory, &title);
+    std::fs::write(&path, bytes).map_err(|e| format!("Couldn't save the spreadsheet: {e}"))?;
+    let shown = path.to_string_lossy().into_owned();
+    spreadsheet_saved(db, assistant, &thread_id, &proposal_id, &shown)?;
+    if open {
+        crate::host::open_file(&path)?;
+    }
+    Ok(shown)
+}
+fn spreadsheet_card(assistant: &Assistant, folder: &Path, thread_id: &str, proposal_id: &str) -> Result<proposals::Proposal, String> {
+    assistant
+        .thread_copy(folder, thread_id)?
         .proposals
         .into_iter()
         .find(|p| p.id == proposal_id)
-        .ok_or("That spreadsheet is gone.")?;
-    if open {
-        if let Some(saved) = p.saved.as_deref().filter(|s| Path::new(s).is_file()) {
-            crate::host::open_file(Path::new(saved))?;
-            return Ok(saved.to_owned());
-        }
-    }
+        .ok_or_else(|| "That spreadsheet is gone.".into())
+}
+/// A spreadsheet card's workbook (or a report's tables), with data sheets filled from the budget
+/// as the window has it: its title and the file's bytes.
+pub fn spreadsheet_file(
+    db: &Database,
+    assistant: &Assistant,
+    patch: Option<Patch>,
+    thread_id: &str,
+    proposal_id: &str,
+) -> Result<(String, Vec<u8>), String> {
+    let p = spreadsheet_card(assistant, &folder(db)?, thread_id, proposal_id)?;
     let (title, grids) = match (&p.workbook, &p.report) {
         (Some(w), _) => (w.title.clone(), db.read(patch, |b| w.sheets.iter().map(|s| workbook::fill(s, b)).collect())?),
         (None, Some(r)) => (r.title.clone(), workbook::report_tables(&r.body)),
@@ -1021,20 +1062,15 @@ pub fn assistant_spreadsheet(
         return Err("This report has no tables to put in a spreadsheet.".into());
     }
     let bytes = workbook::write(&title, &grids)?;
-    let directory = folder.join("exports");
-    std::fs::create_dir_all(&directory).map_err(|e| e.to_string())?;
-    let path = workbook::free_path(&directory, &title);
-    std::fs::write(&path, bytes).map_err(|e| format!("Couldn't save the spreadsheet: {e}"))?;
-    let shown = path.to_string_lossy().into_owned();
-    assistant.with_thread(&folder, &thread_id, |t| {
+    Ok((title, bytes))
+}
+/// Remembers where a card's spreadsheet was saved, for Open to reuse.
+pub fn spreadsheet_saved(db: &Database, assistant: &Assistant, thread_id: &str, proposal_id: &str, path: &str) -> Result<(), String> {
+    assistant.with_thread(&folder(db)?, thread_id, |t| {
         if let Some(p) = t.proposals.iter_mut().find(|p| p.id == proposal_id) {
-            p.saved = Some(shown.clone());
+            p.saved = Some(path.to_owned());
         }
-    })?;
-    if open {
-        crate::host::open_file(&path)?;
-    }
-    Ok(shown)
+    })
 }
 
 #[cfg(test)]
@@ -1051,6 +1087,18 @@ mod tests {
         assert_eq!(parse_money(&json!("12.345")).unwrap(), 1235);
         assert!(parse_money(&json!("twelve")).is_err());
         assert!(parse_money(&json!(null)).is_err());
+    }
+
+    #[test]
+    fn a_decimal_comma_is_refused_rather_than_read_as_hundreds() {
+        assert!(parse_money(&json!("-12,40")).unwrap_err().contains("like -12.40"));
+        assert!(parse_money(&json!("12,4")).is_err());
+        assert!(parse_money(&json!("1.240,50")).is_err());
+        // Commas and spaces between thousands still read.
+        assert_eq!(parse_money(&json!("1,240")).unwrap(), 124000);
+        assert_eq!(parse_money(&json!("-1,240,000")).unwrap(), -124000000);
+        assert_eq!(parse_money(&json!("1,240.50")).unwrap(), 124050);
+        assert_eq!(parse_money(&json!("1 240.50")).unwrap(), 124050);
     }
 
     #[test]

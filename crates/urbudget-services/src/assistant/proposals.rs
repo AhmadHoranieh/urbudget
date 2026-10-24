@@ -676,7 +676,14 @@ fn merge(full: Card, part: Option<Card>, r: &Revision) -> Card {
     for row in &full.rows {
         let key = row.key.as_deref();
         rows.push(match key.and_then(|k| part.rows.iter().find(|p| p.key.as_deref() == Some(k))) {
-            Some(shown) => Row { edit: row.edit.clone(), edited: key.is_some_and(|k| r.get(k).is_some()), ..shown.clone() },
+            Some(shown) => {
+                // What can be changed is the whole change's; the category is the one it gives now, the user's.
+                let edit = row.edit.clone().map(|e| match &shown.edit {
+                    Some(now) => RowEdit { category_id: now.category_id.clone(), ..e },
+                    None => e,
+                });
+                Row { edit, edited: key.is_some_and(|k| r.get(k).is_some()), ..shown.clone() }
+            }
             None => Row { skipped: key.is_some(), ..row.clone() },
         });
     }
@@ -1477,6 +1484,8 @@ mod tests {
         assert!(row(&q, "t:t1").skipped && row(&q, "r:r1").skipped);
         assert!(row(&q, "t:t2").edited);
         assert!(row(&q, "t:t2").detail.as_deref().unwrap().starts_with("Uncategorized \u{2192} Groceries"));
+        // The row's category to change from is the user's, so the assistant's can be chosen again.
+        assert_eq!(row(&q, "t:t2").edit.as_ref().unwrap().category_id.as_deref(), Some("groceries"));
         assert_eq!(q.choices().as_deref(), Some("2 of 3 left out, 1 changed by the user"));
         assert_eq!(q.summary["rows"][0]["leftOutByUser"], json!(true));
         let after = applied(&q, &b);
@@ -1488,6 +1497,7 @@ mod tests {
         let r = revise(&p, serde_json::from_value(serde_json::to_value(&ready).unwrap()).unwrap(), &b).unwrap();
         let Some(Change::Edits { edits, .. }) = &r.change else { panic!() };
         assert_eq!(edits[1].category, Some(None));
+        assert_eq!(row(&r, "t:t2").edit.as_ref().unwrap().category_id, None);
     }
 
     #[test]

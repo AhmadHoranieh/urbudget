@@ -116,12 +116,14 @@ Data directory (macOS `~/Library/Application Support/com.localbudget.desktop/`, 
 budgets.json                 # list of budgets and the one last open
 budget.sqlite3               # the first budget, kept in place
 recovery.json                # its unsaved changes, only while they need recovery
-imports/ backups/ exports/   # its API downloads, SQLite snapshots, and exports
+imports/ backups/ exports/   # its API downloads, SQLite snapshots, and spreadsheets opened from the assistant
 budgets/<id>/                # every other budget: the same files in its own folder
 trash/                       # deleted budgets, moved here rather than erased
 secrets.bin                  # saved tokens and keys, sealed (see Secrets); on Windows also secrets.key
 account.json, sync-state.json  # the signed-in email; per budget, the revisions at the last sync
 ```
+
+Exports go where you choose: the JSON backup, the recovery draft, transaction and report CSVs, the YNAB export (a folder), the bank-file template and the assistant's spreadsheets and converted files each open a save panel in Downloads with a suggested name. The panel opens from Rust ([save.rs](src-tauri/src/save.rs)), so the window never names a path, and Show in folder reveals only the data folder and files saved since the app started.
 
 ### Secrets
 

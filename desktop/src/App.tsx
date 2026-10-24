@@ -40,7 +40,7 @@ import { localeDefaults } from "./locale";
 import { AccountForm, CategoryForm, Modal, ReconcileForm, TransactionForm } from "./forms";
 import { configureFormat, errorText, formatDate, money, monthName, shiftMonth } from "./format";
 import { groupNames } from "./categories";
-import { HeaderSlotElement, Menu, MonthPicker, useToast } from "./ui";
+import { HeaderSlotElements, Menu, MonthPicker, useToast } from "./ui";
 import { useTheme } from "./theme";
 import { useLearnPayee } from "./useLearnPayee";
 import { useSteady } from "./useSteady";
@@ -235,8 +235,11 @@ export default function App() {
   const [accountId, setAccountId] = useState("all");
   const [registerFilter, setRegisterFilter] = useState<RegisterFilter | undefined>();
   const layout = useSidebarLayout();
-  // A computer's page header: a slot after the title for a page's own controls (HeaderSlot).
+  // A computer's page header: slots for a page's own controls (HeaderSlot), after the title and
+  // beside undo and redo.
   const [headerSlot, setHeaderSlot] = useState<HTMLElement | null>(null);
+  const [headerActions, setHeaderActions] = useState<HTMLElement | null>(null);
+  const headerSlots = useMemo(() => ({ title: headerSlot, actions: headerActions }), [headerSlot, headerActions]);
   const [theme, setTheme] = useTheme();
   const fail = (e: unknown, prefix = "") => toast({ message: prefix + errorText(e), tone: "error" });
   const [assistantOpen, setAssistantOpen] = useState(() => {
@@ -256,6 +259,8 @@ export default function App() {
   const assistantWidth = useAssistantWidth();
   // The budget right after the assistant's last applied change, so its Undo only shows while it is the latest edit.
   const lastApplied = useRef<{ id: string; budget: Budget } | null>(null);
+  const budgetNow = useRef(budget);
+  budgetNow.current = budget;
   const showAssistant = (open: boolean) => {
     setAssistantOpen(open);
     try {
@@ -343,6 +348,7 @@ export default function App() {
     if (!value) return;
     try {
       const path = recovery ? await api.exportRecoveryDraft(value) : await api.export(value);
+      if (!path) return;
       toast({
         message: recovery ? "Recovery draft exported." : "Full backup exported.",
         action: { label: "Show in folder", onClick: () => void api.reveal(path).catch(fail) },
@@ -355,12 +361,13 @@ export default function App() {
     if (!budget) return;
     void api
       .exportTransactions(budget, account.id, null)
-      .then((path) =>
-        toast({
-          message: `Exported ${account.name}.`,
-          action: { label: "Show in folder", onClick: () => void api.reveal(path).catch(fail) },
-        }),
-      )
+      .then((path) => {
+        if (path)
+          toast({
+            message: `Exported ${account.name}.`,
+            action: { label: "Show in folder", onClick: () => void api.reveal(path).catch(fail) },
+          });
+      })
       .catch((e) => fail(e));
   };
   const reload = () => {
@@ -501,7 +508,17 @@ export default function App() {
       throw e;
     }
     if (after) lastApplied.current = { id: p.id, budget: after };
-    toast({ message: `Applied: ${p.title}`, action: { label: "Undo", onClick: () => void undoProposal(threadId, p) } });
+    toast({
+      message: `Applied: ${p.title}`,
+      action: {
+        label: "Undo",
+        onClick: () => {
+          // As the card's Undo: only while it's still the latest edit, or this would undo the one made since.
+          if (lastApplied.current?.id === p.id && lastApplied.current.budget === budgetNow.current) void undoProposal(threadId, p);
+          else toast({ message: "Not undone: the budget has changed since it was applied." });
+        },
+      },
+    });
     return outcome!.proposal;
   };
   const undoProposal = async (threadId: string, p: Proposal): Promise<Proposal> => {
@@ -595,7 +612,7 @@ export default function App() {
   );
 
   return (
-    <HeaderSlotElement.Provider value={headerSlot}>
+    <HeaderSlotElements.Provider value={headerSlots}>
     <LoanActionsContext.Provider value={loanActions}>
     <div
       className={`app-shell${assistantOpen ? " with-assistant" : ""}${customTitleBar ? " has-titlebar" : ""}`}
@@ -639,6 +656,7 @@ export default function App() {
           <div className="header-actions">
             {!customTitleBar && cloudChips}
             {!customTitleBar && saveStatus}
+            <div className="header-page-actions" ref={setHeaderActions} />
             <button
               className="icon-button"
               aria-label="Undo"
@@ -1123,6 +1141,6 @@ export default function App() {
       )}
     </div>
     </LoanActionsContext.Provider>
-    </HeaderSlotElement.Provider>
+    </HeaderSlotElements.Provider>
   );
 }

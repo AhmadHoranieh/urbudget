@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react";
 import { Download, FileText, FileUp, LoaderCircle, MessageSquareText, Table2, X } from "lucide-react";
 import { api, type BankFixes, type BankRow, type BankSession, type Statement } from "../bridge";
-import { ImportReview, bankTemplate, statementFile, uncategorizedImports, type ImportChoice, type Uncategorized } from "../BankImport";
+import {
+  ImportReview,
+  bankTemplate,
+  statementFile,
+  uncategorizedImports,
+  type ImportChoice,
+  type ReviewChoices,
+  type Uncategorized,
+} from "../BankImport";
 import { errorText } from "../format";
 import type { Budget } from "../types";
 import { Tabs, useToast } from "../ui";
@@ -25,7 +33,10 @@ export type ImportState = {
   proposal?: { threadId: string; id: string };
   /** Lines the assistant changed. */
   assisted?: string[];
+  /** What's chosen in the review, for the session it was chosen in: it outlasts the review, shown again after the file. */
+  choices?: ReviewChoices & { session: string };
 };
+const NO_CHOICES: ReviewChoices = { picked: {} };
 
 /**
  * Importing a bank file, as a page: choose the file, see every line with what became of it and fix
@@ -65,6 +76,8 @@ export function ImportPage({
   } | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  // The import being saved: it lands whatever is clicked meanwhile, so nothing leaves it.
+  const [saving, setSaving] = useState(false);
   const [dragging, setDragging] = useState(false);
   const { account, file, content, session } = state;
   const accountName = budget.accounts.find((a) => a.id === account)?.name ?? "";
@@ -185,6 +198,7 @@ export function ImportPage({
   const save = async (choices: ImportChoice[], importing: number) => {
     if (!reviewed) return;
     setBusy(true);
+    setSaving(true);
     setMessage("");
     try {
       let uncategorized: Uncategorized = { ids: [], accounts: [] };
@@ -200,14 +214,22 @@ export function ImportPage({
       setMessage(errorText(e));
     } finally {
       setBusy(false);
+      setSaving(false);
     }
   };
   const template = async () => {
     try {
-      const path = await api.writeExport("bank-import-template.csv", bankTemplate(budget.accounts.find((a) => a.id === account)?.fileImport?.dateFormat ?? "ymd"));
+      const path = await api.writeExport(
+        "bank-import-template.csv",
+        bankTemplate(budget.accounts.find((a) => a.id === account)?.fileImport?.dateFormat ?? "ymd"),
+      );
+      if (!path) return;
       toast({
         message: "Template saved.",
-        action: { label: "Show in folder", onClick: () => void api.reveal(path).catch((e) => setMessage(errorText(e))) },
+        action: {
+          label: "Show in folder",
+          onClick: () => void api.reveal(path).catch((e) => setMessage(errorText(e))),
+        },
       });
     } catch (e) {
       setMessage(errorText(e));
@@ -255,7 +277,7 @@ export function ImportPage({
           {file && (
             <button
               className="link-button"
-              disabled={busy && !session}
+              disabled={saving || (busy && !session)}
               onClick={() => {
                 onState({ account });
                 setMessage("");
@@ -264,7 +286,7 @@ export function ImportPage({
               Choose another file
             </button>
           )}
-          <button className="secondary small" onClick={onCancel}>
+          <button className="secondary small" disabled={saving} onClick={onCancel}>
             {session ? "Cancel the import" : "Close"}
           </button>
         </span>
@@ -371,6 +393,8 @@ export function ImportPage({
             onFix={(f) => void fix(f)}
             checking={continuing}
             onContinue={() => {
+              // What went wrong before (a change refused) isn't why the review can't be made.
+              setMessage("");
               setContinuing(true);
               onState((was) => ({ ...was, view: "review" }));
             }}
@@ -393,13 +417,9 @@ export function ImportPage({
             rows={reviewed.rows}
             busy={busy}
             icon={<FileText size={18} aria-hidden />}
-            title={
-              <>
-                <strong>{file?.name}</strong> into {accountName}
-              </>
-            }
+            // The page's heading names the file and its account.
             action={
-              <button className="link-button" onClick={() => onState((was) => ({ ...was, view: "editor" }))}>
+              <button className="link-button" disabled={busy} onClick={() => onState((was) => ({ ...was, view: "editor" }))}>
                 <Table2 size={14} aria-hidden />
                 {attention || out
                   ? ` ${[attention && `${attention} need attention`, out && `${out} left out`].filter(Boolean).join(" · ")} · `
@@ -410,6 +430,13 @@ export function ImportPage({
             cancelLabel="Back to the file"
             onCancel={() => onState((was) => ({ ...was, view: "editor" }))}
             onImport={(choices, count) => void save(choices, count)}
+            // Kept with the import, so the file looked at again (or another page) doesn't undo them.
+            choices={state.choices?.session === session.scope.session ? state.choices : NO_CHOICES}
+            onChoices={(next) =>
+              onState((was) =>
+                was.session?.scope.session === session.scope.session ? { ...was, choices: { ...next, session: session.scope.session } } : was,
+              )
+            }
           />
         </div>
       )}

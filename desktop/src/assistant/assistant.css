@@ -563,6 +563,10 @@
   font: inherit;
   resize: none;
 }
+/* The composer around it shows the focus, not the field's own ring. */
+.assistant-composer textarea:focus {
+  box-shadow: none;
+}
 .assistant-compose-row {
   display: flex;
   gap: 4px;

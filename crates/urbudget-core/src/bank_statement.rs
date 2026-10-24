@@ -443,6 +443,8 @@ struct Extra {
     /// A statement's line as the file writes it, with its bank ID; empty for a CSV's, which is
     /// its line's cells as written.
     written: Vec<String>,
+    /// The transaction 1.0.8 read a CSV's line as (see `bank_csv::CsvLine::then`).
+    then: Option<BankTransaction>,
 }
 struct Reading {
     statement: Statement,
@@ -517,7 +519,7 @@ fn reading(b: &Budget, account: &str, content: &str, session: &Session) -> Resul
                     } else {
                         Status::Attention { field: Field::Date, column: None, reason: reason.clone() }
                     };
-                    extra.push(Extra { transaction: None, original: None, reserves: false, bank_id: String::new(), written: vec![] });
+                    extra.push(Extra { transaction: None, original: None, reserves: false, bank_id: String::new(), written: vec![], then: None });
                     statement.lines.push(Line {
                         version: version(&id),
                         included: false,
@@ -558,7 +560,7 @@ fn reading(b: &Budget, account: &str, content: &str, session: &Session) -> Resul
                         .unwrap_or_else(|| r.amount_columns.iter().map(|&i| cell(&l.cells, i)).find(|c| !c.trim().is_empty()).unwrap_or_default()),
                 },
             };
-            extra.push(Extra { transaction: l.transaction, original: l.original, reserves: l.reserves, bank_id: l.bank_id, written: vec![] });
+            extra.push(Extra { transaction: l.transaction, original: l.original, reserves: l.reserves, bank_id: l.bank_id, written: vec![], then: l.then });
             statement.lines.push(Line {
                 version: version(&id),
                 included: edits.include.contains(&id),
@@ -612,7 +614,7 @@ fn reading(b: &Budget, account: &str, content: &str, session: &Session) -> Resul
             });
             let mut written = written;
             written.push(l.bank_id.clone());
-            extra.push(Extra { transaction: l.transaction, original: l.original, reserves: l.reserves, bank_id: l.bank_id, written });
+            extra.push(Extra { transaction: l.transaction, original: l.original, reserves: l.reserves, bank_id: l.bank_id, written, then: None });
         }
         statement.sources = read.sources.iter().map(|s| SourceInfo { label: s.label.clone(), currency: s.currency.clone(), lines: s.lines }).collect();
         statement.source = (!read.sources.is_empty()).then_some(read.source);
@@ -778,10 +780,38 @@ pub fn preview_statement(b: &Budget, account: &str, content: &str, session: &Ses
     // Lines that read only with help are known by the line as written too.
     let helped = |i: usize| read.extra[i].original.is_none() && all[i].status == Status::Ready;
     let mut aliases = if (0..all.len()).any(helped) { aliases(account, all, &read.extra, helped) } else { vec![None; all.len()] };
+    // And by the ID 1.0.8 gave the line, where it read it otherwise (another column for the
+    // payee, a fee taken off, spaces tidied): a file it imported is found imported still.
+    let mut seen: HashMap<String, usize> = HashMap::new();
+    let mut earlier: Vec<Option<String>> = read
+        .extra
+        .iter()
+        .map(|e| {
+            let t = e.then.as_ref()?;
+            let signature = if t.fit.is_empty() {
+                let key = serde_json::json!([t.date, t.payee, t.memo, t.amount]).to_string();
+                let n = seen.entry(key.clone()).or_default();
+                *n += 1;
+                format!("idless:v2:{key}:{n}")
+            // The same bank ID is the ID today's import gives its first line already.
+            } else if t.fit != e.bank_id {
+                format!("fit:{}", t.fit)
+            } else {
+                return None;
+            };
+            Some(bank_import::bank_id_of(account, &signature))
+        })
+        .collect();
+    // Never another line's own ID: 1.0.8 gave lines sharing a bank ID one ID between them, and a
+    // line it read untidied can read as another does now.
+    let own: HashSet<String> = who.iter().flatten().map(|w| bank_import::bank_id_of(account, &w.signature)).collect();
     let (mut rows, mut lines) = (vec![], vec![]);
     for (i, (e, who)) in read.extra.into_iter().zip(who).enumerate() {
         if let (Status::Ready, Some(t), Some(mut who)) = (&all[i].status, e.transaction, who) {
             who.aliases.extend(aliases[i].take());
+            if let Some(then) = earlier[i].take().filter(|then| !own.contains(then) && !who.aliases.contains(then)) {
+                who.aliases.push(then);
+            }
             rows.push((t, who));
             lines.push(all[i].id.clone());
         }

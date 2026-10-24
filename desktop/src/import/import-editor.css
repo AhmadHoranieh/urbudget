@@ -25,7 +25,12 @@
   min-width: 0;
 }
 /* Each stage (the file's lines, the review) comes in softly as it replaces the other. */
+/* Stands between the page and what it shows, which keeps the page's spacing. */
 .import-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
   animation: import-stage-in 0.18s var(--ease);
 }
 @keyframes import-stage-in {
