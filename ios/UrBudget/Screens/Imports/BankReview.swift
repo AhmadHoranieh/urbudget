@@ -31,6 +31,8 @@ struct BankReviewRow: Identifiable, Sendable {
     var transfer: String?
     /// The bank text backs that transfer up, so it's chosen; otherwise it's only suggested.
     var transferSure = false
+    /// Money in that may be a refund of a purchase: what it's of ("Refund of Shop · 23.99 on 7 Oct 2026 · Shopping").
+    var refund: String?
 
     /// The row's decision, given the choices made so far.
     func decision(_ chosen: String?) -> String { locked ? "skip" : chosen ?? initial }
@@ -44,6 +46,7 @@ struct BankReviewSummary: Equatable, Sendable {
     var idless: Bool
     var allIn: Bool
     var transfers = false
+    var refunds = 0
 }
 
 /// The bank review the desktop's BankImport.tsx and Android's EditorPreparation.kt build: each
@@ -82,7 +85,7 @@ enum BankReview {
                           renamed: rows.count { !$0.duplicate && $0.bankText != nil },
                           idless: rows.contains { $0.possibleDuplicate || $0.idless && $0.duplicate },
                           allIn: rows.count >= 3 && rows.allSatisfy { $0.amount > 0 },
-                          transfers: rows.contains { $0.transfer != nil })
+                          transfers: rows.contains { $0.transfer != nil }, refunds: rows.count { $0.refund != nil })
     }
 
     /// "12 rows · 3 already imported · 2 renamed by your payee rules".
@@ -90,6 +93,7 @@ enum BankReview {
         var text = summary.rows == 1 ? "1 row" : "\(summary.rows) rows"
         if summary.duplicates > 0 { text += " · \(summary.duplicates) already imported" }
         if summary.renamed > 0 { text += " · \(summary.renamed) renamed by your payee rules" }
+        if summary.refunds > 0 { text += " · \(summary.refunds) \(summary.refunds == 1 ? "refund" : "refunds")" }
         return text
     }
 
@@ -117,6 +121,8 @@ enum BankReview {
         for transaction in budget.rows("transactions") { transactions[transaction.text("id")] = transaction }
         var accountNames: [String: String] = [:]
         for account in budget.rows("accounts") { accountNames[account.text("id")] = account.text("name") }
+        var categoryNames: [String: String] = [:]
+        for category in budget.rows("categories") { categoryNames[category.text("id")] = category.text("name") }
         var pools: [Int: Pool] = [:]
 
         func pool(_ source: JSON) -> Pool {
@@ -181,7 +187,8 @@ enum BankReview {
                 bankText: rename == nil ? nil : bankPayee, memo: memo, amount: amount,
                 amountText: Money.format(amount, currency: currency), duplicate: duplicate, possibleDuplicate: possible, idless: idless,
                 detail: [date, memo].filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.joined(separator: " · "),
-                transfer: duplicate ? nil : set.transfer, transferSure: set.transferSure))
+                transfer: duplicate ? nil : set.transfer, transferSure: set.transferSure,
+                refund: duplicate || !row["refundOf"].isObject ? nil : BankStatementText.refund(row["refundOf"], categories: categoryNames, currency: currency)))
         }
         return prepared
     }
@@ -252,6 +259,10 @@ struct BankReviewItem: View {
             }
             if let bank = row.bankText {
                 Text("Bank: \(bank)").font(.footnote).foregroundStyle(Color.secondary).lineLimit(1)
+            }
+            // Imported, a refund takes its purchase's category when it has none.
+            if let refund = row.refund {
+                Label(refund, systemImage: "arrow.uturn.backward").font(.footnote.weight(.semibold)).foregroundStyle(Color.urAccent).lineLimit(2)
             }
             if !row.detail.isEmpty {
                 Text(row.detail).font(.footnote).foregroundStyle(Color.secondary).lineLimit(2)
