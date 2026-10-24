@@ -78,6 +78,9 @@ struct BankFileImportView: View {
         return statement
     }
     private var busy: Bool { loading || saving || (session != nil && current == nil) }
+    /// Most changes take a moment: the screen only looks busy (greyed, a spinner) for one that
+    /// lasts, so a quick one doesn't flash it.
+    @State private var slow = false
 
     var body: some View {
         NavigationStack(path: $route) {
@@ -121,6 +124,11 @@ struct BankFileImportView: View {
             Text("Nothing has been imported yet. The changes and choices you made are lost.")
         }
         .onAppear(perform: begin)
+        .task(id: busy) {
+            guard busy else { slow = false; return }
+            try? await Task.sleep(for: .milliseconds(300))
+            if !Task.isCancelled { slow = busy }
+        }
         .onChange(of: store.revision) { _, now in
             // Sync, Undo or another screen changed the budget: read the file and check the rows again against it.
             guard session != nil, !saving else { return }
@@ -136,7 +144,7 @@ struct BankFileImportView: View {
             .disabled(saving)
         }
         ToolbarItem(placement: .confirmationAction) {
-            if saving || (busy && session != nil) {
+            if saving || (slow && session != nil) {
                 ProgressView()
             } else if stage == .review, let preview {
                 let counts = BankReview.counts(preview.rows, decisions)
@@ -250,18 +258,22 @@ struct BankFileImportView: View {
                     }
                 }
                 if shown.format == "csv" {
-                    Toggle("Purchases are positive (reverse amount signs)", isOn: Binding(get: { structure.flag("flipSigns") },
-                                                                                          set: { on in restructure { $0["flipSigns"] = .bool(on) } }))
+                    // Some card issuers write a purchase as a positive number and a payment as a negative one.
+                    Picker("Purchases in the file", selection: Binding(get: { structure.flag("flipSigns") },
+                                                                       set: { on in restructure { $0["flipSigns"] = .bool(on) } })) {
+                        Text("Negative, as bank accounts write them").tag(false)
+                        Text("Positive, as many card statements write them").tag(true)
+                    }
                 }
             }
-            .disabled(busy) }
+            .disabled(slow) }
             notices(shown)
             if !attention.isEmpty {
                 Section {
                     Notice(text: "The assistant can fix these lines from what the file says, and asks you about anything unclear. You see each fix before it's applied.",
                            tone: "info", icon: "sparkles", action: "Fix with the assistant") { fixWithAssistant() }
                         .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
-                        .disabled(busy)
+                        .disabled(slow)
                     ForEach(attention) { line in
                         lineRow(line, state: line.problem, tone: .urWarning, actions: [batchAction(line, shown), undo(line)].compactMap { $0 }) { fixing = line }
                     }
@@ -336,7 +348,7 @@ struct BankFileImportView: View {
             Notice(text: "The dates don't say whether the day or the month comes first: is \(example)", icon: "exclamationmark.triangle.fill", action: first.1,
                    secondary: .init(label: second.1) { order(second.0) }) { order(first.0) }
                 .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
-                .disabled(busy)
+                .disabled(slow)
         }
         if shown.signsUnconfirmed {
             Notice(text: "Every amount that reads is positive. Is money out told by the transaction types (DEBIT, POS…)?", icon: "exclamationmark.triangle.fill",
@@ -344,7 +356,7 @@ struct BankFileImportView: View {
                 restructure { $0["signsByType"] = true }
             }
             .listRowInsets(EdgeInsets()).listRowBackground(Color.clear)
-            .disabled(busy)
+            .disabled(slow)
         }
     }
 
@@ -364,12 +376,12 @@ struct BankFileImportView: View {
                 }
             }
             .buttonStyle(.borderless)
-            .disabled(edit == nil || busy)
+            .disabled(edit == nil || slow)
             Text(state).font(.footnote.weight(.semibold)).foregroundStyle(tone).lineLimit(3)
             if !actions.isEmpty {
                 HStack(spacing: 18) {
                     ForEach(actions.indices, id: \.self) { index in
-                        Button(actions[index].0, action: actions[index].1).font(.subheadline.weight(.semibold)).buttonStyle(.borderless).disabled(busy)
+                        Button(actions[index].0, action: actions[index].1).font(.subheadline.weight(.semibold)).buttonStyle(.borderless).disabled(slow)
                     }
                 }
             }
@@ -419,9 +431,9 @@ struct BankFileImportView: View {
             }
             BankReviewNotes(summary: preview.summary, undecided: counts.undecided)
             Section {
-                BankReviewRows(rows: preview.rows, decisions: $decisions, enabled: !busy)
+                BankReviewRows(rows: preview.rows, decisions: $decisions, enabled: !slow && !saving)
             } header: {
-                BankReviewHeader(rows: preview.rows, decisions: $decisions, undecided: counts.undecided, enabled: !busy)
+                BankReviewHeader(rows: preview.rows, decisions: $decisions, undecided: counts.undecided, enabled: !slow && !saving)
             } footer: {
                 Text(BankReview.matchingNote)
             }
@@ -555,7 +567,8 @@ struct BankFileImportView: View {
 
     /// Applies changes to the import where they still fit it, then reads the file again.
     private func fix(_ fixes: JSON) {
-        guard let session, let content else { return }
+        // While a change applies, the lines' versions are the ones before it.
+        guard !busy, let session, let content else { return }
         loading = true
         error = nil
         notice = nil

@@ -20,6 +20,7 @@ import { api } from "../bridge";
 import { demoBudget } from "../demo";
 import { ToastProvider } from "../ui";
 import { ImportPage, type ImportState } from "./ImportPage";
+import { applyToLatest, roles, withRole } from "./model";
 
 afterEach(cleanup);
 beforeEach(() => vi.clearAllMocks());
@@ -233,7 +234,7 @@ it("never shows a review made before a change to the file", async () => {
   expect(await screen.findByRole("button", { name: "Import 2 transactions" })).toBeTruthy();
   // Back to the file for a change, then on to the review while it's still being checked.
   fireEvent.click(screen.getByRole("button", { name: /Check the file/ }));
-  fireEvent.click(await screen.findByLabelText("Purchases are positive"));
+  fireEvent.change(await screen.findByLabelText("Purchases in the file"), { target: { value: "positive" } });
   await waitFor(() => expect(api.bankApplyFixes).toHaveBeenCalledTimes(1));
   vi.mocked(api.bankStatementPreview).mockImplementationOnce(() => new Promise(() => {}));
   const next = await screen.findByRole("button", { name: "Continue to the review" });
@@ -294,6 +295,84 @@ it("keeps an answered date order one choice away, and waits for how the file tel
   expect(screen.getByRole("option", { name: "Month first (01/02/2026 is 2 January 2026)" })).toBeTruthy();
   fireEvent.change(dates, { target: { value: "mdy" } });
   await waitFor(() => expect(sent().structure).toMatchObject({ dateOrder: { order: "mdy", confirmed: true } }));
+});
+
+it("doesn't dim the lines for a quick change, and makes one asked for meanwhile after it", async () => {
+  engine((s) => statement(s, [bakery, grocer, lunch]));
+  render(<Page />);
+  choose(csv());
+  const purchases = (await screen.findByLabelText("Purchases in the file")) as HTMLSelectElement;
+  // The first change takes its time.
+  let finish: () => void = () => {};
+  const apply = vi.mocked(api.bankApplyFixes).getMockImplementation()!;
+  vi.mocked(api.bankApplyFixes).mockImplementationOnce((...args) => new Promise((r) => (finish = () => r(apply(...args)))));
+  fireEvent.change(purchases, { target: { value: "positive" } });
+  // Nothing dims or locks for a moment's work.
+  expect((screen.getByRole("button", { name: "Amount of line 30: n/a" }) as HTMLButtonElement).disabled).toBe(false);
+  expect(purchases.disabled).toBe(false);
+  // Another change meanwhile waits for it, then is made on the import as the first left it.
+  fireEvent.change(screen.getByLabelText("What column 2 holds"), { target: { value: "memo" } });
+  expect(api.bankApplyFixes).toHaveBeenCalledTimes(1);
+  finish();
+  await waitFor(() => expect(api.bankApplyFixes).toHaveBeenCalledTimes(2));
+  expect(sent()).toMatchObject({ baseRevision: 1, structure: { flipSigns: true, columns: { memo: "Payee", payee: null } } });
+});
+
+it("makes a change again on the import as another left it, so neither undoes the other", async () => {
+  const base = session("s1", 0);
+  const mine = { ...base, revision: 1 };
+  const theirs = { ...base, revision: 1, edits: { ...base.edits, fields: { "30": { amount: "-12.40" } } } };
+  const both = { ...theirs, revision: 2 };
+  let now: BankSession = base;
+  const apply = vi.fn(async (s: BankSession) => {
+    // The assistant's fix lands while the user's change is being made.
+    if (s === base) {
+      now = theirs;
+      return { session: mine, results: [] };
+    }
+    return { session: both, results: [] };
+  });
+  const applied = await applyToLatest(() => now, apply);
+  expect(apply.mock.calls.map(([s]) => s)).toEqual([base, theirs]);
+  expect(applied).toMatchObject({ base: theirs, session: both });
+  // A change for a file since replaced is dropped.
+  now = base;
+  expect(await applyToLatest(() => now, async () => ((now = session("s2")), { session: mine, results: [] }))).toBeNull();
+});
+
+it("keeps both of two changes that land at once", async () => {
+  const first = session("s9", 0);
+  // An engine that makes a change on the session it's given.
+  const engine = (id: string) => async (s: BankSession) => ({
+    session: { ...s, revision: s.revision + 1, edits: { ...s.edits, fields: { ...s.edits.fields, [id]: { amount: "-1" } } } },
+    results: [],
+  });
+  let shown = first;
+  const install = (applied: Awaited<ReturnType<typeof applyToLatest>>) => {
+    // As a state update does: kept only if it's for the import as it is.
+    if (applied && shown === applied.base) shown = applied.session;
+  };
+  // Both start on the same import; neither result shows before the other lands.
+  const [a, b] = await Promise.all([applyToLatest(() => first, engine("one")), applyToLatest(() => first, engine("two"))]);
+  install(a);
+  install(b);
+  expect(Object.keys(shown.edits.fields).sort()).toEqual(["one", "two"]);
+});
+
+it("chooses a column whose name another column has too by its place", () => {
+  const headers = ["Date", "Payee", "Amount", "Amount", ""];
+  const chosen = withRole(headers, { date: "Date", payee: "Payee", amount: "Amount" }, 3, "amount");
+  expect(chosen.amount).toBe("#4");
+  expect(roles(headers, chosen)).toEqual(["date", "payee", null, "amount", null]);
+  // A column without a name, likewise; and a choice moves off the column it was on.
+  const memo = withRole(headers, chosen, 4, "memo");
+  expect(roles(headers, memo)[4]).toBe("memo");
+  expect(roles(headers, withRole(headers, memo, 4, null))[4]).toBeNull();
+  // A column named like a place doesn't take another's choice.
+  const odd = ["Date", "#4", "Amount", "Amount"];
+  const placed = withRole(odd, { date: "Date", amount: "#3" }, 3, "amount");
+  expect(placed.amount).toBe("##4");
+  expect(roles(odd, placed)).toEqual(["date", null, null, "amount"]);
 });
 
 it("shows a cell's new value at once, while the file reads again", async () => {
@@ -366,7 +445,7 @@ it("reads another account of the file, a card's purchases as positive, and anoth
   choose(new File([new Uint8Array([0x50, 0x4b, 0x03, 0x04])], "Movimientos.xlsx"));
   fireEvent.change(await screen.findByLabelText("Account in the file"), { target: { value: "1" } });
   await waitFor(() => expect(sent().structure).toMatchObject({ source: "B2" }));
-  fireEvent.click(screen.getByLabelText("Purchases are positive"));
+  fireEvent.change(screen.getByLabelText("Purchases in the file"), { target: { value: "positive" } });
   await waitFor(() => expect(sent().structure).toMatchObject({ flipSigns: true }));
   expect(api.bankSession).toHaveBeenLastCalledWith(
     expect.anything(),

@@ -1,4 +1,4 @@
-import type { BankField, BankFixes, BankSession, BankStructure, LeftOutReason, Statement, StatementLine } from "../bridge";
+import type { BankField, BankFixes, BankSession, BankStructure, FixResult, LeftOutReason, Statement, StatementLine } from "../bridge";
 import type { BankColumns } from "../types";
 
 /** What a line left out is, by why. */
@@ -52,12 +52,47 @@ export const needsEditor = (st: Statement) =>
   st.counts.attention > 0 || st.counts.ready === 0 || !!st.dateOrder?.unconfirmed || !!st.signs?.unconfirmed;
 
 /** Changes to a session, made against its current revision. */
-export const fixesFor = (session: BankSession, change: Omit<Partial<BankFixes>, "scope" | "baseRevision" | "baseStructure">): BankFixes => ({
+export const fixesFor = (
+  session: BankSession,
+  change: Omit<Partial<BankFixes>, "scope" | "baseRevision" | "baseStructure">,
+): BankFixes => ({
   scope: session.scope,
   baseRevision: session.revision,
   baseStructure: session.structure,
   ...change,
 });
+/**
+ * Changes applied to an import as it is when they land. Another change can land while these are
+ * being made (the user's while the assistant's apply, or the other way round): they're then made
+ * again on the import as that one left it, so neither undoes the other. `now` gives the import's
+ * session as it is now; `base` is the session the result is for, to keep it only if it still is.
+ */
+export async function applyToLatest(
+  now: () => BankSession | undefined,
+  apply: (session: BankSession) => Promise<{ session: BankSession; results: FixResult[] }>,
+): Promise<{ base: BankSession; session: BankSession; results: FixResult[] } | null> {
+  let base = latestOf(now());
+  for (let tries = 0; base && tries < 3; tries++) {
+    const applied = await apply(base);
+    const latest = latestOf(now());
+    if (latest === base) {
+      replaced.set(base, applied.session);
+      return { base, ...applied };
+    }
+    // Another file since: these were for an import that's gone.
+    if (!latest || latest.scope.session !== base.scope.session) return null;
+    base = latest;
+  }
+  if (!base) return null;
+  throw new Error("The import kept changing while this was made. Try it again.");
+}
+/** The session each change made, by the one it was made on: one that lands before it shows is still the latest. */
+const replaced = new WeakMap<BankSession, BankSession>();
+const latestOf = (session: BankSession | undefined) => {
+  while (session && replaced.has(session)) session = replaced.get(session);
+  return session;
+};
+
 /** The session read another way. */
 export const restructure = (session: BankSession, change: Partial<BankStructure>) =>
   fixesFor(session, { structure: { ...session.structure, ...change } });
@@ -73,11 +108,27 @@ export const ROLES: [keyof BankColumns, string][] = [
   ["id", "Bank ID"],
 ];
 /** What each column holds now, by its place. */
+/** Where a chosen column is: by its name, or by its place ("#4") where its name doesn't say which (bank_csv.rs `position`). */
+export function columnAt(headers: string[], name: string | null | undefined) {
+  if (!name) return -1;
+  const named = headers.findIndex((h) => h.trim() === name.trim());
+  if (named >= 0) return named;
+  const place = /^#+(\d+)$/.exec(name.trim());
+  return place && Number(place[1]) >= 1 && Number(place[1]) <= headers.length ? Number(place[1]) - 1 : -1;
+}
+/** How a column is chosen: by its name when no other column has it, else by its place. */
+export function columnName(headers: string[], column: number) {
+  const name = headers[column]?.trim() ?? "";
+  if (name && headers.filter((h) => h.trim() === name).length === 1) return headers[column];
+  // A place, written so no column's own name reads as it ("##4" where a column is named "#4").
+  let place = `#${column + 1}`;
+  while (headers.some((h) => h.trim() === place)) place = `#${place}`;
+  return place;
+}
 export function roles(headers: string[], columns: BankColumns | undefined | null) {
   const out: (keyof BankColumns | null)[] = headers.map(() => null);
   for (const [role] of ROLES) {
-    const name = columns?.[role];
-    const at = name ? headers.findIndex((h) => h.trim() === name.trim()) : -1;
+    const at = columnAt(headers, columns?.[role]);
     if (at >= 0) out[at] = role;
   }
   return out;
@@ -85,8 +136,8 @@ export function roles(headers: string[], columns: BankColumns | undefined | null
 /** The columns with one column's role changed: a role is one column's at a time. */
 export function withRole(headers: string[], columns: BankColumns | undefined | null, column: number, role: keyof BankColumns | null) {
   const next: BankColumns = { ...(columns ?? {}) };
-  for (const [r] of ROLES) if (next[r] && next[r]!.trim() === headers[column]?.trim()) next[r] = null;
-  if (role) next[role] = headers[column];
+  for (const [r] of ROLES) if (columnAt(headers, next[r]) === column) next[r] = null;
+  if (role) next[role] = columnName(headers, column);
   // One amount column, or money out and in apart.
   if (role === "amount") next.outflow = next.inflow = null;
   if (role === "outflow" || role === "inflow") next.amount = null;

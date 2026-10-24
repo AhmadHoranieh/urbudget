@@ -21,6 +21,7 @@ import { LoanPlanner } from "./LoanPlanner";
 import { LoanPaymentForm } from "./LoanPayment";
 import { ATTACH_LIMIT, categorizeText, fixImportText, importHelpText, type Uncategorized } from "./BankImport";
 import { ImportPage, type ImportState } from "./import/ImportPage";
+import { applyToLatest } from "./import/model";
 import { BankSync, BankSyncDetails, syncHelpText } from "./BankSync";
 import { Payees } from "./PayeesPage";
 import { Reports } from "./Reports";
@@ -223,6 +224,9 @@ export default function App() {
   const [page, setPage] = useState<Page>(startPage);
   // A bank file being imported, kept while someone looks elsewhere.
   const [importing, setImporting] = useState<ImportState | null>(null);
+  // The import as it is now, for the assistant's fixes that land after a change of the user's.
+  const importingNow = useRef(importing);
+  importingNow.current = importing;
   const openImport = (next: ImportState) => {
     // One import at a time: an unfinished one is where the next starts.
     if (!importing?.session || next.file) setImporting(next);
@@ -454,10 +458,15 @@ export default function App() {
     const open = importing?.session && importing.content !== undefined ? importing : null;
     if (!fixes || !open?.session || open.content === undefined) throw new Error("Open the import these fixes are for.");
     if (fixes.scope.session !== open.session.scope.session) throw new Error("These fixes are for another import.");
-    const applied = await api.bankApplyFixes(budget!, open.account, open.content, open.session, fixes);
+    // Made on the import as it is when they land: a change of the user's meanwhile stays.
+    const applied = await applyToLatest(
+      () => importingNow.current?.session,
+      (base) => api.bankApplyFixes(budget!, open.account, open.content!, base, fixes),
+    );
+    if (!applied) throw new Error("These fixes are for another import.");
     const lines = applied.results.filter((r) => r.applied && r.line).map((r) => r.line!);
     setImporting((was) =>
-      was?.session?.scope.session === fixes.scope.session
+      was?.session === applied.base
         ? { ...was, session: applied.session, view: "editor", assisted: [...new Set([...(was.assisted ?? []), ...lines])] }
         : was,
     );

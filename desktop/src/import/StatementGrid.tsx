@@ -1,8 +1,10 @@
 import { memo, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
-import { AlertTriangle, Check, MessageSquareText, RotateCcw, Sparkles } from "lucide-react";
+import { AlertTriangle, Check, LoaderCircle, MessageSquareText, RotateCcw, Sparkles } from "lucide-react";
 import type { BankFixes, BankSession, BatchInfo, Statement, StatementLine } from "../bridge";
 import type { BankColumns } from "../types";
+import { formatDate, money } from "../format";
 import { Tabs, useVirtualRows } from "../ui";
+import { useSteady } from "../useSteady";
 import { FIELDS, INCLUDABLE, ROLES, fixesFor, leftOutText, readings, restructure, roles, shown, withRole, type Filter } from "./model";
 
 /** Each line is this tall, so a long file only renders the lines in view. */
@@ -17,6 +19,8 @@ type LineActions = {
   header: (line: StatementLine) => void;
   whole: (entry: string, on: boolean) => void;
 };
+/** A change to the import, made against it as it is when it's made. */
+type Build = (session: BankSession, statement: Statement) => BankFixes;
 /** A cell given a new value, shown as it until the file reads again. */
 type Pending = { line: string; column: number; to: string; revision: number };
 
@@ -33,9 +37,11 @@ export function StatementGrid({
   onFix,
   onContinue,
   onAssistant,
+  checking = false,
 }: {
   statement: Statement;
   session: BankSession;
+  /** A change is being applied, or the file read again: nothing else is changed meanwhile. */
   busy: boolean;
   /** Lines the assistant changed. */
   assisted: ReadonlySet<string>;
@@ -43,7 +49,12 @@ export function StatementGrid({
   onContinue: () => void;
   /** Hands the lines that need attention to the assistant. */
   onAssistant?: () => void;
+  /** On to the review: its lines are being checked against the budget. */
+  checking?: boolean;
 }) {
+  // Most changes take a moment: the grid only looks busy (dimmed, with a progress line) for one
+  // that lasts, so a quick one doesn't flash it.
+  const slow = useSteady(busy, (b) => b, 300);
   const [filter, setFilter] = useState<Filter>(statement.counts.attention ? "attention" : "all");
   const [editing, setEditing] = useState<{
     line: string;
@@ -74,59 +85,55 @@ export function StatementGrid({
   const s = session.structure;
 
   // The handlers read the session as it is now, so the rows keep the same ones and only redraw
-  // when what they show changes.
-  const latest = useRef({ session, statement, onFix });
-  latest.current = { session, statement, onFix };
-  const actions = useMemo<LineActions>(() => {
-    const fix = (change: Parameters<typeof fixesFor>[1]) => latest.current.onFix(fixesFor(latest.current.session, change));
+  // when what they show changes. A change asked for while another applies waits for it, then is
+  // made against the import as it is then (the latest one asked for, if several were).
+  const latest = useRef({ session, statement, onFix, busy });
+  latest.current = { session, statement, onFix, busy };
+  const queued = useRef<Build | null>(null);
+  const actions = useMemo<LineActions & { send: (build: Build) => void }>(() => {
+    const send = (build: Build) => {
+      const now = latest.current;
+      if (now.busy) queued.current = build;
+      else now.onFix(build(now.session, now.statement));
+    };
+    // A line's change, against the line as it reads when it's made.
+    const onLine = (line: StatementLine, change: (l: StatementLine) => Parameters<typeof fixesFor>[1]) =>
+      send((now, st) => fixesFor(now, change(st.lines.find((l) => l.id === line.id) ?? line)));
     return {
+      send,
       edit: (line, column) => setEditing({ line, column }),
       commit: (line, column, to) => {
         setEditing(null);
         if (to === null || to.trim() === line.cells[column]?.trim()) return;
-        setPending({
-          line: line.id,
-          column,
-          to: to.trim(),
-          revision: latest.current.statement.revision,
-        });
-        fix({
-          cells: [
-            {
-              line: line.id,
-              lineVersion: line.version,
-              column,
-              from: line.cells[column] ?? "",
-              to,
-            },
-          ],
-        });
+        setPending({ line: line.id, column, to: to.trim(), revision: latest.current.statement.revision });
+        onLine(line, (l) => ({ cells: [{ line: l.id, lineVersion: l.version, column, from: l.cells[column] ?? "", to }] }));
       },
-      include: (line, on) =>
-        fix({
-          include: [{ line: line.id, lineVersion: line.version, include: on }],
+      include: (line, on) => onLine(line, (l) => ({ include: [{ line: l.id, lineVersion: l.version, include: on }] })),
+      revert: (line) => onLine(line, (l) => ({ revert: [{ line: l.id, lineVersion: l.version }] })),
+      header: (line) => send((now) => restructure(now, { headerLine: Number(line.id) })),
+      whole: (entry, on) =>
+        send((now) => {
+          const was = now.structure.wholeBatches ?? [];
+          return restructure(now, { wholeBatches: on ? [...was, entry] : was.filter((e) => e !== entry) });
         }),
-      revert: (line) => fix({ revert: [{ line: line.id, lineVersion: line.version }] }),
-      header: (line) => latest.current.onFix(restructure(latest.current.session, { headerLine: Number(line.id) })),
-      whole: (entry, on) => {
-        const was = latest.current.session.structure.wholeBatches ?? [];
-        latest.current.onFix(
-          restructure(latest.current.session, {
-            wholeBatches: on ? [...was, entry] : was.filter((e) => e !== entry),
-          }),
-        );
-      },
     };
   }, []);
+  useEffect(() => {
+    if (busy || !queued.current) return;
+    const build = queued.current;
+    queued.current = null;
+    onFix(build(session, statement));
+  }, [busy]);
   // A new reading of the file shows the cell as it reads; one that failed shows it as it was.
   useEffect(() => setPending((p) => (p && p.revision !== statement.revision ? null : p)), [statement.revision]);
   useEffect(() => {
     if (!busy) setPending((p) => (p && p.revision === statement.revision && session.revision === statement.revision ? null : p));
   }, [busy, statement.revision, session.revision]);
 
+  const act = actions.send;
   const asColumn = (column: number, value: string) =>
-    onFix(
-      restructure(session, {
+    act((now) =>
+      restructure(now, {
         columns: withRole(statement.headers, statement.columns, column, (value || null) as keyof BankColumns | null),
       }),
     );
@@ -142,23 +149,20 @@ export function StatementGrid({
   const attention = statement.counts.attention;
   const width = Math.max(1, statement.headers.length);
   const sources = statement.sources ?? [];
-  const order = (o: "dmy" | "mdy") => onFix(restructure(session, { dateOrder: { order: o, confirmed: true } }));
+  const order = (o: "dmy" | "mdy") => act((now) => restructure(now, { dateOrder: { order: o, confirmed: true } }));
   return (
-    <div className="statement-editor">
+    <div className={`statement-editor${slow ? " slow" : ""}`}>
       <div className="statement-bar">
         {sources.length > 1 && (
           <label className="statement-source">
             Account in the file
             <select
               value={statement.source ?? 0}
-              disabled={busy}
-              onChange={(e) =>
-                onFix(
-                  restructure(session, {
-                    source: sources[Number(e.target.value)].label,
-                  }),
-                )
-              }
+              disabled={slow}
+              onChange={(e) => {
+                const source = sources[Number(e.target.value)].label;
+                act((now) => restructure(now, { source }));
+              }}
             >
               {sources.map((source, i) => (
                 <option key={source.label} value={i}>
@@ -173,7 +177,7 @@ export function StatementGrid({
           // Answered once, the date order stays one choice away.
           <label className="statement-choice">
             Dates
-            <select value={answered.order} disabled={busy} onChange={(e) => order(e.target.value as "dmy" | "mdy")}>
+            <select value={answered.order} disabled={slow} onChange={(e) => order(e.target.value as "dmy" | "mdy")}>
               <option value="dmy">Day first{named ? ` (${answered.example} is ${named.dmy})` : ""}</option>
               <option value="mdy">
                 Month first
@@ -187,14 +191,11 @@ export function StatementGrid({
             Money out
             <select
               value={statement.signs.byType ? "type" : "written"}
-              disabled={busy}
-              onChange={(e) =>
-                onFix(
-                  restructure(session, {
-                    signsByType: e.target.value === "type",
-                  }),
-                )
-              }
+              disabled={slow}
+              onChange={(e) => {
+                const signsByType = e.target.value === "type";
+                act((now) => restructure(now, { signsByType }));
+              }}
             >
               <option value="type">Told by the transaction types</option>
               <option value="written">As the amounts are written</option>
@@ -202,14 +203,24 @@ export function StatementGrid({
           </label>
         )}
         {table && (
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={s.flipSigns}
-              disabled={busy}
-              onChange={(e) => onFix(restructure(session, { flipSigns: e.target.checked }))}
-            />
-            Purchases are positive
+          // Some card issuers write a purchase as a positive number and a payment as a negative one.
+          <label
+            className="statement-choice"
+            title="How the file writes a purchase. Card statements often write purchases as positive numbers and payments as negative ones; choosing that turns every amount's sign."
+          >
+            Purchases in the file
+            <select
+              value={s.flipSigns ? "positive" : "negative"}
+              disabled={slow}
+              onChange={(e) => {
+                // Read as chosen now: the change may wait for one before it.
+                const flipSigns = e.target.value === "positive";
+                act((now) => restructure(now, { flipSigns }));
+              }}
+            >
+              <option value="negative">Negative, as bank accounts write them</option>
+              <option value="positive">Positive, as many card statements write them</option>
+            </select>
           </label>
         )}
       </div>
@@ -242,7 +253,7 @@ export function StatementGrid({
               <button
                 key={o}
                 className={question.order === o ? "primary small" : "secondary small"}
-                disabled={busy}
+                disabled={slow}
                 onClick={() => order(o)}
               >
                 {named ? named[o] : o === "dmy" ? "Day first" : "Month first"}
@@ -256,10 +267,10 @@ export function StatementGrid({
           <AlertTriangle size={15} aria-hidden />
           <span>Every amount that reads is positive. Is money out told by the transaction types (DEBIT, POS…)?</span>
           <span className="statement-answers">
-            <button className="primary small" disabled={busy} onClick={() => onFix(restructure(session, { signsByType: true }))}>
+            <button className="primary small" disabled={slow} onClick={() => act((now) => restructure(now, { signsByType: true }))}>
               Yes, use the types
             </button>
-            <button className="secondary small" disabled={busy} onClick={() => onFix(restructure(session, { signsByType: false }))}>
+            <button className="secondary small" disabled={slow} onClick={() => act((now) => restructure(now, { signsByType: false }))}>
               No, as written
             </button>
           </span>
@@ -276,100 +287,110 @@ export function StatementGrid({
           { id: "edited", label: "Edited", count: counts.edited },
         ]}
       />
-      <div className="table-scroll statement-grid" ref={scroller}>
-        <table>
-          <thead>
-            {table && (
-              <tr className="statement-roles">
-                <th />
-                {statement.headers.map((_, i) => (
-                  <th key={i}>
-                    <select
-                      aria-label={`What column ${i + 1} holds`}
-                      value={role[i] ?? ""}
-                      disabled={busy}
-                      onChange={(e) => asColumn(i, e.target.value)}
-                    >
-                      <option value="">Not read</option>
-                      {ROLES.map(([r, label]) => (
-                        <option key={r} value={r}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
-                  </th>
+      <div className="statement-grid-frame">
+        {/* A change that takes a while shows as a line moving along the top, not a dimmed grid. */}
+        <div className="statement-progress" aria-hidden />
+        <div className="table-scroll statement-grid" ref={scroller}>
+          <table>
+            <thead>
+              {table && (
+                <tr className="statement-roles">
+                  <th />
+                  {statement.headers.map((_, i) => (
+                    <th key={i}>
+                      <select
+                        aria-label={`What column ${i + 1} holds`}
+                        value={role[i] ?? ""}
+                        disabled={slow}
+                        onChange={(e) => asColumn(i, e.target.value)}
+                      >
+                        <option value="">Not read</option>
+                        {ROLES.map(([r, label]) => (
+                          <option key={r} value={r}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                    </th>
+                  ))}
+                </tr>
+              )}
+              <tr>
+                <th className="statement-state" title="What each line imports as, or why it doesn't">
+                  Imports as
+                </th>
+                {statement.headers.map((h, i) => (
+                  <th key={i}>{h || `Column ${i + 1}`}</th>
                 ))}
               </tr>
-            )}
-            <tr>
-              <th className="statement-state">Line</th>
-              {statement.headers.map((h, i) => (
-                <th key={i}>{h || `Column ${i + 1}`}</th>
+            </thead>
+            {/* Another tab's lines come in softly rather than snapping in. */}
+          <tbody key={filter} className="statement-rows">
+              {view.before > 0 && (
+                <tr aria-hidden className="spacer-row" style={{ height: view.before }}>
+                  <td colSpan={width + 1} />
+                </tr>
+              )}
+              {lines.slice(view.start, view.end).map((line) => (
+                <StatementRow
+                  key={line.id}
+                  line={line}
+                  index={place.get(line.id) ?? -1}
+                  batch={line.batch !== undefined ? statement.batches?.[line.batch] : undefined}
+                  headers={statement.headers}
+                  role={role}
+                  table={table}
+                  width={width}
+                  busy={slow}
+                  assisted={assisted.has(line.id)}
+                  editing={editing?.line === line.id ? editing.column : null}
+                  pending={pending?.line === line.id ? pending : null}
+                  actions={actions}
+                />
               ))}
-            </tr>
-          </thead>
-          <tbody>
-            {view.before > 0 && (
-              <tr aria-hidden className="spacer-row" style={{ height: view.before }}>
-                <td colSpan={width + 1} />
-              </tr>
-            )}
-            {lines.slice(view.start, view.end).map((line) => (
-              <StatementRow
-                key={line.id}
-                line={line}
-                index={place.get(line.id) ?? -1}
-                batch={line.batch !== undefined ? statement.batches?.[line.batch] : undefined}
-                headers={statement.headers}
-                role={role}
-                table={table}
-                width={width}
-                busy={busy}
-                assisted={assisted.has(line.id)}
-                editing={editing?.line === line.id ? editing.column : null}
-                pending={pending?.line === line.id ? pending : null}
-                actions={actions}
-              />
-            ))}
-            {view.after > 0 && (
-              <tr aria-hidden className="spacer-row" style={{ height: view.after }}>
-                <td colSpan={width + 1} />
-              </tr>
-            )}
-          </tbody>
-        </table>
-        {!lines.length && (
-          <p className="help statement-empty">
-            {filter === "attention" ? "Every line reads now. " : filter === "edited" ? "Nothing changed yet. " : "No lines here. "}
-            <button className="link-button" onClick={() => setFilter("all")}>
-              Show all lines
-            </button>
-          </p>
-        )}
+              {view.after > 0 && (
+                <tr aria-hidden className="spacer-row" style={{ height: view.after }}>
+                  <td colSpan={width + 1} />
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {!lines.length && (
+            <p className="help statement-empty">
+              {filter === "attention" ? "Every line reads now. " : filter === "edited" ? "Nothing changed yet. " : "No lines here. "}
+              <button className="link-button" onClick={() => setFilter("all")}>
+                Show all lines
+              </button>
+            </p>
+          )}
+        </div>
       </div>
       <div className="form-actions statement-actions">
-        <span className="help">
-          {question
-            ? "Say whether the day or the month comes first, above, to continue."
-            : statement.signs?.unconfirmed
-              ? "Say how the file tells money out, above, to continue."
-              : !statement.counts.ready
-                ? "No line reads yet."
-                : `${statement.counts.ready} ${statement.counts.ready === 1 ? "line reads" : "lines read"}${
-                    attention > 0 ? ` · ${attention} ${attention === 1 ? "needs" : "need"} attention and won't be imported` : ""
-                  }`}
+        <span className="help" role="status">
+          {checking
+            ? "Checking the lines against your budget…"
+            : question
+              ? "Say whether the day or the month comes first, above, to continue."
+              : statement.signs?.unconfirmed
+                ? "Say how the file tells money out, above, to continue."
+                : !statement.counts.ready
+                  ? "No line reads yet."
+                  : `${statement.counts.ready} ${statement.counts.ready === 1 ? "line reads" : "lines read"}${
+                      attention > 0 ? ` · ${attention} ${attention === 1 ? "needs" : "need"} attention and won't be imported` : ""
+                    }`}
         </span>
         {onAssistant && attention > 0 && (
-          <button className="secondary" disabled={busy} onClick={onAssistant}>
+          <button className="secondary" disabled={slow} onClick={onAssistant}>
             <MessageSquareText size={14} /> Fix with the assistant
           </button>
         )}
         <button
           className="primary"
           // Nothing goes on to the review on a guess the file leaves open.
-          disabled={busy || !statement.counts.ready || !!question || !!statement.signs?.unconfirmed}
+          disabled={busy || checking || !statement.counts.ready || !!question || !!statement.signs?.unconfirmed}
           onClick={onContinue}
         >
+          {checking && <LoaderCircle size={14} className="spin" aria-hidden />}
           Continue to the review
         </button>
       </div>
@@ -492,12 +513,9 @@ function LineState({
   return (
     <span className="line-state">
       {s.kind === "ready" ? (
-        <span className="line-ok" title="Reads">
-          <Check size={14} aria-label="Reads" />
-          {(line.fixed || line.included) && (
-            <span className="line-changed">{assisted ? "Fixed by the assistant" : line.included ? "Included" : "Changed"}</span>
-          )}
-        </span>
+        // How it imports, so a change to how the file reads (the signs, the date order, a column)
+        // shows on every line it changes.
+        <ReadsAs line={line} assisted={assisted} />
       ) : s.kind === "attention" ? (
         <span className="line-attention" title={s.reason}>
           <AlertTriangle size={14} aria-hidden /> {s.reason}
@@ -531,6 +549,32 @@ function LineState({
           <RotateCcw size={13} aria-hidden />
         </button>
       )}
+    </span>
+  );
+}
+
+/** A line that reads: its date and amount as they import, lit up briefly when a change alters them. */
+function ReadsAs({ line, assisted }: { line: StatementLine; assisted: boolean }) {
+  const cents = Math.round(Number(line.fields.amount) * 100);
+  const changed = line.fixed || line.included;
+  const why = changed ? (assisted ? "Fixed by the assistant · " : line.included ? "Included · " : "Changed · ") : "";
+  const amount = Number.isFinite(cents) ? money(cents, { symbol: false }) : line.fields.amount;
+  // A new reading of the same line (the signs turned, another date order): shown as it changes.
+  const reading = `${line.fields.date}|${line.fields.amount}`;
+  const was = useRef(reading);
+  const [moved, setMoved] = useState(0);
+  useEffect(() => {
+    if (was.current === reading) return;
+    was.current = reading;
+    setMoved((n) => n + 1);
+  }, [reading]);
+  return (
+    <span className={`line-ok${changed ? " line-changed" : ""}`} title={`${why}Imports as ${formatDate(line.fields.date)}, ${amount}`}>
+      <Check size={14} aria-label="Reads" />
+      <span key={moved} className={`line-reading${moved ? " moved" : ""}`}>
+        <span className="line-date">{formatDate(line.fields.date)}</span>
+        <span className={`line-amount${cents > 0 ? " in" : ""}`}>{amount}</span>
+      </span>
     </span>
   );
 }

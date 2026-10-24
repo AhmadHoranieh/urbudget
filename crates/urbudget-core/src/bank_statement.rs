@@ -700,7 +700,7 @@ fn marked(b: &Budget, account: &str, mut read: Reading) -> Reading {
 /// today's import gives them; a damaged line keeps its place among lines sharing its bank ID;
 /// lines that read only with help come after those. A batch is known by its whole entry's ID,
 /// as today's import counts it, or would if it read it whole.
-fn identities(account: &str, extra: &[Extra], batches: &[bank_statements::Batch]) -> (Vec<Option<Identity>>, Vec<Option<String>>) {
+fn identities(account: &str, lines: &[Line], extra: &[Extra], batches: &[bank_statements::Batch]) -> (Vec<Option<Identity>>, Vec<Option<String>>) {
     let mut counter = Counter::default();
     let mut who: Vec<Option<Identity>> = vec![None; extra.len()];
     let mut named: Vec<Option<String>> = vec![None; batches.len()];
@@ -708,6 +708,10 @@ fn identities(account: &str, extra: &[Extra], batches: &[bank_statements::Batch]
         batches.iter().enumerate().filter_map(|(k, b)| b.line.or(b.payments.first().copied()).map(|l| (l, k))).collect();
     let mut name = |counter: &mut Counter, i: usize, idless: bool| {
         let Some(&k) = starts.get(&i) else { return };
+        // Another account's batch in the same file counts toward none of this one's.
+        if matches!(lines[i].status, Status::LeftOut { reason: Reason::OtherAccount, .. }) {
+            return;
+        }
         let b = &batches[k];
         if let Some(whole) = b.whole.as_ref().filter(|w| !b.as_one && w.fit.is_empty() == idless) {
             named[k] = Some(bank_import::bank_id_of(account, &counter.identity(whole, !b.splits_today).signature));
@@ -769,7 +773,7 @@ pub fn statement(b: &Budget, account: &str, content: &str, session: &Session) ->
 /// imported already, and the transactions it could match.
 pub fn preview_statement(b: &Budget, account: &str, content: &str, session: &Session) -> Result<StatementPreview, String> {
     let read = marked(b, account, reading(b, account, content, session)?);
-    let (who, _) = identities(account, &read.extra, &read.batches);
+    let (who, _) = identities(account, &read.statement.lines, &read.extra, &read.batches);
     let all = &read.statement.lines;
     // Lines that read only with help are known by the line as written too.
     let helped = |i: usize| read.extra[i].original.is_none() && all[i].status == Status::Ready;
@@ -823,8 +827,8 @@ pub fn apply_fixes(b: &Budget, account: &str, content: &str, session: &Session, 
     let table = now.format == "csv";
     // The part of a transaction a CSV column gives, by the columns read.
     let field_of = |column: usize| -> Option<Field> {
-        let (c, name) = (now.columns.as_ref()?, now.headers.get(column)?.trim());
-        let is = |n: &Option<String>| n.as_deref().is_some_and(|n| n.trim() == name);
+        let c = now.columns.as_ref()?;
+        let is = |n: &Option<String>| n.as_deref().and_then(|n| bank_csv::position(&now.headers, n)) == Some(column);
         if is(&c.date) {
             Some(Field::Date)
         } else if is(&c.payee) {
@@ -950,7 +954,7 @@ fn split_already(b: &Budget, account: &str, read: &Reading, structure: &Structur
         return None;
     }
     let imported = bank_import::import_ids(b);
-    let (who, named) = identities(account, &read.extra, &read.batches);
+    let (who, named) = identities(account, &read.statement.lines, &read.extra, &read.batches);
     read.batches.iter().zip(&named).find_map(|(batch, name)| {
         let taken = added.contains(&&batch.entry)
             && (name.as_ref().is_some_and(|n| imported.contains(&format!("camt-batch:{n}")))
@@ -980,6 +984,10 @@ pub struct Brief {
     pub more: usize,
     /// A few lines that read, to show what the file is like.
     pub samples: Vec<BriefLine>,
+    /// Lines left out that someone could include (pending, declined, another currency…), the
+    /// first 20 of them: the user may ask for one.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub left_out: Vec<BriefLine>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub date_order: Option<DateQuestion>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1041,6 +1049,7 @@ impl Statement {
             lines: attention.iter().take(30).map(|l| line(l)).collect(),
             more: attention.len().saturating_sub(30),
             samples: self.lines.iter().filter(|l| l.status == Status::Ready).take(5).map(line).collect(),
+            left_out: self.lines.iter().filter(|l| matches!(l.status, Status::LeftOut { reason, .. } if reason.includable())).take(20).map(line).collect(),
             date_order: self.date_order.clone(),
             signs: self.signs.clone(),
             currency: self.currency.clone(),
@@ -1400,6 +1409,70 @@ mod tests {
         assert_eq!(st.counts.ready, 2);
         assert_eq!(st.lines[2].fields.amount, "-12.00");
         assert_eq!(st.remember.columns.as_ref().and_then(|c| c.outflow.as_deref()), Some("A"));
+    }
+
+    #[test]
+    fn what_the_file_says_of_a_line_holds_after_it_is_fixed() {
+        let b = eur();
+        // A line of another account's, its date fixed, is still that account's.
+        let file = "Account,Date,Payee,Amount\nA,2026-10-01,Shop A,-1\nA,2026-10-02,Shop A2,-2\nB,2026-10-03,Shop B,-3\nB,2026-10-04,Shop B2,-4\nB,n/a,Missed B,-5\n";
+        let s = open(file, csv());
+        let missed = statement(&b, "cash", file, &s).unwrap().lines[4].clone();
+        assert!(matches!(missed.status, Status::LeftOut { reason: Reason::OtherAccount, .. }));
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.cells = vec![cell(&missed.id, 0, 1, "n/a", "2026-10-05")]));
+        assert_eq!(rows(&b, file, &s).len(), 2);
+
+        // A fee in the other currency doesn't come off an amount written over in the budget's.
+        let file = "Date,Payee,Amount,Fee,Currency\n2026-10-01,Bakery,-3.20,0,EUR\n2026-10-02,London,-9.99,1.00,GBP\n";
+        let s = open(file, csv());
+        let london = statement(&b, "cash", file, &s).unwrap().lines[1].id.clone();
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.include = vec![IncludeFix { line: london.clone(), line_version: 0, include: true }]));
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.cells = vec![cell(&london, 1, 2, "-9.99", "-11.60")]));
+        assert_eq!(rows(&b, file, &s)[1].2, -1160);
+
+        // Some columns chosen (an amount column, say): the others as the file names them.
+        let file = "Date,Payee,Amount,Correct Amount\n2026-10-01,Shop,-10.00,-12.00\n";
+        let s = open(file, csv());
+        let only = Columns { amount: Some("Correct Amount".into()), ..Columns::default() };
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.structure = Some(Structure { columns: Some(only), ..s.structure.clone() })));
+        assert_eq!(rows(&b, file, &s)[0].2, -1200);
+
+        // Two columns with one name: the one chosen is known by its place.
+        let file = "Date,Payee,Amount,Amount\n2026-10-01,Shop,-10.00,-12.00\n";
+        let s = open(file, csv());
+        let st = statement(&b, "cash", file, &s).unwrap();
+        assert_eq!(st.columns.as_ref().unwrap().amount.as_deref(), Some("#3"));
+        let second = Columns { amount: Some("#4".into()), ..st.columns.clone().unwrap() };
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.structure = Some(Structure { columns: Some(second), ..s.structure.clone() })));
+        assert_eq!(rows(&b, file, &s)[0].2, -1200);
+        // A column known only by its place isn't kept for the next file.
+        assert_eq!(statement(&b, "cash", file, &s).unwrap().remember.columns, None);
+        // A column named like a place doesn't take another's choice.
+        let file = "Date,#4,Amount,Amount
+2026-10-01,Shop,-10.00,-12.00
+";
+        let s = open(file, csv());
+        let second = Columns { date: Some("Date".into()), payee: Some("#4".into()), amount: Some("##4".into()), ..Columns::default() };
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.structure = Some(Structure { columns: Some(second), ..s.structure.clone() })));
+        assert_eq!((rows(&b, file, &s)[0].2, rows(&b, file, &s)[0].3.as_str()), (-1200, "Shop"));
+    }
+
+    #[test]
+    fn a_batch_is_known_the_same_whatever_other_accounts_the_file_holds() {
+        let b = eur();
+        // A batch whose payments don't add up, imported as its one entry.
+        let stmt = |account: &str| {
+            let body = CAMT.split("<Stmt>").nth(1).unwrap().split("</Stmt>").next().unwrap();
+            body.replace("DE00123", account).replace(">200.00<", ">250.00<")
+        };
+        let alone = format!("<Document><BkToCstmrStmt><Stmt>{}</Stmt></BkToCstmrStmt></Document>", stmt("B"));
+        let both = format!("<Document><BkToCstmrStmt><Stmt>{}</Stmt><Stmt>{}</Stmt></BkToCstmrStmt></Document>", stmt("A"), stmt("B"));
+        let whole = |entry: &str| Structure { format: "camt053".into(), source: Some("B".into()), whole_batches: vec![entry.into()], ..Structure::default() };
+        let imported = import(b, &alone, &open(&alone, whole("e2")));
+        // The same account's statement again, in a file whose other account has the same batch.
+        let again = rows(&imported, &both, &open(&both, whole("e4")));
+        assert_eq!(again.len(), 2);
+        assert!(again.iter().all(|r| r.4), "{again:?}");
     }
 
     #[test]

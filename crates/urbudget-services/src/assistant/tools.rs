@@ -1458,7 +1458,7 @@ fn prepare_import(args: &Value, ctx: &Context) -> Result<Outcome, String> {
 fn fix_import(args: &Value, ctx: &Context) -> Result<Outcome, String> {
     use crate::bank_statement::{BriefLine, DateOrder, Field, FieldFix, Fixes, IncludeFix, Status as LineStatus};
     let brief = ctx.import.ok_or("No bank file is open on the Import page. Ask the user to open it there, then try again.")?;
-    let shown: HashMap<&str, &BriefLine> = brief.lines.iter().chain(&brief.samples).map(|l| (l.id.as_str(), l)).collect();
+    let shown: HashMap<&str, &BriefLine> = brief.lines.iter().chain(&brief.samples).chain(&brief.left_out).map(|l| (l.id.as_str(), l)).collect();
     let line = |v: &Value| -> Result<&BriefLine, String> {
         let id = v["line"].as_str().ok_or("Each fix needs its line's id.")?;
         shown.get(id).copied().ok_or_else(|| format!("Line {id} isn't one the import's note shows. Fix only those."))
@@ -1620,6 +1620,26 @@ pub mod tests {
             Some(p) => Ok(p),
             None => Err(outcome.output["error"].as_str().unwrap_or_default().to_string()),
         }
+    }
+
+    #[test]
+    fn a_fix_includes_a_line_left_out_and_reads_another_amount_column() {
+        use crate::bank_statement::{apply_fixes, preview_statement, statement, DateOrder, Session, Structure};
+        let b = sample();
+        let file = "Date,Payee,Amount,Status,Corrected\n2026-10-01,Bakery,-3.20,Booked,-3.40\n2026-10-03,Cinema,-12.00,Pending,-12.00\n".to_string();
+        let structure = Structure { format: "csv".into(), date_order: DateOrder { order: "ymd".into(), confirmed: false }, ..Structure::default() };
+        let session = Session::new("s1", "b", "checking", &file, structure);
+        let brief = statement(&b, "checking", &file, &session).unwrap().brief(true);
+        // The pending line is shown, to include when the user asks.
+        let cinema = brief.left_out.iter().find(|l| l.cells[1] == "Cinema").unwrap().id.clone();
+        let p = fix(json!({ "include": [{ "line": cinema, "include": true, "reason": "The user asked for it" }], "note": "x" }), &brief, &b).unwrap();
+        let applied = apply_fixes(&b, "checking", &file, &session, p.fixes.as_ref().unwrap()).unwrap();
+        assert!(applied.results.iter().all(|r| r.applied));
+        assert_eq!(preview_statement(&b, "checking", &file, &applied.session).unwrap().review.items.len(), 2);
+        // Another amount column, named alone: the others stay as the file names them.
+        let p = fix(json!({ "readAs": { "columns": { "amount": "Corrected" } }, "note": "x" }), &brief, &b).unwrap();
+        let applied = apply_fixes(&b, "checking", &file, &session, p.fixes.as_ref().unwrap()).unwrap();
+        assert_eq!(preview_statement(&b, "checking", &file, &applied.session).unwrap().review.items[0].row.amount, -340);
     }
 
     #[test]

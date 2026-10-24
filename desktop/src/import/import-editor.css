@@ -24,6 +24,27 @@
   gap: 10px;
   min-width: 0;
 }
+/* Each stage (the file's lines, the review) comes in softly as it replaces the other. */
+.import-stage {
+  animation: import-stage-in 0.18s var(--ease);
+}
+@keyframes import-stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+.import-wait {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  animation: import-stage-in 0.2s var(--ease);
+}
+/* A change that lasts dims the controls gradually rather than all at once. */
+.statement-editor :is(button, select, input) {
+  transition-property: opacity, background-color, border-color, color;
+  transition-duration: 0.18s;
+}
 .statement-bar {
   display: flex;
   flex-wrap: wrap;
@@ -41,6 +62,7 @@
 }
 /* A question the file leaves open (the date order, the signs): answered here, once. */
 .statement-question {
+  animation: pop-in 0.16s var(--ease);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -65,6 +87,60 @@
   flex: none;
   flex-wrap: wrap;
   gap: 8px;
+}
+/* A change that lasts: a line moving along the grid's top edge, and its lines a little faded. */
+.statement-grid-frame {
+  position: relative;
+}
+.statement-progress {
+  position: absolute;
+  z-index: 4;
+  top: 1px;
+  right: 1px;
+  left: 1px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: var(--radius) var(--radius) 0 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.statement-progress::before {
+  position: absolute;
+  inset: 0;
+  width: 30%;
+  background: var(--accent);
+  content: "";
+  animation: statement-progress 1.1s var(--ease) infinite;
+}
+@keyframes statement-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
+.statement-editor.slow .statement-progress {
+  opacity: 1;
+}
+.statement-grid tbody {
+  transition: opacity 0.2s;
+}
+.statement-rows {
+  animation: statement-rows-in 0.16s var(--ease);
+}
+@keyframes statement-rows-in {
+  from {
+    opacity: 0.35;
+  }
+}
+.statement-editor.slow .statement-grid tbody {
+  opacity: 0.6;
+}
+/* In the grid, the fade above says it all: its cells and choices don't dim on their own too. */
+.statement-grid :is(button, select, input):disabled {
+  opacity: 1;
 }
 /* Each line is a fixed 37px, matching LINE in StatementGrid.tsx, so only the lines in view render. */
 .statement-grid {
@@ -102,6 +178,10 @@
   height: 37px;
 }
 .statement-grid td {
+  /* A line that comes to read (or stops reading) changes colour gently. */
+  transition:
+    background-color 0.25s var(--ease),
+    color 0.25s var(--ease);
   max-width: 280px;
   padding: 0 8px;
   overflow: hidden;
@@ -149,12 +229,52 @@
   flex: none;
 }
 .line-ok {
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 auto;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  min-width: 0;
   color: var(--positive);
 }
-.line-changed {
+/* How a line imports: its date, and its amount aligned to the right. */
+.line-state > span.line-ok:first-child {
+  flex: 1 1 auto;
+}
+.line-reading {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 -4px;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+/* A line whose reading a change altered lights up for a moment. */
+.line-reading.moved {
+  animation: line-moved 0.9s var(--ease);
+}
+@keyframes line-moved {
+  from {
+    background: color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+}
+.line-ok .line-date {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.line-ok .line-amount {
+  min-width: 0;
+  margin-left: auto;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 550;
+}
+.line-ok .line-amount.in {
+  color: var(--positive);
+}
+/* Changed from the file: its reading in the accent colour (its title says by whom). */
+.line-ok.line-changed :is(.line-date, .line-amount) {
   color: var(--accent);
 }
 .line-attention {

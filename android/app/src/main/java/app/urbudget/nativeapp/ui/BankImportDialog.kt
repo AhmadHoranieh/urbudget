@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -46,6 +47,7 @@ import app.urbudget.nativeapp.summarizeBankReview
 import app.urbudget.nativeapp.wholeBatchFix
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -153,6 +155,15 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, draft: Ba
     val st = statement?.takeIf { it.session == draft.sessionId }
     // Until the file reads again after a change, a line's version is the one before it.
     val busy = loading || saving || session != null && (st == null || st.revision != session.optLong("revision"))
+    // Most changes take a moment: the sheet only looks busy (greyed, with a progress line) for one
+    // that lasts, so a quick one doesn't flash it.
+    val slow by produceState(false, busy) {
+        value = false
+        if (busy) {
+            delay(300)
+            value = true
+        }
+    }
     fun read(more: JSONObject.() -> Unit = {}) = JSONObject().put("accountId", draft.account).put("content", content).put("session", session).apply(more)
 
     LaunchedEffect(budgetState.error) {
@@ -221,6 +232,8 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, draft: Ba
     }
 
     fun fix(fixes: JSONObject) {
+        // While a change applies, the lines' versions are the ones before it.
+        if (busy) return
         val was = session ?: return
         loading = true
         error = null
@@ -262,13 +275,14 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, draft: Ba
     val view = if (st == null) null else draft.view ?: "lines"
     LazyFormDialog("Import bank file", close,
         confirm = if (view == "review") (if (saving) "Importing…" else "Import $importing") else "Continue",
-        onConfirm = when (view) { null -> null; "review" -> ::importRows; else -> ({ update { it.copy(view = "review") } }) },
-        enabled = !busy && when (view) {
+        onConfirm = when (view) { null -> null; "review" -> ({ if (!busy) importRows() }); else -> ({ if (!busy) update { it.copy(view = "review") } }) },
+        enabled = !slow && !saving && when (view) {
             "review" -> reviewing != null && undecided == 0 && importing > 0
             // Nothing goes on to the review on a guess the file leaves open.
             else -> st != null && st.canContinue
         }) {
-        if (busy) item(key = "import:loading") { LinearProgressIndicator(Modifier.fillMaxWidth(), color = ur.accent) }
+        // Always there, shown only for a change that lasts: it never pushes the sheet's content down.
+        item(key = "import:loading") { LinearProgressIndicator(Modifier.fillMaxWidth().height(2.dp).alpha(if (slow || saving) 1f else 0f), color = ur.accent) }
         error?.let { item(key = "import:error") { FormError(it) } }
         draft.notice?.let { item(key = "import:notice") { Notice(it, tone = "info", icon = Icons.Outlined.AutoAwesome) } }
         when {
@@ -292,11 +306,11 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, draft: Ba
                             onAction = { fix(restructured(session) { put("flipSigns", true) }) }, icon = Icons.Outlined.SwapVert)
                     }
                     all?.let { bankReviewNotes(it, undecided) }
-                    suggestedTransfers(reviewing, decisions, !busy)
-                    bankReviewRows(reviewing, decisions, !busy) { index, value -> decisions[index] = value }
+                    suggestedTransfers(reviewing, decisions, !slow && !saving)
+                    bankReviewRows(reviewing, decisions, !slow && !saving) { index, value -> decisions[index] = value }
                 }
             }
-            else -> statementLines(st, session, draft, accountName, busy, saving, fixWithAssistant,
+            else -> statementLines(st, session, draft, accountName, busy, slow, saving, fixWithAssistant,
                 restart = { update { newBankImport(budget, it.account) } },
                 sheet = { sheet -> draft.file?.let { open(it, sheet) } },
                 edit = { fixing = it }, fix = ::fix)
@@ -338,7 +352,7 @@ private fun LazyListScope.chooser(draft: BankImportDraft, accounts: List<Pair<St
 }
 
 /** The file's lines that need something, as a phone checks them: the questions the file leaves open, then each line with what can be done. */
-private fun LazyListScope.statementLines(st: BankStatement, session: JSONObject, draft: BankImportDraft, accountName: String, busy: Boolean, saving: Boolean,
+private fun LazyListScope.statementLines(st: BankStatement, session: JSONObject, draft: BankImportDraft, accountName: String, busy: Boolean, slow: Boolean, saving: Boolean,
                                          fixWithAssistant: (() -> Unit)?, restart: () -> Unit, sheet: (String) -> Unit,
                                          edit: (StatementLine) -> Unit, fix: (JSONObject) -> Unit) {
     val structure = session.optJSONObject("structure") ?: JSONObject()
@@ -352,7 +366,11 @@ private fun LazyListScope.statementLines(st: BankStatement, session: JSONObject,
         }
     }
     if (st.format == "csv") item(key = "lines:signs") {
-        CheckRow("Purchases are positive (reverse amount signs)", structure.optBoolean("flipSigns"), { on -> if (!busy) fix(restructured(session) { put("flipSigns", on) }) }, enabled = !busy)
+        // Some card issuers write a purchase as a positive number and a payment as a negative one.
+        Choice("Purchases in the file", if (structure.optBoolean("flipSigns")) "positive" else "negative",
+            listOf("negative" to "Negative, as bank accounts write them", "positive" to "Positive, as many card statements write them")) { which ->
+            if (!busy && (which == "positive") != structure.optBoolean("flipSigns")) fix(restructured(session) { put("flipSigns", which == "positive") })
+        }
     }
     st.elsewhere?.let { other -> item(key = "lines:elsewhere") {
         Notice("The file's amounts are in $other. Include a line to enter its amount in your budget's currency, or import the file into a budget in $other.", icon = Icons.Outlined.WarningAmber)
@@ -378,12 +396,12 @@ private fun LazyListScope.statementLines(st: BankStatement, session: JSONObject,
         val named = dateReadings(example)
         val order = { which: String -> fix(restructured(session) { put("dateOrder", JSONObject().put("order", which).put("confirmed", true)) }) }
         ImportQuestion("The dates don't say whether the day or the month comes first: is $example", listOf(
-            (named?.first ?: "Day first") to { order("dmy") }, (named?.second ?: "Month first") to { order("mdy") }), if (st.dateOrder == "mdy") 1 else 0, !busy)
+            (named?.first ?: "Day first") to { order("dmy") }, (named?.second ?: "Month first") to { order("mdy") }), if (st.dateOrder == "mdy") 1 else 0, !slow)
     }
     if (st.signsUnconfirmed) item(key = "lines:types") {
         ImportQuestion("Every amount that reads is positive. Is money out told by the transaction types (DEBIT, POS…)?", listOf(
             "Yes, use the types" to { fix(restructured(session) { put("signsByType", true) }) },
-            "No, as written" to { fix(restructured(session) { put("signsByType", false) }) }), 0, !busy)
+            "No, as written" to { fix(restructured(session) { put("signsByType", false) }) }), 0, !slow)
     }
     val attention = st.attentionLines
     val out = st.leftOutLines
@@ -403,24 +421,24 @@ private fun LazyListScope.statementLines(st: BankStatement, session: JSONObject,
         item(key = "lines:attention") { SectionTitle("Needs attention", "Not imported until fixed: tap a line to give what doesn't read.") }
         if (fixWithAssistant != null) item(key = "lines:assistant") {
             Notice("The assistant can fix these lines from what the file says, and asks you about anything unclear. You see each fix before it's applied.", tone = "info",
-                action = "Fix with the assistant", onAction = { if (!busy) fixWithAssistant() }, icon = Icons.Outlined.AutoAwesome)
+                action = "Fix with the assistant", onAction = { fixWithAssistant() }, icon = Icons.Outlined.AutoAwesome)
         }
         items(attention, key = { "attention:${it.id}" }, contentType = { "statement-line" }) { line ->
-            StatementLineItem(line, line.problem, ur.warning, listOfNotNull(batchAction(line), undo(line)), !busy) { edit(line) }
+            StatementLineItem(line, line.problem, ur.warning, listOfNotNull(batchAction(line), undo(line)), !slow) { edit(line) }
         }
     }
     if (out.isNotEmpty()) {
         item(key = "lines:out") { SectionTitle("Left out", "Not imported. Include a line if it belongs in the account.") }
         items(out, key = { "out:${it.id}" }, contentType = { "statement-line" }) { line ->
             val include = if (line.includable && !line.included) "Include" to { fix(includeFix(session, line, true)) } else null
-            StatementLineItem(line, leftOutText(line), ur.muted, listOfNotNull(include, batchAction(line), undo(line)), !busy)
+            StatementLineItem(line, leftOutText(line), ur.muted, listOfNotNull(include, batchAction(line), undo(line)), !slow)
         }
     }
     if (changed.isNotEmpty()) {
         item(key = "lines:changed") { SectionTitle("Changed", "Imported as you changed them.") }
         items(changed, key = { "changed:${it.id}" }, contentType = { "statement-line" }) { line ->
             StatementLineItem(line, if (line.id in draft.assisted) "Fixed by the assistant" else if (line.included) "Included" else "Changed from the file", ur.accent,
-                listOfNotNull(undo(line)), !busy) { edit(line) }
+                listOfNotNull(undo(line)), !slow) { edit(line) }
         }
     }
 }

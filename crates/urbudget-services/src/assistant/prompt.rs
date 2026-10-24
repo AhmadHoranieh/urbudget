@@ -168,9 +168,10 @@ fn import_note(b: &Budget, brief: &crate::bank_statement::Brief) -> String {
         "needAttention": brief.lines.iter().map(line).collect::<Vec<_>>(),
         "moreNeedingAttention": brief.more,
         "samplesThatRead": brief.samples.iter().map(line).collect::<Vec<_>>(),
+        "leftOutThatCanBeIncluded": brief.left_out.iter().map(line).collect::<Vec<_>>(),
     });
     format!(
-        "They are importing a bank file into {account} on the Import page. Lines that need attention are left out of the import until fixed. To fix them, call fix_import with values the file itself supports (another of the line's cells, the statement's totals, what the user said); never guess one, and ask when it's unclear. The file: {note}"
+        "They are importing a bank file into {account} on the Import page. Lines that need attention are left out of the import until fixed. To fix them, call fix_import with values the file itself supports (another of the line's cells, the statement's totals, what the user said); never guess one, and ask when it's unclear. A line left out (pending, declined, in another currency…) is included with fix_import's include only when the user asks for it. The file: {note}"
     )
 }
 

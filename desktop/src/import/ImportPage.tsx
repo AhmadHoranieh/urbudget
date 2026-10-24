@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from "react";
-import { Download, FileText, FileUp, MessageSquareText, Table2, X } from "lucide-react";
+import { Download, FileText, FileUp, LoaderCircle, MessageSquareText, Table2, X } from "lucide-react";
 import { api, type BankFixes, type BankRow, type BankSession, type Statement } from "../bridge";
 import { ImportReview, bankTemplate, statementFile, uncategorizedImports, type ImportChoice, type Uncategorized } from "../BankImport";
 import { errorText } from "../format";
 import type { Budget } from "../types";
 import { Tabs, useToast } from "../ui";
+import { useSteady } from "../useSteady";
 import { StatementGrid } from "./StatementGrid";
-import { leftOut, needsEditor } from "./model";
+import { applyToLatest, leftOut, needsEditor } from "./model";
 import "./import-editor.css";
 
 /** An import in progress, kept while someone looks elsewhere (the sidebar leads back to it). */
@@ -156,15 +157,21 @@ export function ImportPage({
     };
   }, [state.view, session, content, budget]);
 
+  // The import as it is now, for a change that lands after another.
+  const sessionNow = useRef(session);
+  sessionNow.current = session;
   const fix = async (fixes: BankFixes) => {
     if (!session || content === undefined) return;
     setBusy(true);
     setMessage("");
     try {
-      const applied = await api.bankApplyFixes(budget, account, content, session, fixes);
+      const applied = await applyToLatest(
+        () => sessionNow.current,
+        (base) => api.bankApplyFixes(budget, account, content, base, fixes),
+      );
       // Another file since: its fix is for an import that's gone.
-      if (current.current !== fixes.scope.session) return;
-      onState((was) => ({ ...was, session: applied.session }));
+      if (!applied || current.current !== fixes.scope.session) return;
+      onState((was) => (was.session === applied.base ? { ...was, session: applied.session } : was));
       const refused = applied.results.filter((r) => !r.applied);
       if (refused.length) setMessage(refused[0].problem ?? "That change no longer fits the file.");
     } catch (e) {
@@ -213,6 +220,19 @@ export function ImportPage({
     if (dropped) void start(dropped);
   };
   const shown = reviewed?.statement ?? statement;
+  // On to the review from the file: the file stays in view until the review is ready.
+  const [continuing, setContinuing] = useState(false);
+  useEffect(() => {
+    if (reviewed || state.view !== "review") setContinuing(false);
+    // The review couldn't be made: back to the file, with why.
+    else if (continuing && message) {
+      setContinuing(false);
+      onState((was) => ({ ...was, view: "editor" }));
+    }
+  }, [reviewed, state.view, message]);
+  // A wait shows only once it's long enough to notice.
+  const reading = useSteady(!!session && !statement && !message, (r) => r, 300);
+  const checking = useSteady(state.view === "review" && !reviewed && !continuing && !message, (c) => c, 300);
   const assisted = useMemo(() => new Set(state.assisted ?? []), [state.assisted]);
   const out = shown ? leftOut(shown) : 0;
   const attention = shown?.counts.attention ?? 0;
@@ -335,53 +355,63 @@ export function ImportPage({
           </div>
         </>
       ) : !statement ? (
-        !message && (
-          <p className="help" role="status">
-            Reading {file?.name}…
+        reading && (
+          <p className="help import-wait" role="status">
+            <LoaderCircle size={14} className="spin" aria-hidden /> Reading {file?.name}…
           </p>
         )
-      ) : state.view === "editor" ? (
-        <StatementGrid
-          statement={statement}
-          session={session}
-          // Until the file reads again after a change, a line's version is the one before it.
-          busy={busy || statement.revision !== session.revision}
-          assisted={assisted}
-          onFix={(f) => void fix(f)}
-          onContinue={() => onState((was) => ({ ...was, view: "review" }))}
-          onAssistant={
-            onFixWithAssistant ??
-            (onAskAssistant && file ? () => onAskAssistant(file, `${attention} lines don't read.`, accountName) : undefined)
-          }
-        />
+      ) : state.view === "editor" || (continuing && !reviewed) ? (
+        <div className="import-stage" key="editor">
+          <StatementGrid
+            statement={statement}
+            session={session}
+            // Until the file reads again after a change, a line's version is the one before it.
+            busy={busy || statement.revision !== session.revision}
+            assisted={assisted}
+            onFix={(f) => void fix(f)}
+            checking={continuing}
+            onContinue={() => {
+              setContinuing(true);
+              onState((was) => ({ ...was, view: "review" }));
+            }}
+            onAssistant={
+              onFixWithAssistant ??
+              (onAskAssistant && file ? () => onAskAssistant(file, `${attention} lines don't read.`, accountName) : undefined)
+            }
+          />
+        </div>
       ) : !reviewed ? (
-        <p className="help" role="status">
-          Checking the lines against your budget…
-        </p>
+        checking && (
+          <p className="help import-wait" role="status">
+            <LoaderCircle size={14} className="spin" aria-hidden /> Checking the lines against your budget…
+          </p>
+        )
       ) : (
-        <ImportReview
-          budget={budget}
-          rows={reviewed.rows}
-          busy={busy}
-          icon={<FileText size={18} aria-hidden />}
-          title={
-            <>
-              <strong>{file?.name}</strong> into {accountName}
-            </>
-          }
-          action={
-            <button className="link-button" onClick={() => onState((was) => ({ ...was, view: "editor" }))}>
-              <Table2 size={14} aria-hidden />
-              {attention || out
-                ? ` ${[attention && `${attention} need attention`, out && `${out} left out`].filter(Boolean).join(" · ")} · `
-                : " "}
-              Check the file
-            </button>
-          }
-          cancelLabel="Back to the file"
-          onCancel={() => onState((was) => ({ ...was, view: "editor" }))}
-          onImport={(choices, count) => void save(choices, count)}
-        />
+        <div className="import-stage" key="review">
+          <ImportReview
+            budget={budget}
+            rows={reviewed.rows}
+            busy={busy}
+            icon={<FileText size={18} aria-hidden />}
+            title={
+              <>
+                <strong>{file?.name}</strong> into {accountName}
+              </>
+            }
+            action={
+              <button className="link-button" onClick={() => onState((was) => ({ ...was, view: "editor" }))}>
+                <Table2 size={14} aria-hidden />
+                {attention || out
+                  ? ` ${[attention && `${attention} need attention`, out && `${out} left out`].filter(Boolean).join(" · ")} · `
+                  : " "}
+                Check the file
+              </button>
+            }
+            cancelLabel="Back to the file"
+            onCancel={() => onState((was) => ({ ...was, view: "editor" }))}
+            onImport={(choices, count) => void save(choices, count)}
+          />
+        </div>
       )}
       {message && (
         <p role="status" className="import-result">

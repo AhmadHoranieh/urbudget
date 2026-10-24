@@ -391,13 +391,31 @@ pub(crate) struct Records {
 /// and inclusions change only their own lines.
 pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> Result<Records, String> {
     let saved = settings(b, account).columns;
+    let merged;
     let chosen = match o.columns {
-        Some(c) => Some(c).filter(|c| c.date.is_some()),
+        Some(c) if c.date.is_some() => Some(c),
+        // Some roles chosen (the assistant's amount column, say): the others as the file names
+        // them, with those chosen laid over them.
+        Some(c) => {
+            let found = Sheet::read(content, &b.currency, saved.as_ref(), o.header_at)?.columns();
+            let pick = |mine: &Option<String>, theirs: &Option<String>| mine.clone().or_else(|| theirs.clone());
+            merged = Columns {
+                date: found.date.clone(),
+                payee: pick(&c.payee, &found.payee),
+                memo: pick(&c.memo, &found.memo),
+                // One amount column, or money out and in apart: what's chosen decides which.
+                amount: if c.outflow.is_some() || c.inflow.is_some() { None } else { pick(&c.amount, &found.amount) },
+                outflow: if c.amount.is_some() { None } else { pick(&c.outflow, &found.outflow) },
+                inflow: if c.amount.is_some() { None } else { pick(&c.inflow, &found.inflow) },
+                id: pick(&c.id, &found.id),
+            };
+            Some(&merged).filter(|m| m.date.is_some())
+        }
         None => saved.as_ref(),
     };
     let mut sheet = Sheet::read(content, &b.currency, chosen, o.header_at)?;
     sheet.mend(&b.currency);
-    if let Some(c) = o.columns.filter(|c| c.date.is_some() && !sheet.saved) {
+    if let Some(c) = chosen.filter(|c| o.columns.is_some() && c.date.is_some() && !sheet.saved) {
         let missing = c.names().into_iter().flatten().find(|n| position(&sheet.headers, n).is_none());
         return Err(match missing {
             Some(n) => format!("This file has no column named ‘{n}’. Choose its columns again."),
@@ -465,6 +483,8 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
         }
         let day = Some(value(Field::Date).unwrap_or(day).to_string());
         let given_amount = value(Field::Amount);
+        // An amount in another currency, written over in the budget's.
+        let mut converted = false;
         // An opening or closing balance, or a turnover total, written as a row.
         if let Some(c) = r.iter().find(|c| BALANCES.contains(&plain(c).as_str())) {
             if !lift(Reason::Balance) {
@@ -491,6 +511,7 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
             if !lift(Reason::OtherCurrency) {
                 return (day, left(Reason::OtherCurrency, &code));
             }
+            converted = amount_written;
             if given_amount.is_none() && !amount_written {
                 return (day, attention(Field::Amount, p.amount.or(p.outflow).or(p.inflow), format!("This line is in {code}: enter the amount in {}.", b.currency)));
             }
@@ -538,7 +559,7 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
             }
         };
         let amount = match read(cell(r, p.fee)) {
-            _ if given_amount.is_some() => amount,
+            _ if given_amount.is_some() || converted => amount,
             Err(e) => return (day, attention(Field::Amount, p.fee, e)),
             Ok(fee) => amount - fee.abs(),
         };
@@ -667,7 +688,11 @@ pub(crate) fn records(b: &Budget, account: &str, content: &str, o: &Options) -> 
         };
         // Another account's rows: by its column (a dated row naming another), or its section.
         let elsewhere = match &own {
-            Some((i, _)) if by_column => dated(original) && cell(original, Some(*i)) != sources[source].0,
+            Some((i, _)) if by_column => {
+                let whose = cell(original, Some(*i));
+                // Undated too: a line of another account's, its date fixed, is still that account's.
+                !whose.is_empty() && whose != sources[source].0
+            }
             _ => !sources.is_empty() && sections[k] != source,
         };
         if elsewhere {
@@ -1035,11 +1060,20 @@ fn named(name: &str, names: &[&str], currency: &str) -> bool {
         })
 }
 /// A chosen column among a header row's: the same text, or failing that the same plain name.
-fn position(headers: &[String], wanted: &str) -> Option<usize> {
-    headers.iter().position(|h| h.trim() == wanted.trim()).or_else(|| {
-        let wanted = plain(wanted);
-        headers.iter().position(|h| plain(h) == wanted)
-    })
+pub(crate) fn position(headers: &[String], wanted: &str) -> Option<usize> {
+    headers
+        .iter()
+        .position(|h| h.trim() == wanted.trim())
+        // A column chosen by its place ("#4"), where its name can't tell it apart: blank, or
+        // another column's too.
+        .or_else(|| {
+            let n: usize = wanted.trim().strip_prefix('#')?.trim_start_matches('#').parse().ok()?;
+            (1..=headers.len()).contains(&n).then(|| n - 1)
+        })
+        .or_else(|| {
+            let wanted = plain(wanted);
+            headers.iter().position(|h| plain(h) == wanted)
+        })
 }
 
 /// Where each part of a transaction is in a row.
@@ -1500,7 +1534,21 @@ impl Sheet {
         }
     }
     fn columns(&self) -> Columns {
-        let name = |i: Option<usize>| i.and_then(|i| self.headers.get(i)).cloned();
+        // A column by its name, or by its place where its name doesn't say which (see `position`).
+        let name = |i: Option<usize>| {
+            let i = i?;
+            let h = self.headers.get(i)?;
+            let unique = !h.trim().is_empty() && self.headers.iter().filter(|o| o.trim() == h.trim()).count() == 1;
+            if unique {
+                return Some(h.clone());
+            }
+            // Written so no column's own name reads as it ("##4" where a column is named "#4").
+            let mut place = format!("#{}", i + 1);
+            while self.headers.iter().any(|o| o.trim() == place) {
+                place.insert(0, '#');
+            }
+            Some(place)
+        };
         let p = &self.picked;
         Columns {
             date: name(p.date),
