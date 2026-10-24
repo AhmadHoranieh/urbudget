@@ -37,6 +37,19 @@ export type CardRow = {
   after?: number;
   badge?: string;
   tone?: "warn";
+  /** The part of the change the row shows, to leave out or change before applying. */
+  key?: string;
+  /** Left out: shown, not applied. */
+  skipped?: boolean;
+  /** Given another category or amount by the user. */
+  edited?: boolean;
+  /** What can be changed here: the category it gives (`categoryId`, absent for Ready to Assign), and the amount. */
+  edit?: { category: boolean; categoryId?: string; amount: boolean };
+};
+/** The user's choices on a card, by row key: rows left out, and categories (null: Ready to Assign) or amounts given. */
+export type Revision = {
+  skip: string[];
+  set: { key: string; category?: string | null; amount?: number }[];
 };
 export type Card = {
   kicker: string;
@@ -64,6 +77,8 @@ export type Proposal = {
   sheets: number;
   /** Fixes for a bank file being imported, for the import to apply. */
   fixes?: BankFixes;
+  /** What the user left out or changed on the card. */
+  choices?: Revision;
 };
 export type Entry =
   | { kind: "user"; text: string; attachments: Attachment[]; selected?: number }
@@ -127,6 +142,9 @@ export const assistant = {
   /** The proposal's change as a patch for `budget`, or a refreshed card when the budget moved. */
   apply: (budget: Budget, threadId: string, proposalId: string) =>
     read<{ patch: Patch | null; proposal: Proposal }>(budget, "assistant_apply", { threadId, proposalId }),
+  /** The proposal as the user chose on its card, made again on `budget`: every row, those left out marked. */
+  revise: (budget: Budget, threadId: string, proposalId: string, revision: Revision) =>
+    read<Proposal>(budget, "assistant_revise", { threadId, proposalId, revision }),
   mark: (threadId: string, proposalId: string, status: ProposalStatus) =>
     invoke<Proposal>("assistant_mark", { threadId, proposalId, status }),
   importFile: (threadId: string, proposalId: string) =>

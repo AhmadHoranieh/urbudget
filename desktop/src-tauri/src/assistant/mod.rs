@@ -146,6 +146,19 @@ pub(crate) fn assistant_apply(
     shared::assistant_apply(&db, &assistant, patch, thread_id, proposal_id)
 }
 
+/// The proposal as the user chose on its card, made again on the window's budget.
+#[tauri::command(async)]
+pub(crate) fn assistant_revise(
+    db: State<'_, Database>,
+    assistant: State<'_, Assistant>,
+    patch: Option<Patch>,
+    thread_id: String,
+    proposal_id: String,
+    revision: proposals::Revision,
+) -> Result<Value, String> {
+    shared::assistant_revise(&db, &assistant, patch, thread_id, proposal_id, revision)
+}
+
 #[tauri::command(async)]
 pub(crate) fn assistant_mark(
     db: State<'_, Database>,

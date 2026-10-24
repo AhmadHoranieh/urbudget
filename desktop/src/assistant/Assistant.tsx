@@ -24,7 +24,7 @@ import { errorText, monthName } from "../format";
 import { keyLabel } from "../platform";
 import { today, type Budget, type Summary } from "../types";
 import { Menu, useToast } from "../ui";
-import { ACCEPT, assistant, fileData, type Attachment, type Card, type Entry, type Listing, type Proposal, type Screen, type Status } from "./api";
+import { ACCEPT, assistant, fileData, type Attachment, type Card, type Entry, type Listing, type Proposal, type Revision, type Screen, type Status } from "./api";
 import { Markdown } from "./Markdown";
 import { describe, logError } from "./errors";
 import { ProposalCard } from "./ProposalCard";
@@ -617,9 +617,9 @@ export function AssistantPanel({
   };
   const replace = (p: Proposal) =>
     setEntries((list) => list.map((e) => (e.kind === "proposal" && e.proposal.id === p.id ? { kind: "proposal", proposal: p } : e)));
-  const act = (work: () => Promise<Proposal>) => async () => {
+  const act = <A extends unknown[]>(work: (...args: A) => Promise<Proposal>) => async (...args: A) => {
     try {
-      replace(await work());
+      replace(await work(...args));
     } catch (e) {
       toast({ message: errorText(e), tone: "error" });
     }
@@ -672,8 +672,10 @@ export function AssistantPanel({
         return (
           <ProposalCard
             proposal={p}
+            budget={budget}
             canUndo={canUndo(p)}
             onApply={act(() => onApply(id, p))}
+            onRevise={act((revision: Revision) => assistant.revise(budget, id, p.id, revision))}
             onDiscard={act(() => assistant.mark(id, p.id, "discarded"))}
             onUndo={act(() => onUndo(id, p))}
             onReview={() => onReviewImport(id, p)}

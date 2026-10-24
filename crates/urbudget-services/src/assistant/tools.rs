@@ -1466,12 +1466,7 @@ fn fix_import(args: &Value, ctx: &Context) -> Result<Outcome, String> {
     let reason = |v: &Value| -> Result<String, String> {
         v["reason"].as_str().map(str::trim).filter(|r| !r.is_empty()).map(|r| truncate(r, 200)).ok_or_else(|| "Give a reason for each fix.".to_string())
     };
-    let name = |f: Field| match f {
-        Field::Date => "date",
-        Field::Payee => "payee",
-        Field::Memo => "memo",
-        Field::Amount => "amount",
-    };
+    let name = proposals::field_name;
     let (mut fields, mut include, mut rows) = (vec![], vec![], vec![]);
     for f in args["fields"].as_array().into_iter().flatten() {
         let l = line(f)?;
@@ -1481,6 +1476,7 @@ fn fix_import(args: &Value, ctx: &Context) -> Result<Outcome, String> {
             return Err(format!("Line {}'s {} is \u{201c}{now}\u{201d}, not \u{201c}{from}\u{201d}.", l.id, name(field)));
         }
         let given = f["to"].as_str().map(str::trim).ok_or("Each fix needs the value to give.")?;
+        let mut cents = None;
         let to = match field {
             Field::Date => {
                 chrono::NaiveDate::parse_from_str(given, "%Y-%m-%d").map_err(|_| format!("Give line {}'s date as YYYY-MM-DD.", l.id))?;
@@ -1488,7 +1484,10 @@ fn fix_import(args: &Value, ctx: &Context) -> Result<Outcome, String> {
             }
             Field::Amount => match parse_money(&json!(given))? {
                 0 => return Err(format!("Line {}'s amount can't be zero.", l.id)),
-                cents => money(cents),
+                c => {
+                    cents = Some(c);
+                    money(c)
+                }
             },
             Field::Payee => truncate(given, 200),
             Field::Memo => truncate(given, 500),
@@ -1496,7 +1495,15 @@ fn fix_import(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         if to == from.trim() {
             return Err(format!("Line {}'s {} is \u{201c}{from}\u{201d} already: fix only what needs it.", l.id, name(field)));
         }
-        rows.push(proposals::Row { label: format!("Line {} · {}: {} \u{2192} {to}", l.id, name(field), if from.is_empty() { "empty" } else { from }), detail: Some(reason(f)?), ..Default::default() });
+        // An amount given can be another on the card before it's applied.
+        rows.push(proposals::Row {
+            label: proposals::fix_label(&l.id, field, from, &to),
+            detail: Some(reason(f)?),
+            amount: cents,
+            key: Some(proposals::fix_key(&l.id, field)),
+            edit: cents.map(|_| proposals::RowEdit { amount: true, ..Default::default() }),
+            ..Default::default()
+        });
         fields.push(FieldFix { line: l.id.clone(), line_version: l.version, field, from: from.into(), to });
     }
     for f in args["include"].as_array().into_iter().flatten() {
@@ -1505,7 +1512,12 @@ fn fix_import(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         if on && !matches!(l.status, LineStatus::LeftOut { reason, .. } if reason.includable()) {
             return Err(format!("Line {} can't be included: only lines left out for a reason someone can overrule can.", l.id));
         }
-        rows.push(proposals::Row { label: format!("Line {} · {}", l.id, if on { "include it" } else { "leave it out" }), detail: Some(reason(f)?), ..Default::default() });
+        rows.push(proposals::Row {
+            label: format!("Line {} · {}", l.id, if on { "include it" } else { "leave it out" }),
+            detail: Some(reason(f)?),
+            key: Some(format!("i:{}", l.id)),
+            ..Default::default()
+        });
         include.push(IncludeFix { line: l.id.clone(), line_version: l.version, include: on });
     }
     let read = &args["readAs"];
@@ -1539,6 +1551,10 @@ fn fix_import(args: &Value, ctx: &Context) -> Result<Outcome, String> {
         structure.columns = Some(chosen);
     }
     let restructured = structure != brief.structure;
+    // How the file reads is one change, left out (or not) as a whole.
+    for row in rows.iter_mut().filter(|r| r.key.is_none()) {
+        row.key = Some("x".into());
+    }
     if fields.is_empty() && include.is_empty() && !restructured {
         return Err("Give at least one fix.".into());
     }

@@ -682,6 +682,7 @@ pub fn run() {
             assistant::assistant_spreadsheet,
             assistant::assistant_log_error,
             assistant::assistant_apply,
+            assistant::assistant_revise,
             assistant::assistant_mark,
             assistant::assistant_import,
             assistant::assistant_save_import

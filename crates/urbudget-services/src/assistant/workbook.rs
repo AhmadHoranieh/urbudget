@@ -689,6 +689,7 @@ pub fn build(title: String, sheets: Vec<Sheet>, b: &Budget) -> Result<Proposal, 
         summary: json!({ "title": title, "sheets": summary }),
         problem: None,
         fixes: None,
+        review: None,
     })
 }
 

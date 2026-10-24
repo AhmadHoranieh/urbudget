@@ -160,6 +160,9 @@ pub struct ProposalView<'a> {
     /// Fixes for a bank file being imported, for the import to apply.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fixes: Option<&'a crate::bank_statement::Fixes>,
+    /// What the user left out or changed on the card, to change again.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub choices: Option<&'a super::proposals::Revision>,
 }
 pub fn proposal_view(p: &Proposal) -> Value {
     serde_json::to_value(ProposalView {
@@ -176,6 +179,7 @@ pub fn proposal_view(p: &Proposal) -> Value {
             _ => 0,
         },
         fixes: p.fixes.as_ref(),
+        choices: p.review.as_ref().map(|r| &r.revision),
     })
     .unwrap_or(Value::Null)
 }

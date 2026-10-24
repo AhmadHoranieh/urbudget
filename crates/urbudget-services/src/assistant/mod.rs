@@ -685,7 +685,10 @@ pub fn assistant_send(
         let earlier: Vec<String> = t
             .proposals
             .iter()
-            .map(|p| format!("\u{201c}{}\u{201d} {}", p.title, status_word(p.status)))
+            .map(|p| match p.choices() {
+                Some(choices) => format!("\u{201c}{}\u{201d} {} ({choices})", p.title, status_word(p.status)),
+                None => format!("\u{201c}{}\u{201d} {}", p.title, status_word(p.status)),
+            })
             .collect();
         let context = prompt::context(&budget, &screen, settings.share_memos, &earlier, import.as_ref());
         t.items.push(Item::User { text: text.clone(), attachments: metas, context, at: now(), import });
@@ -887,6 +890,36 @@ pub fn assistant_apply(
             }
         }
     })
+}
+
+/// The proposal as the user chose on its card (rows left out, categories and amounts given),
+/// made again on the budget as the window has it. The card comes back with every row, the ones
+/// left out marked.
+pub fn assistant_revise(
+    db: &Database,
+    assistant: &Assistant,
+    patch: Option<Patch>,
+    thread_id: String,
+    proposal_id: String,
+    revision: proposals::Revision,
+) -> Result<Value, String> {
+    let folder = folder(&db)?;
+    let proposal = assistant
+        .thread_copy(&folder, &thread_id)?
+        .proposals
+        .into_iter()
+        .find(|p| p.id == proposal_id)
+        .ok_or("That proposal is gone.")?;
+    let revised = db.read(patch, |current| proposals::revise(&proposal, revision, current))?;
+    assistant.with_thread(&folder, &thread_id, |t| {
+        let p = t.proposals.iter_mut().find(|p| p.id == proposal_id).ok_or("That proposal is gone.")?;
+        // Applied or discarded meanwhile: the choice is for a card that's done.
+        if p.status != proposal.status {
+            return Err("This proposal was already handled.".to_string());
+        }
+        *p = revised;
+        Ok(history::proposal_view(p))
+    })?
 }
 
 /// Records what happened to a proposal: discarded, undone, or back to proposed when applying failed.
