@@ -308,7 +308,13 @@ function LineState({
       )}
       {children}
       {(line.fixed || line.included) && (
-        <button className="icon-button line-revert" disabled={busy} title="Put back as the file has it" aria-label={`Put line ${line.id} back as the file has it`} onClick={onRevert}>
+        <button
+          className="icon-button line-revert"
+          disabled={busy}
+          title={assisted ? "Fixed by the assistant · put back as the file has it" : "Put back as the file has it"}
+          aria-label={`Put line ${line.id} back as the file has it`}
+          onClick={onRevert}
+        >
           {assisted ? <Sparkles size={13} aria-hidden /> : null}
           <RotateCcw size={13} aria-hidden />
         </button>

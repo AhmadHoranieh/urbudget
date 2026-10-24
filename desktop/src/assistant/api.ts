@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { read } from "../bridge";
+import { read, type BankFixes, type BankSession } from "../bridge";
 import type { Patch } from "../patch";
 import type { Budget } from "../types";
 
@@ -54,7 +54,7 @@ export type ProposalStatus = "proposed" | "applied" | "discarded" | "undone" | "
 export type Proposal = {
   id: string;
   title: string;
-  kind: "budget" | "transactions" | "payees" | "import" | "report" | "spreadsheet";
+  kind: "budget" | "transactions" | "payees" | "import" | "report" | "spreadsheet" | "fix";
   status: ProposalStatus;
   card: Card;
   problem?: string;
@@ -62,6 +62,8 @@ export type Proposal = {
   rows: number;
   /** Sheets it can save as a spreadsheet: a spreadsheet's sheets, or a report's tables. */
   sheets: number;
+  /** Fixes for a bank file being imported, for the import to apply. */
+  fixes?: BankFixes;
 };
 export type Entry =
   | { kind: "user"; text: string; attachments: Attachment[]; selected?: number }
@@ -80,6 +82,8 @@ export type Screen = {
   categoryId?: string | null;
   selected: string[];
   today: string;
+  /** The bank file on the Import page, when that's where the user is: the assistant is told its lines. */
+  import?: { account: string; content: string; session: BankSession };
 };
 export type AssistantEvent = { threadId: string } & (
   | { type: "started" }

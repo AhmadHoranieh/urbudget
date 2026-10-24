@@ -443,3 +443,24 @@ it("puts an import's request and transactions in the box without sending them", 
   expect(screen.getByText("2 selected transactions")).toBeTruthy();
   expect(assistant.send).not.toHaveBeenCalled();
 });
+
+it("offers fixes for an import to apply there", async () => {
+  const { ProposalCard } = await import("./ProposalCard");
+  const onApply = vi.fn(async () => {});
+  const fix = {
+    id: "p1",
+    title: "1 fix for the import",
+    kind: "fix" as const,
+    status: "proposed" as const,
+    rows: 0,
+    sheets: 0,
+    card: { kicker: "Import fixes", rows: [{ label: "Line 30 · amount: n/a → -12.40", detail: "The statement's total" }], stats: [], more: 0, highlight: { categories: [], transactions: [] } },
+  };
+  render(
+    <ProposalCard proposal={fix} canUndo={false} onApply={onApply} onDiscard={async () => {}} onUndo={async () => {}} onReview={() => {}} onPreview={() => {}} onSave={async () => {}} />,
+  );
+  expect(screen.getByText("The statement's total")).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Apply to the import" }));
+  await waitFor(() => expect(onApply).toHaveBeenCalledTimes(1));
+  expect(screen.getByText("Each applies only to a line that hasn't changed")).toBeTruthy();
+});

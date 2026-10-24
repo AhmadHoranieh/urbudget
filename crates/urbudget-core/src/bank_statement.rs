@@ -67,7 +67,7 @@ impl Reason {
 }
 
 /// What became of a line.
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum Status {
     Ready,
@@ -332,7 +332,7 @@ pub struct Statement {
     #[serde(skip)]
     id_column: Option<usize>,
 }
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SourceInfo {
     pub label: String,
@@ -362,11 +362,12 @@ pub struct Line {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub batch: Option<usize>,
 }
-#[derive(Clone, Debug, Default, Serialize, PartialEq)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Counts {
     pub ready: usize,
     pub attention: usize,
+    #[serde(default)]
     pub left_out: BTreeMap<Reason, usize>,
 }
 impl Counts {
@@ -382,7 +383,7 @@ impl Counts {
         counts
     }
 }
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct DateQuestion {
     pub order: String,
@@ -391,13 +392,13 @@ pub struct DateQuestion {
     /// Not confirmed yet: an import asks before going on.
     pub unconfirmed: bool,
 }
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct SignQuestion {
     pub by_type: bool,
     pub unconfirmed: bool,
 }
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BatchInfo {
     pub entry: String,
@@ -911,7 +912,7 @@ fn split_already(b: &Budget, account: &str, read: &Reading, structure: &Structur
 
 /// What the assistant is told about an import: enough to fix its lines, never more of the file
 /// than that.
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct Brief {
     pub scope: Scope,
@@ -919,7 +920,7 @@ pub struct Brief {
     pub structure: Structure,
     pub format: String,
     pub headers: Vec<String>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub sources: Vec<SourceInfo>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source: Option<usize>,
@@ -937,10 +938,10 @@ pub struct Brief {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub currency: Option<String>,
     /// Batches whose payments don't add up.
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub batches: Vec<BatchInfo>,
 }
-#[derive(Clone, Debug, Serialize, PartialEq)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct BriefLine {
     pub id: String,

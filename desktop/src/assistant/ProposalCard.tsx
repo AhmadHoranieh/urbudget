@@ -181,13 +181,13 @@ export function ProposalCard({
         ) : (
           <>
             <button className="primary small" disabled={busy} onClick={run(onApply)}>
-              {busy ? <LoaderCircle size={13} className="spin" aria-hidden /> : p.problem ? <RefreshCw size={13} aria-hidden /> : null}
-              Apply
+              {busy ? <LoaderCircle size={13} className="spin" aria-hidden /> : p.problem && p.kind !== "fix" ? <RefreshCw size={13} aria-hidden /> : null}
+              {p.kind === "fix" ? "Apply to the import" : "Apply"}
             </button>
             <button className="secondary small" disabled={busy} onClick={run(onDiscard)}>
               Discard
             </button>
-            <span className="proposal-hint">One undo step</span>
+            <span className="proposal-hint">{p.kind === "fix" ? "Each applies only to a line that hasn't changed" : "One undo step"}</span>
           </>
         )}
       </div>

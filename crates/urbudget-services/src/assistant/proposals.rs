@@ -193,6 +193,9 @@ pub struct Proposal {
     pub report: Option<ReportDoc>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub workbook: Option<WorkbookDoc>,
+    /// Fixes for a bank file being imported: the import applies them, not the budget.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fixes: Option<crate::bank_statement::Fixes>,
     /// The spreadsheet file last saved from this card, reused by Open.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub saved: Option<String>,
@@ -265,6 +268,7 @@ pub fn build_report(title: String, period: Option<String>, body: String) -> Prop
         card,
         summary,
         problem: None,
+        fixes: None,
     }
 }
 
@@ -437,6 +441,7 @@ pub fn build(change: Change, title: String, before: &Budget) -> Result<Proposal,
         card,
         summary,
         problem: None,
+        fixes: None,
     })
 }
 
@@ -450,6 +455,10 @@ pub enum Recheck {
 /// Runs a proposal again on the budget as it is now.
 pub fn recheck(p: &Proposal, current: &Budget) -> Recheck {
     let mut refreshed = p.clone();
+    if p.fixes.is_some() {
+        refreshed.problem = Some("Apply these from the import they're for.".into());
+        return Recheck::Changed(refreshed);
+    }
     let Some(change) = &p.change else {
         refreshed.status = Status::Failed;
         refreshed.problem = Some(
@@ -814,7 +823,34 @@ pub fn build_import(
         card,
         summary,
         problem: None,
+        fixes: None,
     })
+}
+
+/// A card for fixes to a bank file being imported: each fix, with why.
+pub fn build_fix(fixes: crate::bank_statement::Fixes, mut rows: Vec<Row>, note: Option<String>) -> Proposal {
+    let count = fixes.fields.len() + fixes.include.len() + fixes.structure.is_some() as usize;
+    let title = format!("{} for the import", if count == 1 { "1 fix".to_string() } else { format!("{count} fixes") });
+    let more = rows.len().saturating_sub(MAX_ROWS);
+    rows.truncate(MAX_ROWS);
+    let card = Card { kicker: "Import fixes".into(), rows, more, note, ..Card::default() };
+    let summary = summary(&title, &card);
+    Proposal {
+        id: new_id("p"),
+        title,
+        kind: "fix".into(),
+        status: Status::Proposed,
+        change: None,
+        import: None,
+        report: None,
+        workbook: None,
+        saved: None,
+        expected: None,
+        card,
+        summary,
+        problem: None,
+        fixes: Some(fixes),
+    }
 }
 
 #[cfg(test)]

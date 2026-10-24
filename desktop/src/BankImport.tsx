@@ -74,6 +74,10 @@ export function importHelpText(account: string, problem = "") {
     .join(" ");
 }
 
+/** What the assistant is asked about the lines of an import that need attention: ready to send, not sent. */
+export const fixImportText =
+  "Fix the lines of this import that need attention. Use only what the file itself supports, and ask me about anything that isn't clear.";
+
 /** New transactions an import left without a category, and the accounts they went into. */
 export type Uncategorized = { ids: string[]; accounts: string[] };
 /** The assistant reads at most this many attached transactions at a time. */

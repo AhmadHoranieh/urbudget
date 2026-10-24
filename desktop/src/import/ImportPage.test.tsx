@@ -83,11 +83,12 @@ function engine(read: (s: BankSession) => Statement, first = session()) {
 /** The fixes sent last. */
 const sent = (): BankFixes => vi.mocked(api.bankApplyFixes).mock.lastCall![4];
 
-function Page({ budget = demoBudget(), initial = { account: "checking" }, onImported = vi.fn(), onAskAssistant }: {
+function Page({ budget = demoBudget(), initial = { account: "checking" }, onImported = vi.fn(), onAskAssistant, onFixWithAssistant }: {
   budget?: Budget;
   initial?: ImportState;
   onImported?: () => void;
   onAskAssistant?: (file: File, problem: string, account: string) => void;
+  onFixWithAssistant?: () => void;
 }) {
   const [state, setState] = useState<ImportState>(initial);
   return (
@@ -101,6 +102,7 @@ function Page({ budget = demoBudget(), initial = { account: "checking" }, onImpo
         onImported={onImported}
         onCancel={vi.fn()}
         onAskAssistant={onAskAssistant}
+        onFixWithAssistant={onFixWithAssistant}
       />
     </ToastProvider>
   );
@@ -292,4 +294,20 @@ it("offers the assistant first when no line reads, with why", async () => {
   expect(ask).toHaveBeenCalledWith(file, "1 lines don't read.", "Everyday account");
   // Nothing reads, so there's no review to continue to.
   expect((screen.getByRole("button", { name: "Continue to the review" }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+it("asks the assistant to fix the lines that need attention, and marks the lines it fixed", async () => {
+  const fixed = line("30", ["2026-10-02", "Grocer", "-12.40"], { kind: "ready" }, { fixed: true, version: 1, original: ["2026-10-02", "Grocer", "n/a"] });
+  engine((s) => statement(s, s.revision ? [bakery, fixed] : [bakery, grocer]));
+  const ask = vi.fn();
+  const view = render(<Page onFixWithAssistant={ask} />);
+  choose(csv());
+  fireEvent.click(await screen.findByRole("button", { name: /Fix with the assistant/ }));
+  expect(ask).toHaveBeenCalledTimes(1);
+  cleanup();
+  view.unmount();
+  // The assistant's fixes came back: its lines say so.
+  render(<Page initial={{ account: "checking", file: csv(), content: "x", session: session("s1", 1), view: "editor", assisted: ["30"] }} />);
+  fireEvent.click(await screen.findByRole("tab", { name: /Edited/ }));
+  expect((await screen.findByRole("button", { name: "Put line 30 back as the file has it" })).title).toBe("Fixed by the assistant · put back as the file has it");
 });

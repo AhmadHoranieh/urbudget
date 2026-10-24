@@ -19,7 +19,7 @@ import { assistant, type Card, type Proposal } from "./assistant/api";
 import { LoanActionsContext, hasLoan, loanTerms, type LoanActions } from "./Planning";
 import { LoanPlanner } from "./LoanPlanner";
 import { LoanPaymentForm } from "./LoanPayment";
-import { ATTACH_LIMIT, categorizeText, importHelpText, type Uncategorized } from "./BankImport";
+import { ATTACH_LIMIT, categorizeText, fixImportText, importHelpText, type Uncategorized } from "./BankImport";
 import { ImportPage, type ImportState } from "./import/ImportPage";
 import { BankSync, BankSyncDetails, syncHelpText } from "./BankSync";
 import { Payees } from "./PayeesPage";
@@ -448,7 +448,34 @@ export default function App() {
   const dialogLoan = dialog && (dialog.type === "planner" || dialog.type === "loanPayment") ? loanTerms(budget, dialog.account.id) : undefined;
 
   /** Applies an assistant proposal as one undoable change; a refreshed card comes back when the budget moved. */
+  /** Fixes the assistant proposed for the import in progress: applied there, where each still fits. */
+  const applyFix = async (threadId: string, p: Proposal): Promise<Proposal> => {
+    const fixes = p.fixes;
+    const open = importing?.session && importing.content !== undefined ? importing : null;
+    if (!fixes || !open?.session || open.content === undefined) throw new Error("Open the import these fixes are for.");
+    if (fixes.scope.session !== open.session.scope.session) throw new Error("These fixes are for another import.");
+    const applied = await api.bankApplyFixes(budget!, open.account, open.content, open.session, fixes);
+    const lines = applied.results.filter((r) => r.applied && r.line).map((r) => r.line!);
+    setImporting((was) =>
+      was?.session?.scope.session === fixes.scope.session
+        ? { ...was, session: applied.session, view: "editor", assisted: [...new Set([...(was.assisted ?? []), ...lines])] }
+        : was,
+    );
+    setPage("import");
+    const refused = applied.results.filter((r) => !r.applied);
+    const done = applied.results.length - refused.length;
+    toast({
+      message: refused.length
+        ? `Applied ${done} of ${applied.results.length} fixes. ${refused.length === 1 ? "One no longer fits" : `${refused.length} no longer fit`}: ${refused[0].problem ?? "the line changed"}`
+        : done === 1
+          ? "Applied the fix to the import."
+          : `Applied ${done} fixes to the import.`,
+      tone: refused.length && !done ? "error" : undefined,
+    });
+    return done ? assistant.mark(threadId, p.id, "applied") : p;
+  };
   const applyProposal = async (threadId: string, p: Proposal): Promise<Proposal> => {
+    if (p.kind === "fix") return applyFix(threadId, p);
     if (!currentSummary) throw new Error("Wait for the budget calculation to finish before applying these changes.");
     let outcome = null as { patch: Patch | null; proposal: Proposal } | null;
     let after: Budget | null = null;
@@ -769,6 +796,7 @@ export default function App() {
                 // A file the assistant already converted goes back to it from its own card instead.
                 importing.proposal ? undefined : (file, problem, account) => ask({ text: importHelpText(account, problem), files: [file] })
               }
+              onFixWithAssistant={() => ask({ text: fixImportText })}
             />
           )}
           {page === "settings" && (
@@ -813,7 +841,16 @@ export default function App() {
             budget={budget}
             budgetId={budgetId}
             summary={summary}
-            screen={{ page, month, accountId: page === "transactions" ? accountId : null }}
+            screen={{
+              page,
+              month,
+              accountId: page === "transactions" ? accountId : null,
+              // The bank file on the Import page: the assistant is told its lines, as they read when a message is sent.
+              import:
+                page === "import" && importing?.session && importing.content !== undefined
+                  ? { account: importing.account, content: importing.content, session: importing.session }
+                  : undefined,
+            }}
             request={assistantRequest}
             width={assistantWidth.width}
             onResize={assistantWidth.setWidth}

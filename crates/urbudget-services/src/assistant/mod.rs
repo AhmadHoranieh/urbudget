@@ -675,6 +675,11 @@ pub fn assistant_send(
     if attached_before + metas.len() > 12 {
         return Err("This conversation has as many files as it can hold. Start a new conversation to attach more.".into());
     }
+    // The file being imported, as it reads now: kept with the message, so a fix the assistant
+    // proposes is for these lines as they are now (a line changed since won't take it).
+    let import = screen.import.as_ref().and_then(|i| {
+        crate::bank_statement::statement(&budget, &i.account, &i.content, &i.session).ok().map(|s| s.brief(settings.share_memos))
+    });
     assistant.with_thread(&folder, &id, |t| {
         history::settle(&mut t.items);
         let earlier: Vec<String> = t
@@ -682,8 +687,8 @@ pub fn assistant_send(
             .iter()
             .map(|p| format!("\u{201c}{}\u{201d} {}", p.title, status_word(p.status)))
             .collect();
-        let context = prompt::context(&budget, &screen, settings.share_memos, &earlier);
-        t.items.push(Item::User { text: text.clone(), attachments: metas, context, at: now() });
+        let context = prompt::context(&budget, &screen, settings.share_memos, &earlier, import.as_ref());
+        t.items.push(Item::User { text: text.clone(), attachments: metas, context, at: now(), import });
         t.updated = now();
     })?;
     let job = agent::Job {

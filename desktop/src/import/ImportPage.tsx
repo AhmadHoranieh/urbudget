@@ -43,6 +43,7 @@ export function ImportPage({
   onImported,
   onCancel,
   onAskAssistant,
+  onFixWithAssistant,
 }: {
   budget: Budget;
   budgetId: string;
@@ -54,6 +55,8 @@ export function ImportPage({
   onCancel: () => void;
   /** Hands the file to the assistant, with what went wrong if anything did. */
   onAskAssistant?: (file: File, problem: string, account: string) => void;
+  /** Asks the assistant to fix the lines that need attention (it's told them with the message). */
+  onFixWithAssistant?: () => void;
 }) {
   const toast = useToast();
   const [statement, setStatement] = useState<Statement | null>(null);
@@ -312,7 +315,7 @@ export function ImportPage({
           assisted={new Set(state.assisted ?? [])}
           onFix={(f) => void fix(f)}
           onContinue={() => onState((was) => ({ ...was, view: "review" }))}
-          onAssistant={onAskAssistant && file ? () => onAskAssistant(file, `${attention} lines don't read.`, accountName) : undefined}
+          onAssistant={onFixWithAssistant ?? (onAskAssistant && file ? () => onAskAssistant(file, `${attention} lines don't read.`, accountName) : undefined)}
         />
       ) : !review ? (
         <p className="help" role="status">
