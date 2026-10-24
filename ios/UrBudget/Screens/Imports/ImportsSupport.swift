@@ -304,6 +304,23 @@ struct BankStatement: Equatable, Sendable {
     }
 }
 
+/// What a review of an import's rows was asked for: a reply is kept only while the screen still
+/// shows that import, and a review shown or imported only for the import it was made of.
+struct BankReviewRequest: Equatable, Sendable {
+    /// Reviews asked for so far: a later one replaces this one.
+    var number: Int
+    /// Files chosen so far: another file (or none) is another import, its session at revision 0 too.
+    var generation: Int
+    var session: String
+    var revision: Int64
+    var account: String
+
+    /// Of the same import as `other`, as read after the same changes, into the same account.
+    func sameImport(as other: BankReviewRequest) -> Bool {
+        generation == other.generation && session == other.session && revision == other.revision && account == other.account
+    }
+}
+
 /// Changes to an import session, made against its current revision (bank_statement.rs `Fixes`).
 enum BankFixes {
     static func make(_ session: JSON, _ build: (inout JSON) -> Void = { _ in }) -> JSON {

@@ -251,6 +251,17 @@ final class BankStatementTests: XCTestCase {
         XCTAssertEqual(BankFixes.wholeBatch(session, "e1", false)["structure"]["wholeBatches"], [])
     }
 
+    func testAReviewIsOnlyEverOfTheImportItWasAskedFor() {
+        let asked = BankReviewRequest(number: 1, generation: 1, session: "a", revision: 0, account: "checking")
+        XCTAssertEqual(asked, asked)
+        // Asked again (the budget changed): the earlier review shows until the new one lands.
+        XCTAssertTrue(asked.sameImport(as: BankReviewRequest(number: 2, generation: 1, session: "a", revision: 0, account: "checking")))
+        // Another file, though its session is at revision 0 too; a later change; another account: never.
+        XCTAssertFalse(asked.sameImport(as: BankReviewRequest(number: 2, generation: 2, session: "b", revision: 0, account: "checking")))
+        XCTAssertFalse(asked.sameImport(as: BankReviewRequest(number: 2, generation: 1, session: "a", revision: 1, account: "checking")))
+        XCTAssertFalse(asked.sameImport(as: BankReviewRequest(number: 2, generation: 1, session: "a", revision: 0, account: "savings")))
+    }
+
     func testADateTheOrdersReadDifferentlyIsNamedBothWays() {
         let named = BankStatementText.readings("01/02/2026")
         XCTAssertEqual(named?.dmy, "1 February 2026")

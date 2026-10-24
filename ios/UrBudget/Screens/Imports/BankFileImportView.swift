@@ -9,12 +9,13 @@ private enum BankFileRoute: Hashable { case account }
 private enum BankFileStage { case lines, review }
 
 /// The review of the lines that read: its rows, the budget revision they were checked against,
-/// and the statement as it read then (what the account keeps of it).
+/// the statement as it read then (what the account keeps of it), and the import it was made of.
 private struct BankFilePreview {
     var rows: [BankReviewRow]
     var summary: BankReviewSummary
     var revision: String
     var statement: BankStatement
+    var request: BankReviewRequest
 }
 
 /// Imports a file a bank exported (the desktop's Import page, Android's BankImportDialog): choose
@@ -77,6 +78,16 @@ struct BankFileImportView: View {
         guard let statement, let session, statement.session == sessionId, statement.revision == session.long("revision") else { return nil }
         return statement
     }
+    /// The import as it is now, as a review of it would be asked for.
+    private var request: BankReviewRequest {
+        BankReviewRequest(number: reviews, generation: generation, session: sessionId, revision: session?.long("revision") ?? -1, account: account)
+    }
+    /// The review of the import as it is now: one of another file, an earlier reading of this one
+    /// or another account is never shown or imported.
+    private var shownPreview: BankFilePreview? {
+        guard let preview, session != nil, preview.request.sameImport(as: request) else { return nil }
+        return preview
+    }
     private var busy: Bool { loading || saving || (session != nil && current == nil) }
     /// Most changes take a moment: the screen only looks busy (greyed, a spinner) for one that
     /// lasts, so a quick one doesn't flash it.
@@ -87,7 +98,7 @@ struct BankFileImportView: View {
             Group {
                 if session == nil || statement == nil {
                     setup
-                } else if stage == .review, let preview {
+                } else if stage == .review, let preview = shownPreview {
                     review(preview)
                 } else if stage == .review {
                     List {
@@ -132,7 +143,11 @@ struct BankFileImportView: View {
         .onChange(of: store.revision) { _, now in
             // Sync, Undo or another screen changed the budget: read the file and check the rows again against it.
             guard session != nil, !saving else { return }
-            refresh(notice: preview != nil && preview?.revision != now ? changedAgain : nil)
+            refresh(notice: shownPreview != nil && shownPreview?.revision != now ? changedAgain : nil)
+        }
+        .onChange(of: account) {
+            // An import is into one account: the file is read again into another.
+            if session != nil, let file { open(file, sheet: sheet) }
         }
     }
 
@@ -146,11 +161,12 @@ struct BankFileImportView: View {
         ToolbarItem(placement: .confirmationAction) {
             if saving || (slow && session != nil) {
                 ProgressView()
-            } else if stage == .review, let preview {
+            } else if stage == .review, let preview = shownPreview {
                 let counts = BankReview.counts(preview.rows, decisions)
                 Button(counts.importing == 1 ? "Import 1" : "Import \(counts.importing)") { importRows() }
                     .fontWeight(.semibold)
-                    .disabled(counts.undecided > 0 || counts.importing == 0)
+                    // Checked against the budget as it was: checked again before anything imports.
+                    .disabled(counts.undecided > 0 || counts.importing == 0 || preview.revision != store.revision)
             } else if let current {
                 // Nothing goes on to the review on a guess the file leaves open.
                 Button("Continue") { stage = .review; runPreview() }
@@ -452,7 +468,9 @@ struct BankFileImportView: View {
 
     /// Back to choosing the file, into the same account.
     private func startOver() {
+        // Replies on their way, reviews too, are for the import that's gone.
         generation += 1
+        reviews += 1
         fileName = ""; file = nil; content = nil; sheets = []; sheet = nil; pdf = nil
         session = nil; statement = nil; stage = nil; preview = nil; decisions = [:]; assisted = []
         error = nil; notice = nil; loading = false
@@ -534,9 +552,8 @@ struct BankFileImportView: View {
     private func runPreview(notice next: String? = nil) {
         guard let session, let content else { return }
         reviews += 1
-        let current = reviews
-        let revisionOfSession = session.long("revision")
-        let params: JSON = ["accountId": .string(account), "content": .string(content), "session": session, "problemsOnly": true]
+        let asked = request
+        let params: JSON = ["accountId": .string(asked.account), "content": .string(content), "session": session, "problemsOnly": true]
         error = nil
         Task {
             let revision = store.revision
@@ -548,13 +565,16 @@ struct BankFileImportView: View {
                     let rows = try BankReview.prepare(rows: review.rows("items"), budget: budget, allowIdlessDuplicate: true, candidateSets: review["candidateSets"].array)
                     return (rows, BankStatement(result["statement"]))
                 }.value
-                guard current == reviews, self.session?.long("revision") == revisionOfSession else { return }
+                // A reply for another file, a reading of this one before a change, another
+                // account or an earlier request is dropped.
+                guard asked == request else { return }
                 guard store.revision == revision else { return runPreview(notice: changedAgain) }
-                preview = BankFilePreview(rows: prepared.0, summary: BankReview.summarize(prepared.0), revision: revision, statement: prepared.1)
+                preview = BankFilePreview(rows: prepared.0, summary: BankReview.summarize(prepared.0), revision: revision, statement: prepared.1, request: asked)
                 decisions = [:]
                 notice = next
             } catch {
-                guard current == reviews else { return }
+                // Nor does such a reply's error show for the import that replaced it.
+                guard asked == request else { return }
                 self.error = BudgetStore.readable(error)
             }
         }
@@ -572,11 +592,12 @@ struct BankFileImportView: View {
         loading = true
         error = nil
         notice = nil
-        let was = sessionId
+        let was = generation
         Task {
             do {
                 let applied = try await store.query("bankApplyFixes", ["accountId": .string(account), "content": .string(content), "session": session, "fixes": fixes])
-                guard sessionId == was else { loading = false; return }
+                // Another file chosen meanwhile is reading on its own: this change is for the one before.
+                guard generation == was else { return }
                 self.session = applied["session"]
                 if let refused = applied.rows("results").first(where: { !$0.flag("applied") }) {
                     error = refused.text("problem").isEmpty ? "That change no longer fits the file." : refused.text("problem")
@@ -584,6 +605,7 @@ struct BankFileImportView: View {
                 preview = nil
                 refresh()
             } catch {
+                guard generation == was else { return }
                 self.error = BudgetStore.readable(error)
             }
             loading = false
@@ -628,7 +650,8 @@ struct BankFileImportView: View {
     }
 
     private func importRows() {
-        guard let preview else { return }
+        // Only the review of this import, checked against the budget as it is.
+        guard let preview = shownPreview, preview.revision == store.revision else { return }
         let selected = decisions
         let accountId = account
         let importing = BankReview.counts(preview.rows, selected).importing

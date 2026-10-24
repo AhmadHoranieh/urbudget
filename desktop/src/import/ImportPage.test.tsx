@@ -133,6 +133,13 @@ function Page({
 }
 const choose = (file: File) => fireEvent.change(screen.getByLabelText("Bank file"), { target: { files: [file] } });
 const csv = (name = "october.csv") => new File(["Date,Payee,Amount\n2026-10-01,Bakery,-3.20\n"], name, { type: "text/csv" });
+/** Opens a line to fix and gives one of its cells a new value, saved with Enter. */
+const fixCell = (id: string, column: string, to: string) => {
+  fireEvent.click(screen.getByRole("button", { name: `Fix line ${id}` }));
+  const input = screen.getByLabelText(`${column} of line ${id}`);
+  fireEvent.change(input, { target: { value: to } });
+  fireEvent.keyDown(input, { key: "Enter" });
+};
 
 it("opens the file at the lines that need attention, and a cell fixed there is sent as that fix", async () => {
   engine((s) =>
@@ -167,8 +174,10 @@ it("opens the file at the lines that need attention, and a cell fixed there is s
     null,
     false,
   );
-  fireEvent.click(screen.getByRole("button", { name: "Amount of line 30: n/a" }));
-  const cell = screen.getByLabelText("Cell");
+  // The line opens to edit at the cell that doesn't read.
+  fireEvent.click(screen.getByRole("button", { name: "Fix line 30" }));
+  const cell = screen.getByLabelText("Amount of line 30");
+  expect(document.activeElement).toBe(cell);
   fireEvent.change(cell, { target: { value: "-12.40" } });
   fireEvent.keyDown(cell, { key: "Enter" });
   await waitFor(() => expect(api.bankApplyFixes).toHaveBeenCalledTimes(1));
@@ -179,12 +188,42 @@ it("opens the file at the lines that need attention, and a cell fixed there is s
   });
   // It reads now, marked as changed from the file.
   fireEvent.click(screen.getByRole("tab", { name: /All/ }));
-  const fixed = await screen.findByRole("button", { name: "Amount of line 30: -12.40" });
-  expect(fixed.closest("td")!.className).toContain("changed");
-  expect(fixed.closest("td")!.title).toBe("In the file: n/a");
+  const fixed = await screen.findByRole("cell", { name: "Amount of line 30: -12.40" });
+  expect(fixed.className).toContain("edited");
+  expect(fixed.title).toBe("In the file: n/a");
   // Lines still needing attention don't stop the review: they stay out of it.
   fireEvent.click(screen.getByRole("button", { name: "Continue to the review" }));
   expect(await screen.findByRole("button", { name: "Import 3 transactions" })).toBeTruthy();
+});
+
+it("edits a line as the register does: a click selects it, another edits it there, Esc leaves it as it was", async () => {
+  const pending = line("90", ["2026-10-04", "Cinema", "-12.00"], { kind: "leftOut", reason: "pending", detail: "Pending" });
+  engine((s) => statement(s, [bakery, grocer, pending]));
+  render(<Page />);
+  choose(csv());
+  fireEvent.click(await screen.findByRole("tab", { name: /All/ }));
+  const payee = screen.getByRole("cell", { name: "Payee of line 0: Bakery" });
+  fireEvent.click(payee);
+  expect(payee.closest('[role="row"]')!.getAttribute("aria-selected")).toBe("true");
+  expect(screen.queryByLabelText("Payee of line 0")).toBeNull();
+  // A second click edits it, from the cell clicked.
+  fireEvent.click(payee);
+  const input = screen.getByLabelText("Payee of line 0");
+  expect(document.activeElement).toBe(input);
+  fireEvent.change(input, { target: { value: "Bakery & Co" } });
+  fireEvent.keyDown(input, { key: "Escape" });
+  expect(screen.queryByLabelText("Payee of line 0")).toBeNull();
+  expect(screen.getByRole("cell", { name: "Payee of line 0: Bakery" })).toBeTruthy();
+  // The keys move along the lines: Enter edits one, Space includes one left out.
+  const lines = screen.getByRole("grid").parentElement!;
+  fireEvent.keyDown(lines, { key: "ArrowDown" });
+  fireEvent.keyDown(lines, { key: "Enter" });
+  expect(document.activeElement).toBe(screen.getByLabelText("Amount of line 30"));
+  fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+  fireEvent.keyDown(lines, { key: "ArrowDown" });
+  fireEvent.keyDown(lines, { key: " " });
+  await waitFor(() => expect(sent()).toMatchObject({ include: [{ line: "90", lineVersion: 0, include: true }] }));
+  expect(api.bankApplyFixes).toHaveBeenCalledTimes(1);
 });
 
 it("goes straight to the review when every line reads, says what's left out, and imports with what the account keeps", async () => {
@@ -264,12 +303,16 @@ it("includes a line left out, and asks for its amount in the budget's currency",
   fireEvent.click(await screen.findByRole("button", { name: /1 left out · Check the file/ }));
   fireEvent.click(await screen.findByRole("tab", { name: /Left out/ }));
   expect(screen.getByText("In GBP")).toBeTruthy();
-  fireEvent.click(screen.getByLabelText("Include"));
+  fireEvent.click(screen.getByRole("button", { name: "Include line 40" }));
   await waitFor(() => expect(sent()).toMatchObject({ include: [{ line: "40", lineVersion: 0, include: true }] }));
   fireEvent.click(screen.getByRole("tab", { name: /Need attention/ }));
   expect(await screen.findByText("This line is in GBP: enter the amount in SAR.")).toBeTruthy();
-  // Lines that can't be: nothing to include.
-  expect(screen.queryAllByLabelText("Include")).toHaveLength(1);
+  // Included, it can be fixed or left out again.
+  expect(screen.getByRole("button", { name: "Fix line 40" })).toBeTruthy();
+  expect(screen.getByRole("button", { name: "Leave line 40 out" })).toBeTruthy();
+  // A line that reads has nothing to include.
+  fireEvent.click(screen.getByRole("tab", { name: /All/ }));
+  expect(screen.queryAllByRole("button", { name: /^Include line/ })).toHaveLength(0);
 });
 
 it("keeps an answered date order one choice away, and waits for how the file tells money out", async () => {
@@ -308,7 +351,7 @@ it("doesn't dim the lines for a quick change, and makes one asked for meanwhile 
   vi.mocked(api.bankApplyFixes).mockImplementationOnce((...args) => new Promise((r) => (finish = () => r(apply(...args)))));
   fireEvent.change(purchases, { target: { value: "positive" } });
   // Nothing dims or locks for a moment's work.
-  expect((screen.getByRole("button", { name: "Amount of line 30: n/a" }) as HTMLButtonElement).disabled).toBe(false);
+  expect((screen.getByRole("button", { name: "Fix line 30" }) as HTMLButtonElement).disabled).toBe(false);
   expect(purchases.disabled).toBe(false);
   // Another change meanwhile waits for it, then is made on the import as the first left it.
   fireEvent.change(screen.getByLabelText("What column 2 holds"), { target: { value: "memo" } });
@@ -387,21 +430,19 @@ it("shows a cell's new value at once, while the file reads again", async () => {
   );
   render(<Page />);
   choose(csv());
-  fireEvent.click(await screen.findByRole("button", { name: "Amount of line 30: n/a" }));
+  await screen.findByRole("button", { name: "Fix line 30" });
   // The next reading takes its time.
   const later = vi.mocked(api.bankStatement).getMockImplementation()!;
   vi.mocked(api.bankStatement).mockImplementationOnce((...args) => new Promise((r) => (release = () => r(later(...args)))));
-  const cell = screen.getByLabelText("Cell");
-  fireEvent.change(cell, { target: { value: "-12.40" } });
-  fireEvent.keyDown(cell, { key: "Enter" });
-  const shown = await screen.findByRole("button", { name: "Amount of line 30: -12.40" });
-  expect(shown.closest("td")!.className).toContain("waiting");
+  fixCell("30", "Amount", "-12.40");
+  const shown = await screen.findByRole("cell", { name: "Amount of line 30: -12.40" });
+  expect(shown.className).toContain("waiting");
   await waitFor(() => expect(api.bankStatement).toHaveBeenCalledTimes(2));
   release();
   // Read again, it reads: every line does, and the tab says so.
   expect(await screen.findByText(/Every line reads now/)).toBeTruthy();
   fireEvent.click(screen.getByRole("button", { name: "Show all lines" }));
-  expect((await screen.findByRole("button", { name: "Amount of line 30: -12.40" })).closest("td")!.className).not.toContain("waiting");
+  expect((await screen.findByRole("cell", { name: "Amount of line 30: -12.40" })).className).not.toContain("waiting");
 });
 
 it("asks once whether the day or the month comes first, when the dates don't say", async () => {
@@ -517,18 +558,14 @@ it("says why a fix didn't apply, and drops a fix made for a file since replaced"
   });
   render(<Page />);
   choose(csv());
-  fireEvent.click(await screen.findByRole("button", { name: "Amount of line 30: n/a" }));
-  fireEvent.change(screen.getByLabelText("Cell"), { target: { value: "-1.00" } });
-  fireEvent.keyDown(screen.getByLabelText("Cell"), { key: "Enter" });
+  await screen.findByRole("button", { name: "Fix line 30" });
+  fixCell("30", "Amount", "-1.00");
   expect(await screen.findByText("This line changed since this fix was made.")).toBeTruthy();
   // A fix still on its way when another file is chosen is for an import that's gone.
   let finish!: (v: Awaited<ReturnType<typeof api.bankApplyFixes>>) => void;
   vi.mocked(api.bankApplyFixes).mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)));
-  const cell = await screen.findByRole("button", { name: "Amount of line 30: n/a" });
-  await waitFor(() => expect((cell as HTMLButtonElement).disabled).toBe(false));
-  fireEvent.click(cell);
-  fireEvent.change(screen.getByLabelText("Cell"), { target: { value: "-2.00" } });
-  fireEvent.keyDown(screen.getByLabelText("Cell"), { key: "Enter" });
+  await screen.findByRole("cell", { name: "Amount of line 30: n/a" });
+  fixCell("30", "Amount", "-2.00");
   fireEvent.click(screen.getByRole("button", { name: "Choose another file" }));
   vi.mocked(api.bankSession).mockResolvedValue(session("s2"));
   choose(csv("november.csv"));
