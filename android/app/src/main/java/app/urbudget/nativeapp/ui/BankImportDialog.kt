@@ -94,8 +94,10 @@ internal fun preparedBankImport(file: JSONObject, thread: String, proposal: Stri
     BankImportDraft(file.text("account"), file.text("name"), file.text("csv"), prepared = thread to proposal)
 
 /** The engine's answer, or why there's none; cancelled with whoever waits for it. */
-private suspend fun BudgetViewModel.ask(method: String, params: JSONObject): JSONObject = suspendCancellableCoroutine { waiting ->
-    val job = query(method, params, onError = { if (waiting.isActive) waiting.resumeWithException(IllegalStateException(it)) }) { if (waiting.isActive) waiting.resume(it) }
+private suspend fun BudgetViewModel.ask(method: String, params: JSONObject, anyRevision: Boolean = false): JSONObject = suspendCancellableCoroutine { waiting ->
+    val job = query(method, params, onError = { if (waiting.isActive) waiting.resumeWithException(IllegalStateException(it)) }, anyRevision = anyRevision) {
+        if (waiting.isActive) waiting.resume(it)
+    }
     waiting.invokeOnCancellation { job.cancel() }
 }
 
@@ -172,9 +174,10 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, draft: Ba
         loading = false
     }
 
-    // The lines that need attention (or were changed), read again after each change.
+    // The lines that need attention (or were changed), read again after each change; in the
+    // review, its own reading of the file is the statement.
     LaunchedEffect(session, content, budget) {
-        if (session == null || content == null) return@LaunchedEffect
+        if (session == null || content == null || draft.view == "review") return@LaunchedEffect
         try {
             val reply = vm.ask("bankStatement", read { put("problemsOnly", true) })
             val lines = withContext(Dispatchers.Default) { parseStatement(reply) }
@@ -186,6 +189,8 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, draft: Ba
     // The review, and again whenever the budget or the import changes.
     LaunchedEffect(draft.view, session, content, budget) {
         if (draft.view != "review" || session == null || content == null) return@LaunchedEffect
+        // A review of the import before this change is never the one imported.
+        rows = null; summary = null
         try {
             val reply = vm.ask("bankImportPreview", read { put("problemsOnly", true) })
             val review = reply.getJSONObject("review")
@@ -193,7 +198,7 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, draft: Ba
                 val list = prepareBankReview(review.rows("items"), budget, true, review.optJSONArray("candidateSets"))
                 Triple(list, summarizeBankReview(list), parseStatement(reply.getJSONObject("statement")))
             }
-            rows = prepared.first; summary = prepared.second; reviewed = prepared.third; previewBudget = budget; decisions.clear()
+            rows = prepared.first; summary = prepared.second; reviewed = prepared.third; statement = prepared.third; previewBudget = budget; decisions.clear()
         } catch (cancel: CancellationException) { throw cancel } catch (failure: Exception) { error = failure.message }
     }
 
@@ -222,7 +227,8 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, draft: Ba
         update { it.copy(notice = null) }
         scope.launch {
             try {
-                val applied = vm.ask("bankApplyFixes", read { put("fixes", fixes) })
+                // A change to the import still fits after an edit to the budget meanwhile.
+                val applied = vm.ask("bankApplyFixes", read { put("fixes", fixes) }, anyRevision = true)
                 val next = applied.getJSONObject("session")
                 update { if (it.session === was) it.copy(session = next) else it }
                 val results = applied.optJSONArray("results")
@@ -234,7 +240,7 @@ internal fun BankImportDialog(budget: JSONObject, vm: BudgetViewModel, draft: Ba
     }
 
     fun importRows() {
-        if (previewBudget !== vm.state.value.budget) {
+        if (previewBudget !== vm.state.value.budget || reviewed?.revision != session?.optLong("revision")) {
             error = "Your budget changed. The review is up to date again: check it and import."
             return
         }

@@ -155,16 +155,18 @@ export function ImportPage({
       setBusy(false);
     }
   };
+  // The review of the import as it is now: after a change in the editor, the last one is out of date.
+  const reviewed = review && session && review.statement.revision === session.revision ? review : null;
   const save = async (choices: ImportChoice[], importing: number) => {
-    if (!review) return;
+    if (!reviewed) return;
     setBusy(true);
     setMessage("");
     try {
       let uncategorized: Uncategorized = { ids: [], accounts: [] };
       await transform(async (b) => {
-        if (b !== review.base) throw Error("Your budget changed. The review is up to date again: check it and import.");
+        if (b !== reviewed.base) throw Error("Your budget changed. The review is up to date again: check it and import.");
         // The account keeps how its own file read, not the assistant's.
-        const after = await api.importBank(b, account, choices, state.proposal ? null : review.statement.remember);
+        const after = await api.importBank(b, account, choices, state.proposal ? null : reviewed.statement.remember);
         uncategorized = uncategorizedImports(b, after);
         return after;
       });
@@ -192,7 +194,7 @@ export function ImportPage({
     const dropped = e.dataTransfer.files?.[0];
     if (dropped) void start(dropped);
   };
-  const shown = review?.statement ?? statement;
+  const shown = reviewed?.statement ?? statement;
   const out = shown ? leftOut(shown) : 0;
   const attention = shown?.counts.attention ?? 0;
   const problem = message || (shown && !shown.counts.ready ? "None of the file's lines could be read." : "");
@@ -321,14 +323,14 @@ export function ImportPage({
           onContinue={() => onState((was) => ({ ...was, view: "review" }))}
           onAssistant={onFixWithAssistant ?? (onAskAssistant && file ? () => onAskAssistant(file, `${attention} lines don't read.`, accountName) : undefined)}
         />
-      ) : !review ? (
+      ) : !reviewed ? (
         <p className="help" role="status">
           Checking the lines against your budget…
         </p>
       ) : (
         <ImportReview
           budget={budget}
-          rows={review.rows}
+          rows={reviewed.rows}
           busy={busy}
           icon={<FileText size={18} aria-hidden />}
           title={

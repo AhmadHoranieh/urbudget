@@ -167,7 +167,7 @@ private fun BudgetContent(vm: BudgetViewModel, state: BudgetUiState) {
         if (open == null || fixes == null || session == null) return assistantController.note("Open the import these fixes are for.")
         if (fixes.optJSONObject("scope")?.optString("session") != open.sessionId) return assistantController.note("These fixes are for another import.")
         vm.query("bankApplyFixes", JSONObject().put("accountId", open.account).put("content", open.content).put("session", session).put("fixes", fixes),
-            onError = { assistantController.note(it) }) { applied ->
+            onError = { assistantController.note(it) }, anyRevision = true) { applied ->
             val outcome = fixOutcome(applied)
             bankImport = bankImport?.let {
                 if (it.sessionId == open.sessionId) it.copy(session = applied.getJSONObject("session"), view = "lines", assisted = it.assisted + outcome.lines, notice = outcome.notice) else it

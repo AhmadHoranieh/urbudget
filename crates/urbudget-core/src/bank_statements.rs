@@ -25,6 +25,12 @@ pub fn sniff(content: &str) -> Option<&'static str> {
     if ["!type:", "!account", "!option:", "!clear:"].iter().any(|p| first.starts_with(p)) {
         return Some("qif");
     }
+    // A QIF file some banks write without its !Type line: dated records, each ended by ^.
+    let amount = |l: &str| l.len() > 1 && (l.starts_with('T') || l.starts_with('U')) && l[1..].trim_start().starts_with(|c: char| c.is_ascii_digit() || "-+.,".contains(c));
+    let dated = first.starts_with('d') && first[1..].trim_start().starts_with(|c: char| c.is_ascii_digit());
+    if dated && lines().any(|l| l.trim() == "^") && lines().any(|l| amount(l.trim())) {
+        return Some("qif");
+    }
     None
 }
 
@@ -1477,6 +1483,16 @@ mod tests {
         assert!(matches!(open.lines[0].status, Status::Attention { field: Field::Date, .. }));
         let confirmed = lines("qif", &qif("31/1O/2026"), "EUR", &LineOptions { date_order: "dmy", confirmed: true, ..LineOptions::default() }).unwrap();
         assert_eq!((confirmed.dates.unwrap().unconfirmed, confirmed.lines[1].transaction.as_ref().unwrap().date.as_str()), (false, "2026-02-01"));
+    }
+
+    #[test]
+    fn a_qif_file_without_its_type_line_is_known_by_its_records() {
+        let records = "D10/31/2026\nT-12.50\nPShop\n^\nD11/01/2026\nU1,000.00\nPPay\n^\n";
+        assert_eq!(sniff(records), Some("qif"));
+        assert_eq!(read("qif", records, "EUR").lines.len(), 2);
+        // Not a CSV that merely starts with a D.
+        assert_eq!(sniff("Date,Amount\n2026-10-01,-1\n"), None);
+        assert_eq!(sniff("D1,T2\n^,x\n"), None);
     }
 
     #[test]

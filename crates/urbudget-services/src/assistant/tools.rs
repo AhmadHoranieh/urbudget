@@ -1493,6 +1493,9 @@ fn fix_import(args: &Value, ctx: &Context) -> Result<Outcome, String> {
             Field::Payee => truncate(given, 200),
             Field::Memo => truncate(given, 500),
         };
+        if to == from.trim() {
+            return Err(format!("Line {}'s {} is \u{201c}{from}\u{201d} already: fix only what needs it.", l.id, name(field)));
+        }
         rows.push(proposals::Row { label: format!("Line {} · {}: {} \u{2192} {to}", l.id, name(field), if from.is_empty() { "empty" } else { from }), detail: Some(reason(f)?), ..Default::default() });
         fields.push(FieldFix { line: l.id.clone(), line_version: l.version, field, from: from.into(), to });
     }
@@ -1633,6 +1636,8 @@ pub mod tests {
         assert!(fix(amount("12", "-12.40"), &brief, &b).unwrap_err().contains("not \u{201c}12\u{201d}"));
         assert!(fix(amount("n/a", "twelve"), &brief, &b).is_err());
         assert!(fix(amount("n/a", "0"), &brief, &b).unwrap_err().contains("zero"));
+        let same = json!({ "fields": [{ "line": grocer, "field": "payee", "from": "Grocer", "to": " Grocer", "reason": "r" }], "note": "x" });
+        assert!(fix(same, &brief, &b).unwrap_err().contains("already"));
         assert!(fix(json!({ "fields": [{ "line": grocer, "field": "date", "from": "2026-10-02", "to": "02/10/2026", "reason": "r" }], "note": "x" }), &brief, &b).unwrap_err().contains("YYYY-MM-DD"));
         assert!(fix(json!({ "fields": [{ "line": grocer, "field": "amount", "from": "n/a", "to": "-12.40" }], "note": "x" }), &brief, &b).unwrap_err().contains("reason"));
         assert!(fix(json!({ "note": "nothing" }), &brief, &b).unwrap_err().contains("at least one"));

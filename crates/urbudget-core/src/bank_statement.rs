@@ -833,7 +833,7 @@ pub fn apply_fixes(b: &Budget, account: &str, content: &str, session: &Session, 
             if table {
                 let written = if l.original.is_empty() { &l.cells } else { &l.original };
                 let cells = next.edits.cells.entry(f.line.clone()).or_default();
-                if written.get(f.column) == Some(&f.to) {
+                if written.get(f.column).map(|w| w.trim()) == Some(f.to.trim()) {
                     cells.remove(&f.column);
                 } else {
                     cells.insert(f.column, f.to.trim().to_string());
@@ -853,6 +853,9 @@ pub fn apply_fixes(b: &Budget, account: &str, content: &str, session: &Session, 
         let outcome = line(&f.line, f.line_version).and_then(|l| {
             if l.fields.get(f.field) != f.from {
                 return Err("This value changed since this fix was made.".into());
+            }
+            if f.to.trim() == f.from.trim() {
+                return Err("The line already has that value.".into());
             }
             next.edits.fields.entry(f.line.clone()).or_default().insert(f.field, f.to.trim().to_string());
             Ok(())
@@ -1386,6 +1389,18 @@ mod tests {
         let cafe = statement(&b, "cash", file, &s).unwrap().lines[1].id.clone();
         let fix = FieldFix { line: cafe.clone(), line_version: 0, field: Field::Amount, from: "n/a".into(), to: "-2.00".into() };
         let s = applied(&b, file, &s, &fixes(&s, |f| f.fields = vec![fix]));
+        // Giving a line the value it has changes nothing.
+        let st = statement(&b, "cash", file, &s).unwrap();
+        let shop = st.lines[0].clone();
+        let same = FieldFix { line: shop.id.clone(), line_version: 0, field: Field::Amount, from: "-3.00".into(), to: " -3.00".into() };
+        let refused = apply_fixes(&b, "cash", file, &s, &fixes(&s, |f| f.fields = vec![same])).unwrap();
+        assert_eq!(refused.results[0].problem.as_deref(), Some("The line already has that value."));
+        assert_eq!(refused.session, s);
+        // A cell typed back as the file writes it, spaces and all, is the file's again.
+        let cell = |to: &str, s: &Session| CellFix { line: shop.id.clone(), line_version: s.versions.get(&shop.id).copied().unwrap_or(0), column: 2, from: statement(&b, "cash", file, s).unwrap().lines[0].cells[2].clone(), to: to.into() };
+        let changed = applied(&b, file, &s, &fixes(&s, |f| f.cells = vec![cell("-4.00", &s)]));
+        let back = applied(&b, file, &changed, &fixes(&changed, |f| f.cells = vec![cell("-3.00 ", &changed)]));
+        assert!(!statement(&b, "cash", file, &back).unwrap().lines[0].fixed);
         let problems = statement(&b, "cash", file, &s).unwrap().problems();
         assert_eq!(problems.lines.iter().map(|l| (l.id.as_str(), l.fixed)).collect::<Vec<_>>(), [(cafe.as_str(), true)]);
         assert_eq!((problems.counts.ready, problems.counts.attention), (2, 0));

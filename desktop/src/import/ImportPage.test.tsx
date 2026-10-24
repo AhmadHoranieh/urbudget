@@ -165,6 +165,24 @@ it("reads a file the assistant prepared the standard way, and leaves what the ac
   expect(api.importBank).toHaveBeenCalledWith(b, "checking", [expect.objectContaining({ action: "new" })], null);
 });
 
+it("never shows a review made before a change to the file", async () => {
+  engine((s) => statement(s, s.revision ? [bakery, lunch] : [bakery, grocer, lunch]));
+  render(<Page />);
+  choose(csv());
+  fireEvent.click(await screen.findByRole("button", { name: "Continue to the review" }));
+  expect(await screen.findByRole("button", { name: "Import 2 transactions" })).toBeTruthy();
+  // Back to the file for a change, then on to the review while it's still being checked.
+  fireEvent.click(screen.getByRole("button", { name: /Check the file/ }));
+  fireEvent.click(await screen.findByLabelText("Purchases are positive"));
+  await waitFor(() => expect(api.bankApplyFixes).toHaveBeenCalledTimes(1));
+  vi.mocked(api.bankStatementPreview).mockImplementationOnce(() => new Promise(() => {}));
+  const next = await screen.findByRole("button", { name: "Continue to the review" });
+  await waitFor(() => expect((next as HTMLButtonElement).disabled).toBe(false));
+  fireEvent.click(next);
+  expect(await screen.findByText("Checking the lines against your budget…")).toBeTruthy();
+  expect(screen.queryByRole("button", { name: /^Import \d/ })).toBeNull();
+});
+
 it("includes a line left out, and asks for its amount in the budget's currency", async () => {
   const london = line("40", ["2026-10-05", "London", "-9.99"], { kind: "leftOut", reason: "otherCurrency", detail: "GBP" });
   engine((s) =>

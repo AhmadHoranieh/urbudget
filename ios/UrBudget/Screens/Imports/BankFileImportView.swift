@@ -492,6 +492,8 @@ struct BankFileImportView: View {
             } catch {
                 guard current == generation else { return }
                 self.error = BudgetStore.readable(error)
+                // A file that never read goes back to choosing one, with why.
+                if statement == nil { session = nil }
             }
         }
     }
