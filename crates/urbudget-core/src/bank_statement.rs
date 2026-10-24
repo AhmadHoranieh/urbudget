@@ -7,7 +7,7 @@
 //! about its lines (`Edits`). Changes come as `Fixes` made against one revision of one session,
 //! and apply only where they still fit it, so neither someone's edits nor the assistant's land on
 //! a line that changed since, or on another file.
-use crate::bank_csv::{self, Columns, Options};
+use crate::bank_csv::{self, Columns, FileSettings, Options};
 use crate::bank_import::{self, BankTransaction, CompactReview, Counter, DateReading, Identity};
 use crate::bank_statements::{self, cents, LineOptions};
 use crate::domain::{validate, Budget};
@@ -187,6 +187,32 @@ impl Session {
         Session { scope, structure, ..Session::default() }
     }
 }
+/// A new import of a file into an account, read as the account's last file was (its sheet,
+/// account, date order and signs), else as the file suggests: the date order its dates fit, and a
+/// card's purchases written as positive when most amounts are, unless a line's amount needs
+/// fixing (it could be the one that says otherwise).
+pub fn start(b: &Budget, account: &str, content: &str, id: &str, budget: &str, sheet: Option<String>) -> Result<Session, String> {
+    let kept = bank_csv::settings(b, account);
+    let layout = bank_csv::layout(b, account, content, None)?;
+    let structure = Structure {
+        format: layout.format.clone(),
+        sheet,
+        source: kept.source.clone(),
+        date_order: DateOrder {
+            order: layout.date_format.clone().unwrap_or_default(),
+            confirmed: kept.date_format.is_some() && kept.date_confirmed == Some(true),
+        },
+        ..Structure::default()
+    };
+    let mut session = Session::new(id, budget, account, content, structure);
+    if layout.format == "csv" && kept.flip_signs.is_none() && layout.flip_signs {
+        let doubt = statement(b, account, content, &session)?.lines.iter().any(|l| matches!(l.status, Status::Attention { field: Field::Amount, .. }));
+        session.structure.flip_signs = !doubt;
+    } else {
+        session.structure.flip_signs = layout.flip_signs;
+    }
+    Ok(session)
+}
 
 /// Changes to an import, made against one revision of it: applied together where they still
 /// fit it, never to another import.
@@ -299,6 +325,8 @@ pub struct Statement {
     pub currency: Option<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub batches: Vec<BatchInfo>,
+    /// What the account keeps for its next file, once this one is imported.
+    pub remember: FileSettings,
     #[serde(skip)]
     memo_column: Option<usize>,
     #[serde(skip)]
@@ -445,6 +473,7 @@ fn reading(b: &Budget, account: &str, content: &str, session: &Session) -> Resul
         signs: None,
         currency: None,
         batches: vec![],
+        remember: FileSettings::default(),
         memo_column: None,
         id_column: None,
     };
@@ -555,9 +584,28 @@ fn reading(b: &Budget, account: &str, content: &str, session: &Session) -> Resul
         batches = read.batches;
     }
     statement.counts = Counts::of(&statement.lines);
+    statement.remember = remembered(&statement);
     Ok(Reading { statement, extra, batches })
 }
 
+/// What an account keeps of how its file read: the date order used, the columns chosen (when
+/// each names one column), the sheet and the account read; never the header row's place, which
+/// another file has elsewhere.
+fn remembered(statement: &Statement) -> FileSettings {
+    let s = &statement.structure;
+    let once = |name: &Option<String>| {
+        name.as_ref().is_none_or(|n| !n.trim().is_empty() && statement.headers.iter().filter(|h| h.trim() == n.trim()).count() == 1)
+    };
+    let table = statement.format == "csv";
+    FileSettings {
+        columns: s.columns.clone().filter(|c| table && c.names().into_iter().all(once)),
+        date_format: Some(statement.order.clone()),
+        date_confirmed: Some(s.date_order.confirmed),
+        flip_signs: table.then_some(s.flip_signs),
+        sheet: s.sheet.clone(),
+        source: statement.source.filter(|_| statement.sources.len() > 1).and_then(|i| statement.sources.get(i)).map(|s| s.label.clone()),
+    }
+}
 /// The aliases of the lines `wanted`: each line as the file writes it, and how many identical
 /// lines came before.
 fn aliases(account: &str, lines: &[Line], extra: &[Extra], wanted: impl Fn(usize) -> bool) -> Vec<Option<String>> {
@@ -870,6 +918,22 @@ pub struct BriefLine {
     pub status: Status,
 }
 impl Statement {
+    /// The lines that don't read, for a phone that shows only those: a batch keeps the lines of
+    /// its that are left.
+    pub fn problems(mut self) -> Statement {
+        let kept: Vec<usize> = (0..self.lines.len()).filter(|&i| self.lines[i].status != Status::Ready).collect();
+        let at: HashMap<usize, usize> = kept.iter().enumerate().map(|(new, &old)| (old, new)).collect();
+        for b in &mut self.batches {
+            b.line = b.line.and_then(|l| at.get(&l).copied());
+            b.payments = b.payments.iter().filter_map(|l| at.get(l).copied()).collect();
+        }
+        let mut i = 0;
+        self.lines.retain(|_| {
+            i += 1;
+            at.contains_key(&(i - 1))
+        });
+        self
+    }
     /// What the assistant is told: memos only when they're shared with it.
     pub fn brief(&self, share_memos: bool) -> Brief {
         let cut = |c: &str| if c.chars().count() > 80 { c.chars().take(79).chain(['…']).collect() } else { c.to_string() };
@@ -1164,6 +1228,72 @@ mod tests {
         assert_eq!((row.id.as_str(), row.batch.as_deref()), (whole.as_str(), Some(whole.as_str())));
         let count = b.transactions.len();
         assert_eq!(apply(b, "cash", vec![Choice { row, action: "new".into(), match_id: None }]).unwrap().transactions.len(), count);
+    }
+
+    #[test]
+    fn an_import_starts_as_the_accounts_last_file_read_and_keeps_what_it_used() {
+        let mut b = eur();
+        let file = "Date,Payee,Amount\n01/02/2026,Shop,-3.00\n03/04/2026,Cafe,-2.00\n";
+        let s = start(&b, "cash", file, "s1", "budget", None).unwrap();
+        // Nothing kept, and dates that don't settle their order: it's asked.
+        assert!(statement(&b, "cash", file, &s).unwrap().date_order.unwrap().unconfirmed);
+        let day_first = Structure { date_order: DateOrder { order: "dmy".into(), confirmed: true }, ..s.structure.clone() };
+        let s = applied(&b, file, &s, &fixes(&s, |f| f.structure = Some(day_first)));
+        let st = statement(&b, "cash", file, &s).unwrap();
+        assert_eq!((st.remember.date_format.as_deref(), st.remember.date_confirmed), (Some("dmy"), Some(true)));
+        bank_csv::remember(&mut b, "cash", st.remember).unwrap();
+        // The next file starts with it, and doesn't ask.
+        let next = file.replace("Shop", "Bakery");
+        let s = start(&b, "cash", &next, "s2", "budget", None).unwrap();
+        assert_eq!(s.structure.date_order, DateOrder { order: "dmy".into(), confirmed: true });
+        assert!(!statement(&b, "cash", &next, &s).unwrap().date_order.unwrap().unconfirmed);
+
+        // Columns chosen by a name two columns share aren't kept by that name; others are.
+        let twice = "Date,Text,Text,Amount\n2026-10-01,Shop,Note,-3.00\n";
+        let columns = Columns { date: Some("Date".into()), payee: Some("Text".into()), amount: Some("Amount".into()), ..Columns::default() };
+        let st = statement(&b, "cash", twice, &open(twice, Structure { columns: Some(columns.clone()), ..csv() })).unwrap();
+        assert_eq!(st.remember.columns, None);
+        let once = "Date,Text,Note,Amount\n2026-10-01,Shop,Note,-3.00\n";
+        let st = statement(&b, "cash", once, &open(once, Structure { columns: Some(columns.clone()), ..csv() })).unwrap();
+        assert_eq!(st.remember.columns, Some(columns));
+        assert_eq!(st.header_line, Some(0));
+
+        // A file with two accounts: the one read is kept for the next.
+        let both = "Account,Date,Payee,Amount\nA1,2026-10-01,Shop,-3.00\nA1,2026-10-02,Cafe,-2.00\nB2,2026-10-03,Rent,-500.00\nB2,2026-10-04,Pay,900.00\n";
+        let s = start(&b, "cash", both, "s3", "budget", None).unwrap();
+        let st = statement(&b, "cash", both, &s).unwrap();
+        assert_eq!(st.sources.iter().map(|s| s.label.as_str()).collect::<Vec<_>>(), ["A1", "B2"]);
+        let second = Structure { source: Some("B2".into()), ..s.structure.clone() };
+        let s = applied(&b, both, &s, &fixes(&s, |f| f.structure = Some(second)));
+        let st = statement(&b, "cash", both, &s).unwrap();
+        assert_eq!(st.remember.source.as_deref(), Some("B2"));
+        bank_csv::remember(&mut b, "cash", st.remember).unwrap();
+        let s = start(&b, "cash", both, "s4", "budget", None).unwrap();
+        assert_eq!(statement(&b, "cash", both, &s).unwrap().source, Some(1));
+    }
+
+    #[test]
+    fn a_cards_purchases_written_positive_are_turned_unless_an_amount_is_in_doubt() {
+        let b = eur();
+        let file = "Date,Payee,Amount\n2026-10-01,Shop,3.00\n2026-10-02,Cafe,2.50\n2026-10-03,Bakery,4.20\n2026-10-04,Payment,-50.00\n";
+        let s = start(&b, "card", file, "s1", "budget", None).unwrap();
+        assert!(s.structure.flip_signs);
+        let damaged = file.replace("2.50", "2.5O");
+        assert!(!start(&b, "card", &damaged, "s2", "budget", None).unwrap().structure.flip_signs);
+        // Not for an account that isn't a card.
+        assert!(!start(&b, "cash", file, "s3", "budget", None).unwrap().structure.flip_signs);
+    }
+
+    #[test]
+    fn a_phone_is_shown_the_lines_that_dont_read() {
+        let b = eur();
+        let off = CAMT.replace(">200.00<", ">250.00<");
+        let st = statement(&b, "cash", &off, &open(&off, Structure { format: "camt053".into(), ..Structure::default() })).unwrap();
+        assert_eq!(st.lines.len(), 3);
+        let problems = st.problems();
+        assert_eq!(problems.lines.iter().map(|l| l.id.as_str()).collect::<Vec<_>>(), ["e2.1", "e2.2"]);
+        assert_eq!(problems.batches[0].payments, [0, 1]);
+        assert_eq!(problems.counts.attention, 2);
     }
 
     #[test]

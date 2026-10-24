@@ -31,7 +31,7 @@ pub struct Columns {
     pub id: Option<String>,
 }
 impl Columns {
-    fn names(&self) -> [&Option<String>; 7] {
+    pub(crate) fn names(&self) -> [&Option<String>; 7] {
         [&self.date, &self.payee, &self.memo, &self.amount, &self.outflow, &self.inflow, &self.id]
     }
 }
@@ -46,8 +46,17 @@ pub struct FileSettings {
     pub columns: Option<Columns>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub date_format: Option<String>,
+    /// Someone confirmed that date order, for files whose dates don't settle it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub date_confirmed: Option<bool>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub flip_signs: Option<bool>,
+    /// The sheet of a workbook, by its name.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sheet: Option<String>,
+    /// The account in files with several, by its label.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
 }
 
 pub fn settings(b: &Budget, account: &str) -> FileSettings {
@@ -58,24 +67,27 @@ pub fn settings(b: &Budget, account: &str) -> FileSettings {
 }
 
 /// Keeps what an import used for the account's next file. A setting left out stays as it was;
-/// columns without a date go back to being found by name.
+/// columns without a date go back to being found by name. What can't be kept (a date order that
+/// isn't one, a column without a name) stays as it was too: it never stops an import.
 pub fn remember(b: &mut Budget, account: &str, chosen: FileSettings) -> Result<(), String> {
-    if chosen.date_format.as_deref().is_some_and(|f| !matches!(f, "ymd" | "dmy" | "mdy")) {
-        return Err("Choose how the file writes dates.".into());
-    }
     let bad = |n: &Option<String>| n.as_ref().is_some_and(|n| n.trim().is_empty() || n.len() > 200);
-    if chosen.columns.as_ref().is_some_and(|c| c.names().into_iter().any(bad)) {
-        return Err("Choose the file's columns again.".into());
-    }
     let mut kept = settings(b, account);
-    if let Some(columns) = chosen.columns {
+    if let Some(columns) = chosen.columns.filter(|c| !c.names().into_iter().any(bad)) {
         kept.columns = columns.date.is_some().then_some(columns);
     }
-    if chosen.date_format.is_some() {
-        kept.date_format = chosen.date_format;
+    if let Some(order) = chosen.date_format.filter(|f| matches!(f.as_str(), "ymd" | "dmy" | "mdy")) {
+        kept.date_format = Some(order);
+        kept.date_confirmed = chosen.date_confirmed.filter(|c| *c);
     }
     if chosen.flip_signs.is_some() {
         kept.flip_signs = chosen.flip_signs;
+    }
+    let named = |n: Option<String>| n.filter(|n| !n.trim().is_empty() && n.len() <= 200);
+    if let Some(sheet) = named(chosen.sheet) {
+        kept.sheet = Some(sheet);
+    }
+    if let Some(source) = named(chosen.source) {
+        kept.source = Some(source);
     }
     let a = b.accounts.iter_mut().find(|a| a.id == account).ok_or("Account not found")?;
     a.extra.insert("fileImport".into(), serde_json::to_value(kept).map_err(|e| e.to_string())?);
@@ -83,13 +95,16 @@ pub fn remember(b: &mut Budget, account: &str, chosen: FileSettings) -> Result<(
 }
 
 /// A statement's text and the encoding it was in ("spreadsheet" for a workbook's sheet, as CSV).
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Default, Serialize, PartialEq)]
 pub struct Decoded {
     pub text: String,
     pub encoding: &'static str,
     /// The sheet read, of a workbook's.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub sheet: Option<String>,
+    /// A workbook's sheets, by name, to read another.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub sheets: Vec<String>,
 }
 
 /// What a PDF statement needs.
@@ -99,12 +114,16 @@ pub const PDF: &str = "A PDF statement can't be read directly. The assistant can
 /// looks most like a statement, as CSV), a ZIP of statements (CAMT.053 files a day, MT940), or text
 /// in any encoding (`decode`). A PDF is the assistant's to read.
 pub fn read_statement(bytes: &[u8]) -> Result<Decoded, String> {
+    read_sheet(bytes, None)
+}
+/// The same, reading a workbook's sheet by its name, when it has one by that name.
+pub fn read_sheet(bytes: &[u8], sheet: Option<&str>) -> Result<Decoded, String> {
     if bytes.starts_with(b"%PDF") {
         return Err(PDF.into());
     }
     let zip = bytes.starts_with(b"PK\x03\x04");
     if zip || bytes.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
-        return match workbook(bytes) {
+        return match workbook(bytes, sheet) {
             Ok(read) => Ok(read),
             Err(_) if zip => zipped(bytes),
             Err(e) => Err(e),
@@ -113,9 +132,9 @@ pub fn read_statement(bytes: &[u8]) -> Result<Decoded, String> {
     Ok(decode(bytes))
 }
 
-/// A workbook's sheet with the most rows holding a date and a number, as CSV: dates as
-/// YYYY-MM-DD, numbers as written without grouping.
-fn workbook(bytes: &[u8]) -> Result<Decoded, String> {
+/// A workbook's sheet with the most rows holding a date and a number (or the one `chosen`), as
+/// CSV: dates as YYYY-MM-DD, numbers as written without grouping.
+fn workbook(bytes: &[u8], chosen: Option<&str>) -> Result<Decoded, String> {
     use calamine::{Data, Reader};
     let mut book = calamine::open_workbook_auto_from_rs(std::io::Cursor::new(bytes))
         .map_err(|e| format!("The spreadsheet couldn't be opened: {e}"))?;
@@ -132,7 +151,9 @@ fn workbook(bytes: &[u8]) -> Result<Decoded, String> {
         Data::DateTimeIso(s) | Data::DurationIso(s) => s.clone(),
     };
     let mut best: Option<(usize, String, Vec<Vec<String>>)> = None;
-    for name in book.sheet_names() {
+    let sheets = book.sheet_names();
+    let picked = chosen.filter(|c| sheets.iter().any(|s| s == c));
+    for name in sheets.iter().filter(|s| picked.is_none_or(|p| p == s.as_str())).cloned() {
         let Ok(range) = book.worksheet_range(&name) else { continue };
         let left = range.start().map_or(0, |(_, c)| c as usize);
         let mut score = 0;
@@ -153,7 +174,7 @@ fn workbook(bytes: &[u8]) -> Result<Decoded, String> {
         out.write_record(&row[..end]).map_err(|e| e.to_string())?;
     }
     let text = String::from_utf8(out.into_inner().map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
-    Ok(Decoded { text, encoding: "spreadsheet", sheet: Some(sheet) })
+    Ok(Decoded { text, encoding: "spreadsheet", sheet: Some(sheet), sheets })
 }
 
 /// A ZIP of statements, as some banks hand out a day's CAMT.053 files or MT940 together: those,
@@ -183,7 +204,7 @@ fn zipped(bytes: &[u8]) -> Result<Decoded, String> {
     if text.len() > 20_000_000 {
         return Err("Import a file smaller than 20 MB.".into());
     }
-    Ok(Decoded { text, encoding: "UTF-8", sheet: None })
+    Ok(Decoded { text, encoding: "UTF-8", ..Decoded::default() })
 }
 
 /// A statement's text from its bytes: as its byte-order mark says, else UTF-8 when it is, else the
@@ -192,10 +213,10 @@ fn zipped(bytes: &[u8]) -> Result<Decoded, String> {
 pub fn decode(bytes: &[u8]) -> Decoded {
     if let Some((encoding, bom)) = encoding_rs::Encoding::for_bom(bytes) {
         let text = encoding.decode_without_bom_handling(&bytes[bom..]).0.into_owned();
-        return Decoded { text, encoding: encoding.name(), sheet: None };
+        return Decoded { text, encoding: encoding.name(), ..Decoded::default() };
     }
     if let Ok(text) = std::str::from_utf8(bytes) {
-        return Decoded { text: text.to_string(), encoding: "UTF-8", sheet: None };
+        return Decoded { text: text.to_string(), encoding: "UTF-8", ..Decoded::default() };
     }
     let mut detector = chardetng::EncodingDetector::new();
     detector.feed(bytes, true);
@@ -205,7 +226,7 @@ pub fn decode(bytes: &[u8]) -> Decoded {
     if [encoding_rs::WINDOWS_1250, encoding_rs::ISO_8859_2].contains(&encoding) && !central_european(bytes) {
         encoding = encoding_rs::WINDOWS_1252;
     }
-    Decoded { text: encoding.decode_without_bom_handling(bytes).0.into_owned(), encoding: encoding.name(), sheet: None }
+    Decoded { text: encoding.decode_without_bom_handling(bytes).0.into_owned(), encoding: encoding.name(), ..Decoded::default() }
 }
 /// Whether bytes that are letters in Windows-1250 (ł, ą, ż, Ł, Ż…) but symbols in Windows-1252
 /// (³, ¹, ¿, £, ¯…) come up inside words, as in Polish and Czech text.
@@ -216,10 +237,10 @@ fn central_european(bytes: &[u8]) -> bool {
 }
 /// `read_statement` for a file the apps read as ISO-8859-1, one character for each byte, which
 /// crosses the apps' text boundary unchanged.
-pub fn decode_latin1(latin1: &str) -> Result<Decoded, String> {
+pub fn decode_latin1(latin1: &str, sheet: Option<&str>) -> Result<Decoded, String> {
     let bytes = latin1.chars().map(|c| u8::try_from(c as u32)).collect::<Result<Vec<u8>, _>>()
         .map_err(|_| "The statement's bytes didn't come through as they were.".to_string())?;
-    read_statement(&bytes)
+    read_sheet(&bytes, sheet)
 }
 
 /// A CSV's columns, for choosing which holds what.
@@ -1737,7 +1758,7 @@ mod tests {
             assert_eq!((read.encoding, read.text.as_str()), (encoding.name(), text));
             // As the apps send it: a character for each byte.
             let latin1: String = bytes.iter().map(|&b| b as char).collect();
-            assert_eq!(decode_latin1(&latin1).unwrap(), read);
+            assert_eq!(decode_latin1(&latin1, None).unwrap(), read);
         }
         // £ signs in an otherwise English file aren't Polish Ł.
         let pounds = encoding_rs::WINDOWS_1252.encode("Date,Description,Amount\n14/10/2026,TESCO STORES,£12.50\n15/10/2026,SALARY,£2,150.00").0;
@@ -1745,7 +1766,15 @@ mod tests {
         // A byte-order mark says which.
         assert_eq!(decode(b"\xFF\xFED\x00\xE4\x00").text, "Dä");
         assert_eq!(decode(b"\xEF\xBB\xBFB\xC3\xA4").text, "Bä");
-        assert!(decode_latin1("not bytes: ł").is_err());
+        assert!(decode_latin1("not bytes: ł", None).is_err());
+        // A workbook's other sheet, by its name.
+        let book = std::fs::read(format!("{}/../../shared/fixtures/bank-files/es-bbva.xlsx", env!("CARGO_MANIFEST_DIR"))).unwrap();
+        let found = read_statement(&book).unwrap();
+        assert_eq!((found.sheet.as_deref(), found.sheets.as_slice()), (Some("Movimientos"), &["Resumen".to_string(), "Movimientos".to_string()][..]));
+        let other = read_sheet(&book, Some("Resumen")).unwrap();
+        assert_eq!((other.sheet.as_deref(), other.sheets.len()), (Some("Resumen"), 2));
+        assert_ne!(other.text, found.text);
+        assert_eq!(read_sheet(&book, Some("Gone")).unwrap(), found);
         // A PDF is the assistant's to read; a ZIP or an Excel file that isn't one says so.
         assert_eq!(read_statement(b"%PDF-1.7\n1 0 obj").err().as_deref(), Some(PDF));
         assert!(read_statement(b"PK\x03\x04 not really a zip").is_err());
@@ -1911,7 +1940,7 @@ TRANSFER,Current,2026-10-06 08:00:00,2026-10-06 08:00:01,To Joint,-50.00,0.00,EU
 
         let rows = preview_mapped(&b, "cash", csv, "csv", "dmy", false, Some(&columns)).unwrap();
         b = apply(b, "cash", rows.into_iter().map(|row| Choice { row, action: "new".into(), match_id: None }).collect()).unwrap();
-        remember(&mut b, "cash", FileSettings { columns: Some(columns.clone()), date_format: Some("dmy".into()), flip_signs: Some(false) }).unwrap();
+        remember(&mut b, "cash", FileSettings { columns: Some(columns.clone()), date_format: Some("dmy".into()), flip_signs: Some(false), ..FileSettings::default() }).unwrap();
         // The next file from the bank, with its columns in another order and an extra one.
         let next = "Notiz;Wieviel;Wann;Wer;Saldo\nMiete;-800,00;01.11.2026;Vermieter;100,00";
         let read = preview(&b, "cash", next, "csv", "dmy", false).unwrap();
@@ -1920,9 +1949,14 @@ TRANSFER,Current,2026-10-06 08:00:00,2026-10-06 08:00:01,To Joint,-50.00,0.00,EU
         assert_eq!((found.columns, found.saved, found.date_format.as_deref()), (columns.clone(), true, Some("dmy")));
         // A file without those columns is read by its names, and an empty choice forgets them.
         assert_eq!(rows_of(&b, "Date,Payee,Amount\n2026-11-02,Shop,-1"), 1);
-        assert!(remember(&mut b, "cash", FileSettings { date_format: Some("ydm".into()), ..FileSettings::default() }).is_err());
+        // What can't be kept stays as it was, and never stops an import.
+        remember(&mut b, "cash", FileSettings { date_format: Some("ydm".into()), ..FileSettings::default() }).unwrap();
+        let blank = Columns { payee: Some(" ".into()), ..columns.clone() };
+        remember(&mut b, "cash", FileSettings { columns: Some(blank), ..FileSettings::default() }).unwrap();
+        assert_eq!(settings(&b, "cash").columns, Some(columns.clone()));
         remember(&mut b, "cash", FileSettings { columns: Some(Columns::default()), ..FileSettings::default() }).unwrap();
-        assert_eq!(settings(&b, "cash"), FileSettings { columns: None, date_format: Some("dmy".into()), flip_signs: Some(false) });
+        let kept = FileSettings { columns: None, date_format: Some("dmy".into()), flip_signs: Some(false), ..FileSettings::default() };
+        assert_eq!(settings(&b, "cash"), kept);
     }
     fn rows_of(b: &Budget, csv: &str) -> usize {
         preview(b, "cash", csv, "csv", "ymd", false).unwrap().len()

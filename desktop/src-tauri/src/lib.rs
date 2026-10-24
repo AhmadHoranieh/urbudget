@@ -1,5 +1,5 @@
 // Desktop commands use the same accounting implementation as the native phone apps.
-pub use urbudget_core::{domain, engine, ledger, targets, schedules, workflows, reports, loans, patch, store, sync_merge, bank_csv, bank_import, ynab, ynab_files, fresh_start, import_sync, budgets};
+pub use urbudget_core::{domain, engine, ledger, targets, schedules, workflows, reports, loans, patch, store, sync_merge, bank_csv, bank_import, bank_statement, ynab, ynab_files, fresh_start, import_sync, budgets};
 pub mod assistant;
 mod cloud;
 mod credentials;
@@ -357,10 +357,57 @@ fn preview_bank_file(
     })
 }
 /// A statement that isn't UTF-8, sent as ISO-8859-1 so its bytes cross unchanged: its text in the
-/// encoding they fit.
+/// encoding they fit (with `sheet`, a workbook's sheet of that name).
 #[tauri::command(async)]
-fn decode_statement(latin1: String) -> Result<bank_csv::Decoded, String> {
-    bank_csv::decode_latin1(&latin1)
+fn decode_statement(latin1: String, sheet: Option<String>) -> Result<bank_csv::Decoded, String> {
+    bank_csv::decode_latin1(&latin1, sheet.as_deref())
+}
+/// An import of a file into an account, read as its last file was (see `bank_statement::start`).
+#[tauri::command(async)]
+fn bank_session(
+    db: State<'_, Database>,
+    patch: Option<Patch>,
+    account: String,
+    content: String,
+    session: String,
+    budget: String,
+    sheet: Option<String>,
+) -> Result<bank_statement::Session, String> {
+    db.read(patch, |b| bank_statement::start(b, &account, &content, &session, &budget, sheet))
+}
+/// The file as lines, each with what became of it.
+#[tauri::command(async)]
+fn bank_statement(
+    db: State<'_, Database>,
+    patch: Option<Patch>,
+    account: String,
+    content: String,
+    session: bank_statement::Session,
+) -> Result<bank_statement::Statement, String> {
+    db.read(patch, |b| bank_statement::statement(b, &account, &content, &session))
+}
+/// The statement, and the review of its lines that read.
+#[tauri::command(async)]
+fn bank_statement_preview(
+    db: State<'_, Database>,
+    patch: Option<Patch>,
+    account: String,
+    content: String,
+    session: bank_statement::Session,
+) -> Result<bank_statement::StatementPreview, String> {
+    db.read(patch, |b| bank_statement::preview_statement(b, &account, &content, &session))
+}
+/// Changes to an import, where they still fit it.
+#[tauri::command(async)]
+fn bank_apply_fixes(
+    db: State<'_, Database>,
+    patch: Option<Patch>,
+    account: String,
+    content: String,
+    session: bank_statement::Session,
+    fixes: bank_statement::Fixes,
+) -> Result<bank_statement::Applied, String> {
+    db.read(patch, |b| bank_statement::apply_fixes(b, &account, &content, &session, &fixes))
 }
 /// A CSV's header row, first rows and the columns an import would read, for choosing them.
 #[tauri::command(async)]
@@ -528,6 +575,10 @@ pub fn run() {
             preview_bank_file,
             bank_file_columns,
             decode_statement,
+            bank_session,
+            bank_statement,
+            bank_statement_preview,
+            bank_apply_fixes,
             import_bank_file,
             budget_action,
             auto_assign_preview,
