@@ -10,12 +10,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mocked = vi.hoisted(() => ({
   check: vi.fn(),
   invoke: vi.fn(),
+  version: vi.fn(),
   steps: [] as string[],
 }));
 vi.mock("./bridge", () => ({ desktop: true }));
 vi.mock("@tauri-apps/plugin-updater", () => ({ check: mocked.check }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: mocked.invoke }));
-import { useUpdates } from "./updates";
+vi.mock("@tauri-apps/api/app", () => ({ getVersion: mocked.version }));
+import { IDLE_BEFORE_UPDATE, useAutomaticUpdate, useUpdatedNotice, useUpdates } from "./updates";
 import { UpdateChip, UpdateSetting } from "./UpdateNotice";
 const saveAndInstall = async (install: () => Promise<void>) => {
   mocked.steps.push("save");
@@ -221,6 +223,7 @@ describe("updates", () => {
     mocked.invoke.mockImplementation(async (command: string) => {
       if (command === "update_channel") return "microsoftStore";
       if (command === "check_store_update") return true;
+      if (command === "download_store_update") return "consent";
       mocked.steps.push(command);
       if (command === "install_store_update")
         return new Promise<boolean>((done) => {
@@ -362,5 +365,186 @@ describe("updates", () => {
       await result.current.check(true);
     });
     expect(result.current.error).toMatch(/offline/);
+  });
+
+  it("downloads a found update in the background, so installing doesn't wait for it", async () => {
+    const next = update();
+    const { result } = await found(next);
+    expect(next.download).toHaveBeenCalledTimes(1);
+    expect(result.current.ready).toBe(true);
+    expect(result.current.phase).toBe("idle");
+    await act(async () => {
+      await result.current.install(saveAndInstall);
+    });
+    expect(next.download).toHaveBeenCalledTimes(1);
+    expect(mocked.steps).toEqual(["download", "save", "install", "restart_app"]);
+  });
+
+  it("keeps a failed background download quiet and downloads again when installing", async () => {
+    const next = update();
+    next.download.mockRejectedValueOnce(new Error("offline"));
+    mocked.check.mockResolvedValue(next);
+    const { result } = renderHook(() => useUpdates());
+    await act(async () => {
+      await result.current.check();
+    });
+    expect(result.current.error).toBeNull();
+    expect(result.current.ready).toBe(false);
+    expect(result.current.available?.version).toBe("0.4.1");
+    await act(async () => {
+      await result.current.install(saveAndInstall);
+    });
+    expect(next.download).toHaveBeenCalledTimes(2);
+    expect(next.install).toHaveBeenCalledTimes(1);
+  });
+
+  function store(download: string) {
+    mocked.invoke.mockImplementation(async (command: string, args?: unknown) => {
+      if (command === "update_channel") return "microsoftStore";
+      if (command === "check_store_update") return true;
+      if (command === "download_store_update") return download;
+      mocked.steps.push(args ? `${command} ${JSON.stringify(args)}` : command);
+      return true;
+    });
+  }
+
+  it("installs a downloaded Store update without a prompt and reopens UrBudget", async () => {
+    store("ready");
+    const { result } = renderHook(() => useUpdates());
+    await act(async () => {
+      await result.current.check(true);
+    });
+    expect(result.current.ready).toBe(true);
+    await act(async () => {
+      await result.current.install(saveAndInstall);
+    });
+    expect(mocked.steps).toEqual([
+      "save",
+      'apply_store_update {"relaunch":true}',
+      "restart_app",
+    ]);
+  });
+
+  it("asks Windows first when the Store won't update silently", async () => {
+    store("consent");
+    const { result } = renderHook(() => useUpdates());
+    await act(async () => {
+      await result.current.check(true);
+    });
+    expect(result.current.ready).toBe(false);
+    expect(result.current.available).not.toBeNull();
+    await act(async () => {
+      await result.current.install(saveAndInstall);
+    });
+    expect(mocked.steps).toEqual(["save", "install_store_update", "restart_app"]);
+    expect(await result.current.installOnExit()).toBe(false);
+    expect(mocked.steps).not.toContain('apply_store_update {"relaunch":false}');
+  });
+
+  it("forgets a Store update that's gone by the time it downloads", async () => {
+    store("none");
+    const { result } = renderHook(() => useUpdates());
+    await act(async () => {
+      await result.current.check(true);
+    });
+    expect(result.current.available).toBeNull();
+    expect(result.current.current).toBe(true);
+  });
+
+  it("installs a downloaded Store update on closing, without reopening UrBudget", async () => {
+    store("ready");
+    const { result } = renderHook(() => useUpdates());
+    expect(await result.current.installOnExit()).toBe(false);
+    await act(async () => {
+      await result.current.check(true);
+    });
+    expect(await result.current.installOnExit()).toBe(true);
+    expect(mocked.steps).toEqual(['apply_store_update {"relaunch":false}']);
+  });
+
+  it("never installs on closing for a standalone copy, whose installer reopens the app", async () => {
+    const { result } = await found(update());
+    expect(await result.current.installOnExit()).toBe(false);
+    expect(mocked.steps).toEqual(["download"]);
+  });
+
+  it("says once, after an update, which version is now running", async () => {
+    const seen: string[] = [];
+    localStorage.removeItem("lb:version");
+    mocked.version.mockResolvedValue("1.0.8");
+    let hook = renderHook(() => useUpdatedNotice((v) => seen.push(v)));
+    await act(async () => {});
+    hook.unmount();
+    expect(seen).toEqual([]);
+    mocked.version.mockResolvedValue("1.0.9");
+    hook = renderHook(() => useUpdatedNotice((v) => seen.push(v)));
+    await act(async () => {});
+    hook.unmount();
+    renderHook(() => useUpdatedNotice((v) => seen.push(v)));
+    await act(async () => {});
+    expect(seen).toEqual(["1.0.9"]);
+  });
+});
+
+describe("automatic updates", () => {
+  let focused = false;
+  beforeEach(() => {
+    vi.useFakeTimers();
+    focused = false;
+    vi.spyOn(document, "hasFocus").mockImplementation(() => focused);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it("installs a ready update once UrBudget has sat unused in the background", async () => {
+    const install = vi.fn();
+    renderHook(() => useAutomaticUpdate(true, () => true, install));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_BEFORE_UPDATE - 60_000);
+    });
+    expect(install).not.toHaveBeenCalled();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(install).toHaveBeenCalledTimes(1);
+    // A failed attempt waits for another quiet spell instead of retrying every minute.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_BEFORE_UPDATE - 60_000);
+    });
+    expect(install).toHaveBeenCalledTimes(1);
+  });
+
+  it("waits while UrBudget is in use, in front, or has something to lose", async () => {
+    const install = vi.fn();
+    let safe = false;
+    const { rerender } = renderHook(({ ready }) => useAutomaticUpdate(ready, () => safe, install), {
+      initialProps: { ready: false },
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_BEFORE_UPDATE * 2);
+    });
+    rerender({ ready: true });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_BEFORE_UPDATE * 2);
+    });
+    expect(install).not.toHaveBeenCalled();
+    safe = true;
+    focused = true;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(IDLE_BEFORE_UPDATE * 2);
+    });
+    expect(install).not.toHaveBeenCalled();
+    focused = false;
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "a" }));
+      await vi.advanceTimersByTimeAsync(IDLE_BEFORE_UPDATE - 60_000);
+    });
+    expect(install).not.toHaveBeenCalled();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(install).toHaveBeenCalledTimes(1);
   });
 });

@@ -29,7 +29,7 @@ import { BudgetPage } from "./BudgetPage";
 import { SettingsPage, type Tab as SettingsTab } from "./SettingsPage";
 import { useCloud } from "./cloud";
 import { SyncChip } from "./CloudBadges";
-import { useUpdates } from "./updates";
+import { useAutomaticUpdate, useUpdatedNotice, useUpdates } from "./updates";
 import { useUsageCounts } from "./usage";
 import { UpdateChip } from "./UpdateNotice";
 import { TransactionsPage, saveTransaction, scheduledMessage } from "./Register";
@@ -385,6 +385,25 @@ export default function App() {
     void updates
       .install(model.installUpdate)
       .catch((e) => fail(e, "Couldn't install the update: "));
+  // A downloaded Store update installs when the window closes, after the budget is saved.
+  const { ready: updateReady, channel: updateChannel, installOnExit } = updates;
+  useEffect(() => {
+    model.setExitTask(updateReady && updateChannel === "microsoftStore" ? installOnExit : null);
+  });
+  // Or by itself once UrBudget has sat unused in the background with nothing to lose.
+  useAutomaticUpdate(
+    updates.ready,
+    () =>
+      !model.operation &&
+      !model.dirty() &&
+      !cloud.syncing &&
+      !dialog &&
+      !planningEditor &&
+      !document.querySelector('[aria-modal="true"]') &&
+      !document.activeElement?.matches("input, textarea, select, [contenteditable]"),
+    installUpdate,
+  );
+  useUpdatedNotice((version) => toast({ message: `UrBudget was updated to version ${version}.` }));
   const switchBudget = (id: string) =>
     model.switchBudget(id).catch((e) => {
       fail(e, "Couldn't open that budget: ");
@@ -903,7 +922,7 @@ export default function App() {
       {updates.phase === "installing" && (
         <Blocking title="Installing the update">
           <p role="status">{updates.channel === "microsoftStore"
-            ? "Your budget is saved first, then Windows downloads and installs the update. Windows may ask for permission and close UrBudget. Reopen it from Start if it doesn't restart."
+            ? "Your budget is saved first, then Windows installs the update, which closes UrBudget and opens it again. Windows may ask for permission first."
             : "Your budget is saved first, then UrBudget restarts on the new version."}</p>
           <LoaderCircle className="spin" />
         </Blocking>

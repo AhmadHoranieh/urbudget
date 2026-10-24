@@ -32,6 +32,7 @@ vi.mock("./useBudget", async (importOriginal) => ({
     undo: state.undo,
     fetchDatabase: state.fetch,
     dirty: () => state.dirty,
+    setExitTask: () => {},
   }),
 }));
 vi.mock("./bridge", async (importOriginal) => {
