@@ -40,6 +40,8 @@ import app.urbudget.nativeapp.AssistantController
 import app.urbudget.nativeapp.BudgetViewModel
 import app.urbudget.nativeapp.NativePreferences
 import app.urbudget.nativeapp.BudgetUiState
+import app.urbudget.nativeapp.fixImportText
+import app.urbudget.nativeapp.fixOutcome
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -100,6 +102,8 @@ private fun BudgetContent(vm: BudgetViewModel, state: BudgetUiState) {
     val assistantController: AssistantController = viewModel()
     var editor by remember { mutableStateOf<String?>(null) }
     var selected by remember { mutableStateOf<JSONObject?>(null) }
+    // A bank file being imported: kept while the assistant is open over it, to fix its lines.
+    var bankImport by remember { mutableStateOf<BankImportDraft?>(null) }
     var accountFilter by rememberSaveable { mutableStateOf("") }
     var categoryFilter by rememberSaveable { mutableStateOf("") }
     // A date range the register opens with, when a budget figure leads to one month's transactions.
@@ -147,7 +151,32 @@ private fun BudgetContent(vm: BudgetViewModel, state: BudgetUiState) {
             }
         }
     }
-    fun openEditor(kind: String, record: JSONObject? = null) { selected = record; editor = kind }
+    fun openEditor(kind: String, record: JSONObject? = null) {
+        selected = record; editor = kind
+        if (kind == "bankImport" && bankImport == null) state.budget?.let { bankImport = newBankImport(it) }
+    }
+    // The import the assistant is open over: it's told the file's lines, and its fixes apply there.
+    val importing = bankImport?.takeIf { editor == "bankImport" }
+    val importScreen = remember(importing) {
+        importing?.session?.let { JSONObject().put("account", importing.account).put("content", importing.content).put("session", it) }
+    }
+    fun applyFix(thread: String, proposal: JSONObject) {
+        val open = importing
+        val fixes = proposal.optJSONObject("fixes")
+        val session = open?.session
+        if (open == null || fixes == null || session == null) return assistantController.note("Open the import these fixes are for.")
+        if (fixes.optJSONObject("scope")?.optString("session") != open.sessionId) return assistantController.note("These fixes are for another import.")
+        vm.query("bankApplyFixes", JSONObject().put("accountId", open.account).put("content", open.content).put("session", session).put("fixes", fixes),
+            onError = { assistantController.note(it) }) { applied ->
+            val outcome = fixOutcome(applied)
+            bankImport = bankImport?.let {
+                if (it.sessionId == open.sessionId) it.copy(session = applied.getJSONObject("session"), view = "lines", assisted = it.assisted + outcome.lines, notice = outcome.notice) else it
+            }
+            if (outcome.applied > 0) assistantController.imported(thread, proposal.text("id"))
+            // Back to the import, to see them.
+            assistant = false
+        }
+    }
     fun openTab(index: Int) {
         if (index == 4) { drawer = true; return }
         tab = index; morePage = ""; parentPage = ""; accountFilter = ""; categoryFilter = ""; rangeFrom = ""; rangeThrough = ""; rangeSearch = ""; returnTab = -1
@@ -276,7 +305,7 @@ private fun BudgetContent(vm: BudgetViewModel, state: BudgetUiState) {
                 Box(Modifier.fillMaxWidth().padding(top = 8.dp), contentAlignment = Alignment.Center) {
                     Box(Modifier.size(36.dp, 5.dp).clip(CircleShape).background(ur.borderStrong))
                 }
-                Box(Modifier.weight(1f).navigationBarsPadding()) { AssistantScreen(vm, onClose = { assistant = false }) }
+                Box(Modifier.weight(1f).navigationBarsPadding()) { AssistantScreen(vm, onClose = { assistant = false }, importing = importScreen, applyFix = ::applyFix) }
             }
         }
     }
@@ -291,8 +320,13 @@ private fun BudgetContent(vm: BudgetViewModel, state: BudgetUiState) {
         "loan" -> LoanDialog(selected, budget, state.summary, vm) { editor = null }
         "payee" -> PayeeDialog(selected, budget, vm) { editor = null }
         "rule" -> RuleDialog(selected, budget, vm) { editor = null }
-        // A PDF statement goes to the assistant, attached to its next message.
-        "bankImport" -> BankImportDialog(budget, vm, askAssistant = { uri -> assistantController.attach(context, uri); editor = null; assistant = true }) { editor = null }
+        // Hidden while the assistant is open over it. A PDF statement goes to the assistant,
+        // attached to its next message.
+        "bankImport" -> bankImport?.let { draft ->
+            if (!assistant) BankImportDialog(budget, vm, draft, { change -> bankImport = bankImport?.let(change) },
+                askAssistant = { uri -> assistantController.attach(context, uri); editor = null; bankImport = null; assistant = true },
+                fixWithAssistant = { assistantController.prefill(fixImportText); assistant = true }) { editor = null; bankImport = null }
+        }
         "ynabImport" -> YnabImportDialog(budget, vm) { editor = null }
     }
     val error = state.error ?: fileError

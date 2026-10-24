@@ -314,14 +314,16 @@ fn dispatch(request: Request) -> Result<Value, String> {
                 // An import of a file into an account, as its last file read (see
                 // `bank_statement::start`); its statement, every line or with `problemsOnly` those
                 // that don't read; its review; and changes to it.
-                "bankSession" => encode(bank_statement::start(
-                    &budget,
-                    &required::<String>(p, "accountId")?,
-                    &required::<String>(p, "content")?,
-                    &required::<String>(p, "sessionId")?,
-                    &optional::<String>(p, "budgetId")?.unwrap_or_default(),
-                    optional(p, "sheet")?,
-                )?),
+                // With `prepared`, a file the assistant wrote the standard way.
+                "bankSession" => {
+                    let (account, content) = (required::<String>(p, "accountId")?, required::<String>(p, "content")?);
+                    let (id, budget_id) = (required::<String>(p, "sessionId")?, optional::<String>(p, "budgetId")?.unwrap_or_default());
+                    if optional(p, "prepared")?.unwrap_or(false) {
+                        encode(bank_statement::start_prepared(&content, &account, &id, &budget_id))
+                    } else {
+                        encode(bank_statement::start(&budget, &account, &content, &id, &budget_id, optional(p, "sheet")?)?)
+                    }
+                }
                 "bankStatement" => {
                     let read = bank_statement::statement(
                         &budget,
@@ -331,12 +333,18 @@ fn dispatch(request: Request) -> Result<Value, String> {
                     )?;
                     encode(if optional(p, "problemsOnly")?.unwrap_or(false) { read.problems() } else { read })
                 }
-                "bankImportPreview" => encode(bank_statement::preview_statement(
-                    &budget,
-                    &required::<String>(p, "accountId")?,
-                    &required::<String>(p, "content")?,
-                    &required(p, "session")?,
-                )?),
+                "bankImportPreview" => {
+                    let mut preview = bank_statement::preview_statement(
+                        &budget,
+                        &required::<String>(p, "accountId")?,
+                        &required::<String>(p, "content")?,
+                        &required(p, "session")?,
+                    )?;
+                    if optional(p, "problemsOnly")?.unwrap_or(false) {
+                        preview.statement = preview.statement.problems();
+                    }
+                    encode(preview)
+                }
                 "bankApplyFixes" => encode(bank_statement::apply_fixes(
                     &budget,
                     &required::<String>(p, "accountId")?,

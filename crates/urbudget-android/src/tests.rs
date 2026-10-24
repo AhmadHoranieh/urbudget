@@ -328,8 +328,17 @@ fn a_bank_file_import_is_a_session_the_phones_fix_and_review() {
     let amounts: Vec<i64> = preview["review"]["items"].as_array().unwrap().iter().map(|i| i["amount"].as_i64().unwrap()).collect();
     assert_eq!(amounts, [-320, -1240, -850]);
     assert_eq!(preview["lines"].as_array().unwrap().len(), 3);
+    // A phone's review carries the line it fixed (to undo), not every line.
+    let short = value(call("bankImportPreview", sample(), with(json!({"session": applied["session"], "problemsOnly": true}))));
+    assert_eq!(short["statement"]["lines"].as_array().unwrap().len(), 1);
+    assert_eq!(short["statement"]["lines"][0]["fixed"], true);
+    assert_eq!(short["review"]["items"].as_array().unwrap().len(), 3);
     // Another import's fix is refused.
     let mut elsewhere = fixes.clone();
     elsewhere["scope"]["session"] = json!("s2");
     assert_eq!(call("bankApplyFixes", sample(), with(json!({"session": session, "fixes": elsewhere})))["ok"], false);
+    // A file the assistant prepared reads the standard way.
+    let prepared = value(call("bankSession", sample(), with(json!({"sessionId": "s3", "prepared": true}))));
+    assert_eq!(prepared["structure"]["dateOrder"], json!({"order": "ymd", "confirmed": true}));
+    assert_eq!(prepared["structure"]["columns"]["amount"], "Amount");
 }

@@ -24,6 +24,7 @@ internal fun reviewCounts(summary: BankReviewSummary) = buildString {
     append(summary.rows).append(if (summary.rows == 1) " row" else " rows")
     if (summary.duplicates > 0) append(" · ").append(summary.duplicates).append(" already imported")
     if (summary.renamed > 0) append(" · ").append(summary.renamed).append(" renamed by your payee rules")
+    if (summary.refunds > 0) append(" · ").append(summary.refunds).append(if (summary.refunds == 1) " refund" else " refunds")
 }
 
 /** What the review says before its rows: how matching works, files without bank IDs, and rows still to decide. */
@@ -75,6 +76,8 @@ private fun BankReviewItem(row: BankReviewRow, decision: String, enabled: Boolea
                     color = if (row.locked) ur.muted else if (row.amount > 0) ur.positive else ur.text, maxLines = 1)
             }
             row.bankText?.let { Text("Bank: $it", style = MaterialTheme.typography.bodySmall, color = ur.muted, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+            // Imported, a refund takes its purchase's category when it has none.
+            row.refund?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = ur.accent, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis) }
             if (row.detail.isNotEmpty()) Text(row.detail, style = MaterialTheme.typography.bodySmall, color = ur.muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (row.locked) Text("Already imported · skipped", style = MaterialTheme.typography.bodySmall, color = ur.muted, fontWeight = FontWeight.SemiBold)
             else {

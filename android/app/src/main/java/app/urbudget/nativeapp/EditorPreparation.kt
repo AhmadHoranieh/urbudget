@@ -24,6 +24,8 @@ internal data class BankReviewRow(
     val transfer: String? = null,
     /** The bank text backs that transfer up, so it's chosen; otherwise it's only suggested. */
     val transferSure: Boolean = false,
+    /** Money in that may be a refund of a purchase: what it's of ("Refund of Shop · 23.99 on 7 Oct 2026 · Shopping"). */
+    val refund: String? = null,
 ) {
     /** The row's decision, given the choices made so far. */
     fun decision(chosen: String?): String = if (locked) "skip" else chosen ?: initial
@@ -40,11 +42,12 @@ internal fun bankReviewCounts(rows: List<BankReviewRow>, chosen: Map<Int, String
 }
 
 /** The review's figures: rows already imported, rows a payee rule renamed, and what a note should say. */
-internal data class BankReviewSummary(val rows: Int, val duplicates: Int, val renamed: Int, val idless: Boolean, val allIn: Boolean, val transfers: Boolean = false)
+internal data class BankReviewSummary(val rows: Int, val duplicates: Int, val renamed: Int, val idless: Boolean, val allIn: Boolean, val transfers: Boolean = false,
+                                      val refunds: Int = 0)
 
 internal fun summarizeBankReview(rows: List<BankReviewRow>) = BankReviewSummary(rows.size, rows.count { it.duplicate },
     rows.count { !it.duplicate && it.bankText != null }, rows.any { it.possibleDuplicate || it.idless && it.duplicate },
-    rows.size >= 3 && rows.all { it.amount > 0 }, rows.any { it.transfer != null })
+    rows.size >= 3 && rows.all { it.amount > 0 }, rows.any { it.transfer != null }, rows.count { it.refund != null })
 
 /**
  * Desktop's defaultChoice: skip known bank IDs; take a single match only when that account side was not imported before,
@@ -80,12 +83,30 @@ internal fun statementFormat(name: String, text: String): String? {
     }
 }
 
-/** The engine's reading of a statement's bytes, given as ISO-8859-1: its text, or why it can't be read. */
-private fun engineRead(latin1: String): String {
-    val request = JSONObject().put("version", 1).put("method", "decodeStatement").put("params", JSONObject().put("latin1", latin1))
+/**
+ * The engine's reading of a statement's bytes, given as ISO-8859-1: its text (a workbook's sheet,
+ * the one named or else the one most like a statement, and its sheets), or why it can't be read.
+ */
+private fun engineDecoded(latin1: String, sheet: String? = null): JSONObject {
+    val params = JSONObject().put("latin1", latin1).put("sheet", sheet ?: JSONObject.NULL)
+    val request = JSONObject().put("version", 1).put("method", "decodeStatement").put("params", params)
     val reply = JSONObject(NativeBridge.invoke(request.toString()))
     if (!reply.optBoolean("ok")) error(reply.optString("error", "This file couldn't be read."))
-    return reply.getJSONObject("value").getString("text")
+    return reply.getJSONObject("value")
+}
+private fun engineRead(latin1: String): String = engineDecoded(latin1).getString("text")
+
+/** A statement's text, and a workbook's sheets with the one read. */
+internal data class DecodedStatement(val text: String, val sheet: String? = null, val sheets: List<String> = emptyList())
+
+/** A statement's text (see `decodeStatement`); a workbook is read at `sheet` when it has one by that name. */
+internal fun decodeStatementFile(bytes: ByteArray, sheet: String? = null, workbook: (String, String?) -> JSONObject = ::engineDecoded): DecodedStatement {
+    var book: JSONObject? = null
+    val text = decodeStatement(bytes, binary = { latin1 -> workbook(latin1, sheet).also { book = it }.getString("text") })
+    return book?.let { read ->
+        val sheets = read.optJSONArray("sheets")
+        DecodedStatement(text, if (read.isNull("sheet")) null else read.optString("sheet"), (0 until (sheets?.length() ?: 0)).map { sheets!!.optString(it) })
+    } ?: DecodedStatement(text)
 }
 
 /** The engine's reading of a statement that isn't UTF-8; Windows-1252 if it can't say. */
@@ -151,6 +172,7 @@ internal suspend fun prepareBankReview(
     val currency = budget.editorText("currency").ifBlank { "SAR" }
     val transactions = budget.records("transactions").associateBy { it.editorText("id") }
     val accountNames = budget.records("accounts").associate { it.editorText("id") to it.editorText("name") }
+    val categoryNames by lazy { budget.records("categories").associate { it.editorText("id") to it.editorText("name") } }
     val preparedSets = mutableMapOf<Int, CandidateOptions>()
     fun prepareOptions(source: JSONObject): CandidateOptions {
         val details = source.records("candidateDetails").associateBy { it.editorText("id") }
@@ -201,7 +223,8 @@ internal suspend fun prepareBankReview(
             memo = row.editorText("memo"), amount = row.optLong("amount"), amountText = Money.format(row.optLong("amount"), currency),
             duplicate = duplicate, possibleDuplicate = possible, idless = idless,
             detail = listOf(Money.date(row.editorText("date")), row.editorText("memo")).filter { it.isNotBlank() }.joinToString(" · "),
-            transfer = set.transfer.takeUnless { duplicate }, transferSure = set.transferSure)
+            transfer = set.transfer.takeUnless { duplicate }, transferSure = set.transferSure,
+            refund = row.optJSONObject("refundOf")?.takeUnless { duplicate }?.let { refundText(it, categoryNames, currency) })
     }
 }
 
